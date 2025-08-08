@@ -1,0 +1,258 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:on_chain/solidity/contract/contract_abi.dart';
+import 'package:on_chain/tron/tron.dart';
+import 'package:tron_energy_wallet_core/src/application/providers/transactions/tron/trc20_abi.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
+
+/// Сервис Transactions
+///
+/// Предоставляет сервисы по созданию и подписанию транзакций
+class TransactionsServiceTronImpl implements TransactionsService {
+  /// Сервис Transactions
+  ///
+  /// Предоставляет сервисы по созданию и подписанию транзакций
+  TransactionsServiceTronImpl({
+    required LocalRepoBaseCore localRepo,
+    required Future<ErrOrTransactionInfo> Function({
+      required String tx,
+      required AppBlockchain appBlockchain,
+      String? txFee,
+    })
+    postTransaction,
+    this.tronProvider,
+    this.apiTron,
+  }) : _localRepo = localRepo,
+       _postTransaction = postTransaction,
+       assert(
+         tronProvider != null || apiTron != null,
+         'Required rpc params are null',
+       );
+
+  /// Блокчейн сервиса
+  @override
+  final AppBlockchain appBlockchain = AppBlockchain.tron;
+
+  final LocalRepoBaseCore _localRepo;
+
+  /// Отправка транзакции
+  final Future<ErrOrTransactionInfo> Function({
+    required String tx,
+    required AppBlockchain appBlockchain,
+    String? txFee,
+  })
+  _postTransaction;
+
+  /// Провайдер ноды
+  final TronProvider? tronProvider;
+
+  /// Адрес api tron
+  final String? apiTron;
+
+  static const String _name = 'TransactionsServiceTronImpl';
+
+  static final InAppLogger _logger = InAppLogger.instance;
+
+  TronProvider get _tronProvider =>
+      tronProvider ??
+      TronProvider(
+        TronHTTPProvider(
+          url: apiTron!,
+          authToken: _localRepo.getAccount().token,
+        ),
+      );
+
+  /// 6 Store (Broadcast)
+  @override
+  Future<TransactionInfoData> postTransactionOrThrow({
+    required String tx,
+    String? txFee,
+  }) async {
+    try {
+      if (tx.isEmpty || (txFee != null && txFee.isEmpty)) {
+        throw AppException(
+          message: 'tx: $tx, txFee: $txFee',
+          code: ExceptionCode.unableToCreateTransaction,
+        );
+      }
+      final res = await _postTransaction(
+        tx: tx,
+        appBlockchain: appBlockchain,
+        txFee: txFee,
+      );
+      return res.fold((l) => throw l, (r) => r);
+    } on Exception catch (e) {
+      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
+      rethrow;
+    }
+  }
+
+  /// Отправить trx
+  ///
+  /// [message] не используется в сети TRON (пока)
+  @override
+  Future<String> createTransactionOrThrow({
+    required String toAddress,
+    required double amount,
+    required AppAsset asset,
+    required String masterKey,
+    String? message,
+    FeeTypeBTC? feeTypeBTC,
+    String? txIdToPumpFeeBTC,
+  }) async {
+    try {
+      if (asset.token.blockchain.appBlockchain != appBlockchain) {
+        throw AppIncorrectBlockchainException(
+          appBlockchain.toString(),
+          asset.token.blockchain.appBlockchain.toString(),
+        );
+      }
+
+      if (amount <= 0) {
+        throw AppException(
+          message:
+              'unable to create transaction: amount is not positive: $amount',
+          code: ExceptionCode.amountIsNotPositive,
+        );
+      }
+
+      // Отправка транзакции в трх
+      if (asset.isTrx) {
+        _logger.logInfoMessage(_name, 'creating TRX transaction');
+
+        // create transfer contract (TRX Transfer)
+        final transferContract = TransferContract(
+          amount: TronHelper.toSun(amount.toString()),
+          ownerAddress: TronAddress(asset.address),
+          toAddress: TronAddress(toAddress),
+        );
+
+        _logger.logInfoMessage(_name, 'transferContract: $transferContract');
+
+        // validate transacation and got required data like block hash and ....
+        final transaction = await _tronProvider.request(
+          TronRequestCreateTransaction.fromContract(transferContract),
+        );
+
+        // Время жизни транзакции
+        // По умолчанию в пакете 1 минута, устанавливаем самостоятельно 10 мин.
+        final transactionTTL = BigInt.from(
+          DateTime.fromMillisecondsSinceEpoch(
+            transaction.rawData.timestamp.toInt(),
+            // 10 минут TTL по таскам 790 и 800
+          ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
+        );
+        final rawTr = transaction.rawData.copyWith(expiration: transactionTTL);
+
+        // - feeLimit здесь не задаем. См чат тренержи за 02.06.25
+        return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
+      }
+      _logger.logInfoMessage(_name, 'creating non-TRX transaction');
+      // Отправить не трх транзакцию
+      // столько нулей нужно приписать к еденице
+      final buffer = StringBuffer()..write('1');
+      for (var i = 0; i < asset.token.decimal; i++) {
+        buffer.write('0');
+      }
+
+      final decimal = int.parse(buffer.toString());
+      final totalAmount = amount * decimal;
+      final contract = ContractABI.fromJson(trc20Abi);
+      final function = contract.functionFromName('transfer');
+
+      // address, amount
+      final transferParams = [TronAddress(toAddress), BigInt.from(totalAmount)];
+
+      final _contractAddress = TronAddress(asset.token.contractAddress);
+
+      final transaction = await _tronProvider.request(
+        TronRequestTriggerConstantContract(
+          ownerAddress: TronAddress(asset.address),
+          contractAddress: _contractAddress,
+          data: function.encodeHex(transferParams),
+        ),
+      );
+
+      _logger.logInfoMessage(_name, 'transaction: $transaction');
+
+      // An error has occurred with the request, and we need to investigate
+      // the issue to determine what is happening.
+      if (!transaction.isSuccess) {
+        throw AppRpcException(message: transaction.error.toString());
+      }
+
+      if (transaction.transaction == null) {
+        throw AppRpcException(message: 'tron network returned no transaction');
+      }
+
+      // Время жизни транзакции, устанавливается для всех токенов помимо TRX.
+      // По умолчанию в пакете 1 минута, устанавливаем самостоятельно 10 мин.
+      final transactionTTL = BigInt.from(
+        DateTime.fromMillisecondsSinceEpoch(
+          transaction.transaction!.rawData.timestamp.toInt(),
+          // 10 минут TTL по таскам 790 и 800
+        ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
+      );
+
+      // get transactionRaw from response and make sure set fee limit
+      final rawTr = transaction.transaction!.rawData.copyWith(
+        feeLimit: TronHelper.toSun('100'),
+        expiration: transactionTTL,
+      );
+
+      return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
+    } on Exception catch (e) {
+      if (e is! IncorrectPinCodeException) {
+        _logger.logCriticalError(_name, 'createTransaction: $e');
+      }
+      rethrow;
+    }
+  }
+
+  Future<String> _signTransactionOrThrow({
+    required TransactionRaw rawTr,
+    required String masterKey,
+  }) async {
+    final account = _localRepo.getAccount();
+    final pk = await _localRepo.getPK(
+      publicKey: account.publicKey,
+      masterKey: masterKey,
+    );
+
+    if (pk == null) {
+      throw AppException(
+        message: 'No private wallet key saved for ${account.address}',
+        code: ExceptionCode.noPrivateKeySaved,
+      );
+    }
+
+    /// get transaaction digest and sign with private key
+    final sign = pk.sign(rawTr.toBuffer());
+
+    /// create transaction object and add raw data and signature to this
+    final transaction = Transaction(rawData: rawTr, signature: [sign]);
+
+    final fullTx = {
+      'txID': transaction.rawData.txID,
+      'raw_data_hex': transaction.toHex,
+      'visible': true,
+      ...transaction.toJson(),
+    };
+
+    return json.encode(fullTx);
+  }
+
+  @override
+  Future<({String address, List<int> pkAsBytes})>
+  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
+    // Для простоты считаем что на сети трон мы всегда инициализиированы
+    return (address: _localRepo.getAccount().address, pkAsBytes: <int>[]);
+  }
+
+  @override
+  Future<bool> checkWalletIsFrozen({
+    required AppAsset asset,
+    required String addressToCheck,
+  }) async => false;
+}

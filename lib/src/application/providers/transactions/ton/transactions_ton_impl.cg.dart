@@ -1,0 +1,307 @@
+import 'dart:async';
+
+import 'package:blockchain_utils/bip/mnemonic/mnemonic.dart';
+import 'package:blockchain_utils/bip/ton/mnemonic/ton_seed_generator.dart';
+import 'package:ton_dart/ton_dart.dart';
+import 'package:ton_wallet_service/ton_wallet_service.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
+
+/// Сервис Transactions
+///
+/// Предоставляет сервисы по созданию и подписанию транзакций
+class TransactionsServiceTonImpl implements TransactionsService {
+  /// Сервис Transactions
+  ///
+  /// Предоставляет сервисы по созданию и подписанию транзакций
+  ///
+  /// Для работы на тестовой сети нужно передать обязательно либо [tonProvider],
+  /// либо [testApiKey]
+  TransactionsServiceTonImpl({
+    required LocalRepoBaseCore localRepo,
+    required Future<ErrOrTransactionInfo> Function({
+      required String tx,
+      required AppBlockchain appBlockchain,
+      String? txFee,
+    })
+    postTransaction,
+    required String? Function() currentAccountWallet,
+    required this.isTestnet,
+    this.tonProvider,
+    this.apiTon,
+    this.apiTonJrpc,
+    this.testApiKey,
+  }) : _localRepo = localRepo,
+       _postTransaction = postTransaction,
+       _currentAccountWallet = currentAccountWallet,
+       assert(
+         tonProvider != null || (apiTon != null && apiTonJrpc != null),
+         'Required rpc params are null',
+       );
+
+  /// Блокчейн сервиса
+  @override
+  final AppBlockchain appBlockchain = AppBlockchain.ton;
+
+  /// Для какой cети прошла инициализация
+  final bool isTestnet;
+
+  final LocalRepoBaseCore _localRepo;
+
+  /// Отправка транзакции
+  final Future<ErrOrTransactionInfo> Function({
+    required String tx,
+    required AppBlockchain appBlockchain,
+    String? txFee,
+  })
+  _postTransaction;
+
+  final String? Function() _currentAccountWallet;
+
+  /// Cервис кошелька TON
+  TonWalletService? _walletService;
+
+  /// Провайдер ноды
+  final TonProvider? tonProvider;
+
+  /// Ключ доступа к api на тестовой сети ТОН
+  final String? testApiKey;
+
+  /// Адрес доступа к API TON
+  final String? apiTon;
+
+  /// Адрес доступа к API TON (JRPC)
+  final String? apiTonJrpc;
+
+  static const String _name = 'TransactionsServiceTonImpl';
+
+  static final InAppLogger _logger = InAppLogger.instance;
+
+  /// Кошельки jetton
+  final Map<int, TonJettonWalletService> _jettonWallets = {};
+
+  TonProvider get _rpc =>
+      tonProvider ??
+      TonProvider(
+        TonHTTPProvider(
+          tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
+          tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
+          tonApiKey: isTestnet ? testApiKey : null,
+          authToken: isTestnet ? null : _localRepo.getAccount().token,
+        ),
+        // TonHTTPProvider(
+        //     tonApiUrl: 'https://tonapi.io',
+        //     tonCenterUrl: 'https://toncenter.com',
+        //     authToken: _mainNetApiKey),
+      );
+
+  /// 6 Store (Broadcast)
+  @override
+  Future<TransactionInfoData> postTransactionOrThrow({
+    required String tx,
+    String? txFee,
+  }) async {
+    try {
+      if (tx.isEmpty) {
+        throw AppException(code: ExceptionCode.unableToCreateTransaction);
+      }
+      final res = await _postTransaction(tx: tx, appBlockchain: appBlockchain);
+
+      return res.fold((l) => throw l, (r) => r);
+    } on Exception catch (e) {
+      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<String> createTransactionOrThrow({
+    required String toAddress,
+    required double amount,
+    required AppAsset asset,
+    required String masterKey,
+    String? message,
+    FeeTypeBTC? feeTypeBTC,
+    String? txIdToPumpFeeBTC,
+  }) async {
+    String? signedTransaction;
+    try {
+      if (asset.token.blockchain.appBlockchain != appBlockchain) {
+        throw AppIncorrectBlockchainException(
+          appBlockchain.toString(),
+          asset.token.blockchain.appBlockchain.toString(),
+        );
+      }
+      if (amount <= 0) {
+        throw AppException(
+          message:
+              'unable to create transaction: amount is not positive: $amount',
+          code: ExceptionCode.amountIsNotPositive,
+        );
+      }
+      final walletInfo = await tryInitializeWalletAndGetInfoOrThrow(
+        masterKey: masterKey,
+      );
+      // Не получилось инициализировать сервис выходим
+      if (_walletService == null) {
+        throw AppException(
+          message:
+              'Initialisation error for walletService: asset: '
+              '${asset.token.name}',
+          code: ExceptionCode.unableToInitializeWalletService,
+        );
+      }
+      // Если ключ передан, забираем сразу его
+      final key = walletInfo.pkAsBytes.isEmpty
+          ? await _createSigningKeyOrThrow(masterKey: masterKey)
+          : TonPrivateKey.fromBytes(walletInfo.pkAsBytes);
+      switch (asset.token.tokenWalletType) {
+        case TokenWalletType.master:
+          signedTransaction = await _walletService?.createTransfer(
+            accessKey: key,
+            addressTo: toAddress,
+            amount: amount.toString(),
+            message: message,
+            sendToBlockchain: false,
+          );
+        case TokenWalletType.child:
+          var jettonWalletService = _jettonWallets[asset.token.id];
+          if (asset.childWalletAddress.isEmpty) {
+            throw AppException(
+              message:
+                  'No jettonWalletAddress provided for master '
+                  'wallet ${asset.address}',
+              code: ExceptionCode.noJettonWallet,
+            );
+          }
+          jettonWalletService ??= await _walletService?.openJettonWallet(
+            jettonContractAddress: asset.token.contractAddress,
+            jettonWalletAddress: asset.childWalletAddress,
+            jettonOnChainMetadata: JettonOnChainMetadata.snakeFormat(
+              name: asset.token.name,
+              image: asset.token.icon,
+              symbol: asset.token.shortName,
+              decimals: asset.token.decimal,
+            ),
+          );
+          if (jettonWalletService == null) {
+            throw AppException(
+              message:
+                  'Unable to initialise jetton service for '
+                  'token ${asset.token.name}',
+              code: ExceptionCode.unableToInitializeWalletService,
+            );
+          }
+          _jettonWallets[asset.token.id] = jettonWalletService;
+          signedTransaction = await jettonWalletService.sendJettons(
+            key: key,
+            amount: amount.toString(),
+            recipient: TonAddress(toAddress),
+            sendToBlockchain: false,
+            message: message,
+          );
+        case TokenWalletType.stable:
+        case TokenWalletType.unknown:
+          throw AppException(
+            message: '${asset.token.tokenWalletType} is not supported',
+            code: ExceptionCode.tokenIsNotSupported,
+          );
+      }
+      if (signedTransaction == null || signedTransaction.isEmpty) {
+        throw AppException(code: ExceptionCode.unableToCreateTransaction);
+      }
+      return signedTransaction;
+    } catch (e) {
+      if (e is! IncorrectPinCodeException) {
+        _logger.logCriticalError(_name, 'createTransaction: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Проверка инициализации кошелька
+  ///
+  /// String address = успешно
+  /// null = не успешно
+  @override
+  Future<({String address, List<int> pkAsBytes})>
+  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
+    try {
+      if (_walletService != null) {
+        // Проверка выполненного переключения аккаунта, чтобы сбрасывать
+        // текущеее состояние
+        final initializedTonAddress = _walletService!.tonWallet.address
+            .toString();
+        // На бэке адрес совпадает с уже инициализированным, возвращаем его
+        // если нет, выполняем инициализацию
+        if (_currentAccountWallet() == initializedTonAddress) {
+          return (address: initializedTonAddress, pkAsBytes: <int>[]);
+        }
+        _logger.logInfoMessage(
+          _name,
+          'tryInitializeWallet: reset wallet success. '
+          'Old wallet: $initializedTonAddress',
+        );
+        _walletService = null;
+        _jettonWallets.clear();
+      }
+      final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
+      _walletService = TonWalletService.fromPublicKey(
+        tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
+        publicKey: pk.toPublicKey(),
+        rpc: _rpc,
+      );
+      return (
+        address: _walletService!.tonWallet.address.toString(),
+        pkAsBytes: pk.toBytes(),
+      );
+    } catch (e) {
+      if (e is! IncorrectPinCodeException) {
+        _logger.logCriticalError(_name, 'tryInitializeWallet: $e');
+      }
+      rethrow;
+    }
+  }
+
+  Future<TonPrivateKey> _createSigningKeyOrThrow({
+    required String masterKey,
+  }) async {
+    // Берем текущий активный кошелек трона
+    final mnemonicFromRepo = await _localRepo.getMnemonic(
+      publicKey: _localRepo.getAccount().publicKey,
+      masterKey: masterKey,
+    );
+    if (mnemonicFromRepo.isEmpty) {
+      throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
+    }
+    final mnemonic = Mnemonic.fromList(mnemonicFromRepo.split(' '));
+    final seed = TonSeedGenerator(mnemonic).generate();
+    final key = TonPrivateKey.fromBytes(seed);
+    return key;
+  }
+
+  @override
+  Future<bool?> checkWalletIsFrozen({
+    required AppAsset asset,
+    required String addressToCheck,
+  }) async {
+    try {
+      final walletService =
+          _walletService ??
+          TonWalletService.fromWalletAddress(
+            tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
+            address: asset.address,
+            rpc: _rpc,
+          );
+      final res = await walletService.fetchWalletAddressState(
+        walletAddress: addressToCheck,
+      );
+      return res == TonAddressStateType.frozen;
+    } catch (e) {
+      _logger.logError(
+        _name,
+        'checkWalletIsFrozen: for wallet $addressToCheck. Exception: $e',
+      );
+      return null;
+    }
+  }
+}
