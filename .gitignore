@@ -10,7 +10,7 @@
 .history
 .svn/
 *.lock
-*.g.dart
+#*.g.dart
 .env
 .env.*
 *.apk
@@ -36,7 +36,7 @@ migrate_working_dir/
 
 # generated files
 bin/
-gen/
+#gen/
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -181,7 +181,7 @@ obj/
 coverage/
 
 # Freezed
-*.freezed.dart
+#*.freezed.dart
 
 #My files
 /android/key.properties
