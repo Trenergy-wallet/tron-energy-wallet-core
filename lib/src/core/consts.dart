@@ -1,4 +1,4 @@
-/// Константы Core живут тут
+/// Core constants live here
 class CoreConsts {
   /// TRX
   static const trx = 'TRX';
@@ -9,9 +9,9 @@ class CoreConsts {
   /// USDT
   static const usdt = 'USDT';
 
-  /// Ошибочное значение -1 int
+  /// Error value -1 for int
   static const invalidIntValue = -1;
 
-  /// Ошибочное значение -1 double
+  /// Error value -1 for double
   static const invalidDoubleValue = -1.0;
 }

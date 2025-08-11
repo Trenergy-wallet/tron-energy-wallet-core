@@ -1,6 +1,6 @@
 /// bip32.derivePath params
 enum BtcBipPath {
-  /// Для SegWit в режиме совместимости со старыми кошельками
+  /// For SegWit in compatibility mode with legacy wallets
   bip49segwit("m/49'/0'/0'/0/0"),
 
   /// SegWit
@@ -11,6 +11,6 @@ enum BtcBipPath {
 
   const BtcBipPath(this.path);
 
-  /// Путь деривации ключа
+  /// Key derivation path
   final String path;
 }

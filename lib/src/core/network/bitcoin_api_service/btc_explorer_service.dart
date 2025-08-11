@@ -1,19 +1,32 @@
-// ignore_for_file: type=lint
-// ignore_for_file: strict_raw_type, unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
-
 import 'dart:convert';
 
 import 'package:bitcoin_base/bitcoin_base.dart' show ApiService;
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:http/http.dart' as http;
 
-class ApiProviderException implements Exception {
-  final String message;
-  final int? statusCode;
-  final Map<String, dynamic>? responseData;
+//
+// ignore_for_file: type_literal_in_constant_pattern, strict_raw_type,
+// ignore_for_file: empty_catches
 
-  const ApiProviderException(this.message,
-      [this.statusCode, this.responseData]);
+/// Implementation from blockchain_utils
+/// https://pub.dev/packages/blockchain_utils
+class ApiProviderException implements Exception {
+  /// Implementation from blockchain_utils
+  /// https://pub.dev/packages/blockchain_utils
+  const ApiProviderException(
+    this.message, [
+    this.statusCode,
+    this.responseData,
+  ]);
+
+  ///
+  final String message;
+
+  ///
+  final int? statusCode;
+
+  ///
+  final Map<String, dynamic>? responseData;
 
   @override
   String toString() {
@@ -21,7 +34,11 @@ class ApiProviderException implements Exception {
   }
 }
 
+/// Implementation from blockchain_utils
+/// https://pub.dev/packages/blockchain_utils
 class BitcoinApiService implements ApiService {
+  /// Implementation from blockchain_utils
+  /// https://pub.dev/packages/blockchain_utils
   BitcoinApiService([http.Client? client]) : _client = client ?? http.Client();
   final http.Client _client;
 
@@ -32,16 +49,21 @@ class BitcoinApiService implements ApiService {
   }
 
   @override
-  Future<T> post<T>(String url,
-      {Map<String, String> headers = const {"Content-Type": "application/json"},
-      Object? body}) async {
-    final response =
-        await _client.post(Uri.parse(url), headers: headers, body: body);
+  Future<T> post<T>(
+    String url, {
+    Map<String, String> headers = const {'Content-Type': 'application/json'},
+    Object? body,
+  }) async {
+    final response = await _client.post(
+      Uri.parse(url),
+      headers: headers,
+      body: body,
+    );
     return _readResponse<T>(response);
   }
 
   T _readResponse<T>(http.Response response) {
-    final String toString = _readBody(response);
+    final toString = _readBody(response);
     switch (T) {
       case String:
         return toString as T;
@@ -52,7 +74,7 @@ class BitcoinApiService implements ApiService {
         try {
           return jsonDecode(toString) as T;
         } catch (e) {
-          throw const ApiProviderException("invalid request");
+          throw const ApiProviderException('invalid request');
         }
     }
   }
@@ -64,15 +86,14 @@ class BitcoinApiService implements ApiService {
 
   void _readErr(http.Response response) {
     if (response.statusCode == 200 || response.statusCode == 201) return;
-    String toString = StringUtils.decode(response.bodyBytes);
+    var toString = StringUtils.decode(response.bodyBytes);
     Map<String, dynamic>? errorResult;
     try {
       if (toString.isNotEmpty) {
         errorResult = StringUtils.toJson(toString);
       }
-      // ignore: empty_catches
     } catch (e) {}
-    toString = toString.isEmpty ? "request_error" : toString;
+    toString = toString.isEmpty ? 'request_error' : toString;
     throw ApiProviderException(toString, response.statusCode, errorResult);
   }
 }

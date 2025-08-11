@@ -6,16 +6,16 @@ import 'package:ton_dart/ton_dart.dart';
 import 'package:ton_wallet_service/ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Сервис Transactions
+/// Transactions Service
 ///
-/// Предоставляет сервисы по созданию и подписанию транзакций
+/// Provides services for creating and signing transactions
 class TransactionsServiceTonImpl implements TransactionsService {
-  /// Сервис Transactions
+  /// Transactions Service
   ///
-  /// Предоставляет сервисы по созданию и подписанию транзакций
+  /// Provides services for creating and signing transactions
   ///
-  /// Для работы на тестовой сети нужно передать обязательно либо [tonProvider],
-  /// либо [testApiKey]
+  /// For working on the testnet, you must provide either [tonProvider]
+  /// or [testApiKey]
   TransactionsServiceTonImpl({
     required LocalRepoBaseCore localRepo,
     required Future<ErrOrTransactionInfo> Function({
@@ -38,16 +38,16 @@ class TransactionsServiceTonImpl implements TransactionsService {
          'Required rpc params are null',
        );
 
-  /// Блокчейн сервиса
+  /// Blockchain of the service
   @override
   final AppBlockchain appBlockchain = AppBlockchain.ton;
 
-  /// Для какой cети прошла инициализация
+  /// Network for which the initialization was completed
   final bool isTestnet;
 
   final LocalRepoBaseCore _localRepo;
 
-  /// Отправка транзакции
+  /// Transaction sending
   final Future<ErrOrTransactionInfo> Function({
     required String tx,
     required AppBlockchain appBlockchain,
@@ -57,26 +57,26 @@ class TransactionsServiceTonImpl implements TransactionsService {
 
   final String? Function() _currentAccountWallet;
 
-  /// Cервис кошелька TON
+  /// TON Wallet service
   TonWalletService? _walletService;
 
-  /// Провайдер ноды
+  /// Node provider
   final TonProvider? tonProvider;
 
-  /// Ключ доступа к api на тестовой сети ТОН
+  /// Access key for the TON testnet API
   final String? testApiKey;
 
-  /// Адрес доступа к API TON
+  /// Access address for the TON API
   final String? apiTon;
 
-  /// Адрес доступа к API TON (JRPC)
+  /// Access address for the TON API (JRPC)
   final String? apiTonJrpc;
 
   static const String _name = 'TransactionsServiceTonImpl';
 
   static final InAppLogger _logger = InAppLogger.instance;
 
-  /// Кошельки jetton
+  /// Jetton wallets
   final Map<int, TonJettonWalletService> _jettonWallets = {};
 
   TonProvider get _rpc =>
@@ -141,7 +141,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
       final walletInfo = await tryInitializeWalletAndGetInfoOrThrow(
         masterKey: masterKey,
       );
-      // Не получилось инициализировать сервис выходим
+      // Failed to initialize the service, exiting
       if (_walletService == null) {
         throw AppException(
           message:
@@ -150,7 +150,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
           code: ExceptionCode.unableToInitializeWalletService,
         );
       }
-      // Если ключ передан, забираем сразу его
+      // If the key is provided, use it directly
       final key = walletInfo.pkAsBytes.isEmpty
           ? await _createSigningKeyOrThrow(masterKey: masterKey)
           : TonPrivateKey.fromBytes(walletInfo.pkAsBytes);
@@ -218,21 +218,21 @@ class TransactionsServiceTonImpl implements TransactionsService {
     }
   }
 
-  /// Проверка инициализации кошелька
+  /// Wallet initialization check
   ///
-  /// String address = успешно
-  /// null = не успешно
+  /// String address = success
+  /// null = failure
   @override
   Future<({String address, List<int> pkAsBytes})>
   tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
     try {
       if (_walletService != null) {
-        // Проверка выполненного переключения аккаунта, чтобы сбрасывать
-        // текущеее состояние
+        // Check if the account switch has been done to reset
+        // the current state
         final initializedTonAddress = _walletService!.tonWallet.address
             .toString();
-        // На бэке адрес совпадает с уже инициализированным, возвращаем его
-        // если нет, выполняем инициализацию
+        // On the backend, if the address matches the already initialized one,
+        // return it otherwise, perform initialization
         if (_currentAccountWallet() == initializedTonAddress) {
           return (address: initializedTonAddress, pkAsBytes: <int>[]);
         }
@@ -265,7 +265,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
   Future<TonPrivateKey> _createSigningKeyOrThrow({
     required String masterKey,
   }) async {
-    // Берем текущий активный кошелек трона
+    // Take the current active Tron wallet
     final mnemonicFromRepo = await _localRepo.getMnemonic(
       publicKey: _localRepo.getAccount().publicKey,
       masterKey: masterKey,

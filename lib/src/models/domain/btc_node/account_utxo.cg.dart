@@ -9,10 +9,10 @@ part 'gen/account_utxo.cg.g.dart';
 // "height": 900608,
 // "confirmations": 12
 
-/// AccountUtxo для Bitcoin
+/// AccountUtxo for Bitcoin
 @freezed
 sealed class AppUtxo with _$AppUtxo {
-  /// AccountUtxo для Bitcoin
+  /// AccountUtxo for Bitcoin
   const factory AppUtxo({
     required String txid,
     required int vout,

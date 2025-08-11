@@ -5,30 +5,30 @@ part 'gen/local_account.cg.g.dart';
 
 /// AccountModel
 ///
-/// Локальная модель аккаунта для хранения дополнительных данных при
-/// авторизации и смене аккаунта
+/// Local account model for storing additional data during
+/// authorization and account switching
 ///
-/// [address] - используется при авторизации для получения токена. ТРХ адрес
-/// активного кошелька
+/// [address] - used during authorization to obtain the token. TRX address
+/// of the active wallet
 ///
-/// [publicKey] - публичный ключ подписи - использется для хранения данных в
-/// локальном репозитории
+/// [publicKey] - signature public key - used to store data in
+/// the local repository
 ///
-/// [token] - токен авторизации текущего аккаунта (кошелька ТРХ)
+/// [token] - authorization token of the current account (TRX wallet)
 @Freezed(fromJson: true, toJson: true)
 sealed class LocalAccount with _$LocalAccount {
   /// AccountModel
   ///
-  /// Локальная модель аккаунта для хранения дополнительных данных при
-  /// авторизации и смене аккаунта
+  /// Local account model for storing additional data during
+  /// authorization and account switching
   ///
-  /// [address] - используется при авторизации для получения токена. ТРХ адрес
-  /// активного кошелька
+  /// [address] - used during authorization to obtain the token. TRX address
+  /// of the active wallet
   ///
-  /// [publicKey] - публичный ключ подписи - использется для хранения данных в
-  /// локальном репозитории
+  /// [publicKey] - signature public key - used to store data in
+  /// the local repository
   ///
-  /// [token] - токен авторизации текущего аккаунта (кошелька ТРХ)
+  /// [token] - authorization token of the current account (TRX wallet)
   const factory LocalAccount({
     required String name,
     required String description,
@@ -48,7 +48,7 @@ sealed class LocalAccount with _$LocalAccount {
   factory LocalAccount.fromJson(Map<String, dynamic> json) =>
       _$LocalAccountFromJson(json);
 
-  /// Ошибочное/пустое состояние
+  /// Empty state
   static const LocalAccount empty = LocalAccount(
     name: '',
     description: '',

@@ -1,9 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'package:on_chain/tron/tron.dart';
 
-/// Провайдер для работы с нодой трона
+/// Provider for working with the TRON node
 class TronHTTPProvider implements TronServiceProvider {
-  /// Провайдер для работы с нодой трона
+  /// Provider for working with the TRON node
   TronHTTPProvider({
     required this.url,
     http.Client? client,
@@ -11,16 +11,16 @@ class TronHTTPProvider implements TronServiceProvider {
     this.authToken,
   }) : client = client ?? http.Client();
 
-  /// Адрес api
+  /// API address
   final String url;
 
-  /// Сетевой клиент для взаимодействия
+  /// Network client for interaction
   final http.Client client;
 
-  /// Таймаут для запросов
+  /// Timeout for requests
   final Duration defaultRequestTimeout;
 
-  /// Токен авторизации
+  /// Authorization token
   final String? authToken;
 
   @override

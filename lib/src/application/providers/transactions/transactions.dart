@@ -5,37 +5,37 @@ export 'btc/transactions_btc_impl.cg.dart';
 export 'ton/transactions_ton_impl.cg.dart';
 export 'tron/transactions_tron_impl.cg.dart';
 
-/// Сервис Transactions
+/// Transactions Service
 ///
-/// Предоставляет сервисы по созданию и подписанию транзакций
+/// Provides services for creating and signing transactions
 interface class TransactionsService {
-  /// Конструктор создания сервиса
+  /// Service constructor
   TransactionsService(this.appBlockchain);
 
-  /// Блокчейн сервиса
+  /// Blockchain of the service
   final AppBlockchain appBlockchain;
 
-  /// Отправить транзакцию через наш бэк (6.2)
+  /// Send transaction through our backend (6.2)
   ///
-  /// Возвращает ссылку на открытие в блокчейне (все хорошо) или пустую строку
-  /// (все плохо)
+  /// Returns a link to view the transaction on the blockchain (if successful)
+  /// or an empty string (if failed)
   Future<TransactionInfoData> postTransactionOrThrow({
     required String tx,
     String? txFee,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
-  /// Returns Signed transaction
+  /// Returns signed transaction
   ///
-  /// [toAddress] - адрес куда отправляем
-  /// [amount] - количество монеток на отправку
-  /// [asset] - кошелек
-  /// [masterKey] - ключ доступа к данным на устройстве
-  /// [message] - сообщение для добавления в транзакцию (опционально)
-  /// [feeTypeBTC] - только биткоин. Выбранный тип комиссии (быстрая, медленная)
-  /// [txIdToPumpFeeBTC] - только биткоин. Неподтвержденная транзакция, которой
-  /// надо поднять комиссию. В данном случае toAddress, amount, message будут
-  /// проигнорированы, тк данные будут браться из этой транзакции
+  /// [toAddress] - address to send to
+  /// [amount] - number of coins to send
+  /// [asset] - wallet
+  /// [masterKey] - access key to data on the device
+  /// [message] - optional message to add to the transaction
+  /// [feeTypeBTC] - Bitcoin only. Selected fee type (fast, slow)
+  /// [txIdToPumpFeeBTC] - Bitcoin only. Unconfirmed transaction for which the
+  /// fee needs to be bumped. In this case, [toAddress], [amount], and [message]
+  /// will be ignored since data will be taken from this transaction
   Future<String> createTransactionOrThrow({
     required String toAddress,
     required double amount,
@@ -47,22 +47,22 @@ interface class TransactionsService {
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
-  /// Проверка инициализации кошелька
+  /// Wallet initialization check
   ///
-  /// String address = успешно
-  /// null = не успешно
+  /// String address = success
+  /// null = failure
   ///
-  /// Возврат приватного ключа нужен чтобы пользователь не
-  /// вводил два раза подряд пинкод при отправке средств после смены аккаунта
+  /// Returning the private key is needed so the user doesn’t have to enter the
+  /// PIN twice when sending funds after switching accounts
   Future<({String address, List<int> pkAsBytes})>
   tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
-  /// Проверка статуса кошелька (заморожен или нет)
+  /// Wallet status check (frozen or not)
   ///
-  /// ТОЛЬКО для ТОН сети
+  /// ONLY for the TON network
   ///
-  /// null если не удалось проверить статус
+  /// null if the status could not be verified
   Future<bool?> checkWalletIsFrozen({
     required AppAsset asset,
     required String addressToCheck,

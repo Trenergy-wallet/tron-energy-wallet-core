@@ -1,6 +1,7 @@
+//
 // ignore_for_file: public_member_api_docs
 
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:meta/meta.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 abstract class Either<L, R> {

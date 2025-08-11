@@ -3,14 +3,14 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 part 'gen/wallet.cg.f.dart';
 
-/// Главный кошелек аккаунта TRON
+/// Main wallet of the TRON account
 ///
-/// [assets] - связанные с основным аккаунтом кошельки разных блокчейнов
+/// [assets] - wallets of different blockchains linked to the main account
 @freezed
 sealed class AppWallet with _$AppWallet {
-  /// AppWallet
+  /// Main wallet of the TRON account
   ///
-  /// [assets] - связанные с основным аккаунтом кошельки разных блокчейнов
+  /// [assets] - wallets of different blockchains linked to the main account
   const factory AppWallet({
     required int id,
     required String address,
@@ -35,7 +35,7 @@ sealed class BlockchainInfo with _$BlockchainInfo {
 
   const BlockchainInfo._();
 
-  /// Ошибочное/пустое состояние
+  /// Error/empty state
   static const BlockchainInfo empty = BlockchainInfo(
     id: 0,
     name: '',
@@ -59,7 +59,7 @@ sealed class AppCurrency with _$AppCurrency {
     int? currentIndex,
   }) = _AppCurrency;
 
-  /// Ошибочное/пустое состояние
+  /// Error/empty state
   static const AppCurrency empty = AppCurrency(
     id: 1,
     name: 'United Arab Emirates Dirham',
@@ -83,16 +83,16 @@ sealed class AppAsset with _$AppAsset {
 
   const AppAsset._();
 
-  /// Если активный токен TRX
+  /// Active token is TRX
   bool get isTrx => token.isTrx;
 
-  /// Если активный токен USDT
+  /// Active token is USDT
   bool get isUSDT => token.isUSDT;
 
   /// AppBlockchain
   AppBlockchain get appBlockchain => token.blockchain.appBlockchain;
 
-  /// Ошибочное/пустое состояние
+  /// Error/empty state
   static const AppAsset empty = AppAsset(
     id: CoreConsts.invalidIntValue,
     balance: CoreConsts.invalidDoubleValue,
@@ -125,18 +125,18 @@ sealed class AppToken with _$AppToken {
 
   const AppToken._();
 
-  /// Активный токен = TRX
+  /// Active token is TRX
   bool get isTrx =>
       shortName == CoreConsts.tron &&
       blockchain.appBlockchain == AppBlockchain.tron &&
       tokenWalletType == TokenWalletType.master;
 
-  /// Активный токен = USDT
+  /// Active token is USDT
   bool get isUSDT =>
       shortName == CoreConsts.usdt &&
       blockchain.appBlockchain == AppBlockchain.tron;
 
-  /// Пустое значение
+  /// Error/empty state
   static const AppToken empty = AppToken(
     id: 0,
     name: '',

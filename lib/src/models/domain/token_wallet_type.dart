@@ -1,33 +1,32 @@
-/// Тип кошелька, который мы инициализируем для конкретного токена
+/// Wallet type initialized for a specific token
 ///
-/// [unknown] - если тип не задан, либо для заполнения поля по умолчанию в
-/// остальных блокчейнов
+/// [unknown] - if type is not set, or used as a default for other blockchains
 ///
-/// [master] - главный токен на блокчейне (основной = ТРХ на ТРОН, ТОН на ТОН)
+/// [master] - main token on the blockchain (e.g., TRX on TRON, TON on TON)
 ///
-/// [child] - Дочерний токен-контракт (BTC на TRON, XP на ТОН и тд)
+/// [child] - child token contract (BTC on TRON, XP on TON, etc.)
 ///
-/// [stable] - Стейбл дочерний токен (USDT на ТОН)
+/// [stable] - stable child token (USDT on TON)
 enum TokenWalletType {
-  /// Тип неопределен
+  /// Type undefined
   unknown(),
 
-  /// Главный токен на блокчейне (основной = ТРХ на ТРОН, ТОН на ТОН)
+  /// Main token on the blockchain (e.g., TRX on TRON, TON on TON)
   master(),
 
-  /// Дочерний токен-контракт (BTC на TRON, XP на ТОН и тд)
+  /// Child token contract (BTC on TRON, XP on TON, etc.)
   child(),
 
-  /// Стейбл дочерний токен (USDT на ТОН)
+  /// Stable child token (USDT on TON)
   stable();
 
   const TokenWalletType();
 
   /// fromJson
   factory TokenWalletType.fromJson(dynamic json) => values.firstWhere(
-        (e) => e.name == json.toString(),
-        orElse: () => TokenWalletType.unknown,
-      );
+    (e) => e.name == json.toString(),
+    orElse: () => TokenWalletType.unknown,
+  );
 
   /// toJson
   String toJson() => name;

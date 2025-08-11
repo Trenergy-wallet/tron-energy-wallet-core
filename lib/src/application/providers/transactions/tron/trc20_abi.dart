@@ -1,4 +1,4 @@
-/// Стандартный abi tron
+/// Standard TRON ABI
 const List<Map<String, Object>> trc20Abi = [
   {'inputs': [], 'stateMutability': 'nonpayable', 'type': 'constructor'},
   {
@@ -552,5 +552,5 @@ const List<Map<String, Object>> trc20Abi = [
     'outputs': [],
     'stateMutability': 'nonpayable',
     'type': 'function',
-  }
+  },
 ];

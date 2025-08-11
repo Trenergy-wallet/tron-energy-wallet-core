@@ -1,11 +1,11 @@
+//
 // ignore_for_file: public_member_api_docs
 
 import 'package:dio/dio.dart' show DioException, DioExceptionType;
 
-/// Все коды исключений
-///
+/// All exception codes
 enum ExceptionCode {
-  /// Когда нет возможности детализировать ошибку
+  /// When it is not possible to specify the error in detail
   generalError(code: 'E1', description: 'General error'),
   noPrivateKeySaved(code: 'E2', description: 'No private key saved'),
   unableToDecodeWallet(code: 'E3', description: 'Unable to decode the wallet'),
@@ -14,13 +14,13 @@ enum ExceptionCode {
     code: 'E5',
     description: 'Error while reading mnemonic from repo',
   ),
-  // В аккаунте нет кошелька ТРОН (не загрузился например)
+  // No TRON wallet in the account (e.g., failed to load)
   tronWalletNotLoadedToAccount(
     code: 'E6',
     description: 'Tron wallet is not loaded to the account',
   ),
 
-  // Ошибки инициализации сервисов
+  // Service initialization errors
   unableToInitializeWalletService(
     code: 'SI1',
     description: 'Initialisation error for WalletService',
@@ -31,7 +31,7 @@ enum ExceptionCode {
   ),
   tokenIsNotSupported(code: 'SI3', description: 'Token is not supported'),
 
-  // Ошибки отправок средств
+  // Fund sending errors
   blockchainLinkIsEmpty(
     code: 'TRS1',
     description: 'Service returned empty linkToBlockchain',
@@ -53,7 +53,7 @@ enum ExceptionCode {
     code: 'TRS6',
     description: 'Unable to retrieve the trx asset',
   ),
-  // Ошибки создания транзакции
+  // Transaction creation errors
   tronFromContractError(
     code: 'TRS7',
     description:
@@ -64,7 +64,7 @@ enum ExceptionCode {
     description: 'Error transit wallet is invalid',
   ),
 
-  // Ошибки свапа
+  // Swap errors
   swapError(code: 'SW', description: 'Unknown error during swap'),
   swapControllerIsNotLoaded(
     code: 'SW1',
@@ -76,7 +76,7 @@ enum ExceptionCode {
   ),
   incorrectBlockchain(code: 'BS1', description: 'Incorrect blockchain'),
 
-  // Ошибки бэкенда
+  // Backend errors
   backendGeneralError(code: 'B0', description: 'General backend error'),
   connectionTimeout(code: 'B1', description: 'Connection timeout'),
   responseDataIsNull(code: 'B2', description: 'Data is null in the response'),
@@ -86,11 +86,11 @@ enum ExceptionCode {
     description: 'CheckedFromJsonException - backend sent different models',
   ),
 
-  // Ошибки нод и блокчейнов
+  // Node and blockchain errors
   rpcError(code: 'RPC0', description: 'Blockchain node error'),
 
-  // Разные типы исключений куда в описание может упасть все что угодно.
-  // НЕ показываем пользователю их сообщение
+  // Various types of exceptions where anything can be included in the
+  // description
   rawException(
     code: 'R0',
     description: 'Raw exception. Message can be too big',
@@ -108,10 +108,10 @@ enum ExceptionCode {
         _ => backendGeneralError,
       };
 
-  /// Код для показа пользователю
+  /// Code to show to the user
   final String code;
 
-  /// Описание ошибки чтобы не запутаться
+  /// Error description
   final String description;
 
   @override

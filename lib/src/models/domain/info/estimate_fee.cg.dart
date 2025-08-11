@@ -3,10 +3,10 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 part 'gen/estimate_fee.cg.f.dart';
 
-/// Модель комиссии блокчейна
+/// Blockchain fee model
 @freezed
 sealed class EstimateFeeModel with _$EstimateFeeModel {
-  /// Модель комиссии блокчейна
+  /// Blockchain fee model
   const factory EstimateFeeModel({
     required double fee,
     required double energy,
@@ -15,7 +15,7 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
 
   const EstimateFeeModel._();
 
-  /// Ошибочное/пустое состояние
+  /// Error value / placeholder
   static const empty = EstimateFeeModel(
     fee: CoreConsts.invalidDoubleValue,
     energy: CoreConsts.invalidDoubleValue,
@@ -23,10 +23,9 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
   );
 }
 
-/// Набор комиссий для биткоина
+/// Set of fees for Bitcoin
 @freezed
 sealed class Fees with _$Fees {
-  /// Набор комиссий для биткоина
   const factory Fees({
     required int fastestFee,
     required int halfHourFee,
@@ -37,14 +36,14 @@ sealed class Fees with _$Fees {
 
   const Fees._();
 
-  /// Выбрать соответствующую [FeeTypeBTC] комиссию
+  /// Select the corresponding [FeeTypeBTC] fee
   int feeForType(FeeTypeBTC feeType) => switch (feeType) {
-        FeeTypeBTC.fast => fastestFee,
-        FeeTypeBTC.optimal => halfHourFee,
-        FeeTypeBTC.economy => economyFee,
-      };
+    FeeTypeBTC.fast => fastestFee,
+    FeeTypeBTC.optimal => halfHourFee,
+    FeeTypeBTC.economy => economyFee,
+  };
 
-  /// Ошибочное значение / заглушка
+  /// Error value / placeholder
   static const invalid = Fees(
     fastestFee: CoreConsts.invalidIntValue,
     halfHourFee: CoreConsts.invalidIntValue,

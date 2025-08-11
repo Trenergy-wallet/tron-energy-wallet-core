@@ -1,24 +1,24 @@
 import 'package:on_chain/on_chain.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Абстрактный интерфейс локальной репы Core
+/// Abstract interface of the Core local repository
 abstract interface class LocalRepoBaseCore {
-  /// Выбрать аккаунт
+  /// Select account
   Future<void> chooseAccount(LocalAccount account);
 
-  /// Сохраняем аккаунт
+  /// Save account
   Future<void> saveAccount(LocalAccount account);
 
-  /// Получаем аккаунт
+  /// Get account
   LocalAccount getAccount();
 
-  /// Получаем аккаунты
+  /// Get accounts
   List<LocalAccount> getAccountList();
 
-  /// Удаляем аккаунты
+  /// Delete account
   Future<({bool lastAccountDeleted})> deleteAccount(LocalAccount account);
 
-  /// Обновить аккаунт
+  /// Update account
   Future<void> updateAccount({
     String? name,
     String? description,
@@ -29,35 +29,35 @@ abstract interface class LocalRepoBaseCore {
     bool? hasWalletRights,
   });
 
-  /// Сохраняем mnemonic
+  /// Save mnemonic
   Future<void> saveMnemonic({
     required String mnemonic,
     required String publicKey,
     required String masterKey,
   });
 
-  /// Получить mnemonic
+  /// Get mnemonic
   ///
-  /// успех - строка 12 слов
-  /// неудача - пустая строка
+  /// success - string of 12 words
+  /// failure - empty string
   Future<String> getMnemonic({
     required String publicKey,
     required String masterKey,
   });
 
-  /// Сохранить приватный ключ кошелька
+  /// Save wallet private key
   Future<void> savePK({
     required String pk,
     required String publicKey,
     required String masterKey,
   });
 
-  /// Достать приватный ключ кошелька
+  /// Retrieve wallet private key
   Future<TronPrivateKey?> getPK({
     required String publicKey,
     required String masterKey,
   });
 
-  /// Сохраняем token
+  /// Save token
   Future<void> saveToken(String value);
 }

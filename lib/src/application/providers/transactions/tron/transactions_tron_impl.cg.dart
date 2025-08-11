@@ -6,13 +6,13 @@ import 'package:on_chain/tron/tron.dart';
 import 'package:tron_energy_wallet_core/src/application/providers/transactions/tron/trc20_abi.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Сервис Transactions
+/// Transactions Service
 ///
-/// Предоставляет сервисы по созданию и подписанию транзакций
+/// Provides services for creating and signing TRON transactions
 class TransactionsServiceTronImpl implements TransactionsService {
-  /// Сервис Transactions
+  /// Transactions Service
   ///
-  /// Предоставляет сервисы по созданию и подписанию транзакций
+  /// Provides services for creating and signing TRON transactions
   TransactionsServiceTronImpl({
     required LocalRepoBaseCore localRepo,
     required Future<ErrOrTransactionInfo> Function({
@@ -30,13 +30,13 @@ class TransactionsServiceTronImpl implements TransactionsService {
          'Required rpc params are null',
        );
 
-  /// Блокчейн сервиса
+  /// Blockchain of the service
   @override
   final AppBlockchain appBlockchain = AppBlockchain.tron;
 
   final LocalRepoBaseCore _localRepo;
 
-  /// Отправка транзакции
+  /// Transaction sending
   final Future<ErrOrTransactionInfo> Function({
     required String tx,
     required AppBlockchain appBlockchain,
@@ -44,10 +44,10 @@ class TransactionsServiceTronImpl implements TransactionsService {
   })
   _postTransaction;
 
-  /// Провайдер ноды
+  /// Node provider
   final TronProvider? tronProvider;
 
-  /// Адрес api tron
+  /// TRON API address
   final String? apiTron;
 
   static const String _name = 'TransactionsServiceTronImpl';
@@ -88,9 +88,9 @@ class TransactionsServiceTronImpl implements TransactionsService {
     }
   }
 
-  /// Отправить trx
+  /// Send TRX
   ///
-  /// [message] не используется в сети TRON (пока)
+  /// [message] is not used in the TRON network (yet)
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
@@ -117,7 +117,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
         );
       }
 
-      // Отправка транзакции в трх
+      // Sending a transaction in TRX
       if (asset.isTrx) {
         _logger.logInfoMessage(_name, 'creating TRX transaction');
 
@@ -135,22 +135,22 @@ class TransactionsServiceTronImpl implements TransactionsService {
           TronRequestCreateTransaction.fromContract(transferContract),
         );
 
-        // Время жизни транзакции
-        // По умолчанию в пакете 1 минута, устанавливаем самостоятельно 10 мин.
+        // Transaction lifetime
+        // Default in the package is 1 minute, we set it ourselves to 10 minutes
         final transactionTTL = BigInt.from(
           DateTime.fromMillisecondsSinceEpoch(
             transaction.rawData.timestamp.toInt(),
-            // 10 минут TTL по таскам 790 и 800
+            // 10 minutes TTL according to tasks 790 and 800
           ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
         );
         final rawTr = transaction.rawData.copyWith(expiration: transactionTTL);
 
-        // - feeLimit здесь не задаем. См чат тренержи за 02.06.25
+        // - feeLimit is not set here. See chat trenergy on 02.06.25
         return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
       }
       _logger.logInfoMessage(_name, 'creating non-TRX transaction');
-      // Отправить не трх транзакцию
-      // столько нулей нужно приписать к еденице
+      // Send a non-TRX transaction
+      // this many zeros need to be appended to one
       final buffer = StringBuffer()..write('1');
       for (var i = 0; i < asset.token.decimal; i++) {
         buffer.write('0');
@@ -186,8 +186,8 @@ class TransactionsServiceTronImpl implements TransactionsService {
         throw AppRpcException(message: 'tron network returned no transaction');
       }
 
-      // Время жизни транзакции, устанавливается для всех токенов помимо TRX.
-      // По умолчанию в пакете 1 минута, устанавливаем самостоятельно 10 мин.
+      // Transaction lifetime is set for all tokens except TRX.
+      // Default in the package is 1 minute, we set it ourselves to 10 minutes
       final transactionTTL = BigInt.from(
         DateTime.fromMillisecondsSinceEpoch(
           transaction.transaction!.rawData.timestamp.toInt(),
@@ -195,7 +195,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
         ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
       );
 
-      // get transactionRaw from response and make sure set fee limit
+      // Get transactionRaw from response and make sure set fee limit
       final rawTr = transaction.transaction!.rawData.copyWith(
         feeLimit: TronHelper.toSun('100'),
         expiration: transactionTTL,
@@ -227,10 +227,10 @@ class TransactionsServiceTronImpl implements TransactionsService {
       );
     }
 
-    /// get transaaction digest and sign with private key
+    // Get transaaction digest and sign with private key
     final sign = pk.sign(rawTr.toBuffer());
 
-    /// create transaction object and add raw data and signature to this
+    // Create transaction object and add raw data and signature to this
     final transaction = Transaction(rawData: rawTr, signature: [sign]);
 
     final fullTx = {
@@ -246,7 +246,8 @@ class TransactionsServiceTronImpl implements TransactionsService {
   @override
   Future<({String address, List<int> pkAsBytes})>
   tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
-    // Для простоты считаем что на сети трон мы всегда инициализиированы
+    // For simplicity, we assume that we are always initialized on the TRON
+    // network
     return (address: _localRepo.getAccount().address, pkAsBytes: <int>[]);
   }
 

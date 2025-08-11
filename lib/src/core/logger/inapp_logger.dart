@@ -1,3 +1,4 @@
+// It is for testing
 // ignore_for_file: avoid_print
 
 import 'dart:developer' as developer;
@@ -8,25 +9,23 @@ import 'package:tron_energy_wallet_core/src/core/core.dart';
 const _maxLength = 100000;
 const Level _minimumLogLevel = Level.INFO;
 
-/// Класс для показа лога внутри приложения
-/// Сбрасывается после перезапуска приложения
-/// Все новые события также выводятся в консоль
+/// Class for displaying logs inside the app
+/// Resets after app restart
+/// All new events are also printed to the console
 final class InAppLogger {
   InAppLogger._();
 
-  /// Синглтон InAppLogger
+  /// Singleton InAppLogger
   static final InAppLogger instance = InAppLogger._();
 
   final _log = StringBuffer();
 
-  /// В тестах просто выводим принты
+  /// In tests, simply output prints
   bool inTest = false;
 
-  /// Добавить новую строку в лог и консоль
+  /// Add a new line to the log and console
   void _addToLog({
     required String method,
-    // TODO(ivn): Отрефракторить для того чтобы в поле line не нужно было
-    // снаружи передавать ошибку
     required Object line,
     Level level = Level.INFO,
     Object? error,
@@ -37,11 +36,11 @@ final class InAppLogger {
       return;
     }
     if (level >= _minimumLogLevel) {
-      // Ограничим длину лога 100 000 символов и при переполнении будем
-      // оставлять только свежие данные (последние 90 000 символов)
+      // Limit log length to 100,000 characters and on overflow
+      // keep only the most recent data (last 90,000 characters)
       if (_log.length > _maxLength) {
-        // Чтобы лог не обрывался посередине строки, найдем начало строки, до
-        // которой будем обрезать лог
+        // To avoid cutting off the log mid-line, find the start of the line
+        // at which to trim the log
         final pos = _log.toString().indexOf(
           RegExp(r'\[\d+:\d+:\d+] \['),
           (_maxLength * 0.1).toInt(),
@@ -58,9 +57,8 @@ final class InAppLogger {
           '${_toDoubleDigits(now.second)}';
       _log
         ..write('[$datetime] [$method] ${_getLogSymbol(level)}')
-        // ограничим длину одного логируемого сообщения
+        // Limit length of a single logged message
         ..writeln(line.toString().maxLen(30000));
-      // рефреш тут не делаем, тк может оказаться, что мы не в дереве
       developer.log(
         '${_getLogSymbol(level)} $line',
         name: '$datetime] [$method',
@@ -71,22 +69,22 @@ final class InAppLogger {
     }
   }
 
-  /// Получить текущее значение лога
+  /// Get the current log value
   String get getLog => _log.toString();
 
-  /// Очистить лог
+  /// Clear the log
   void cleanLog() => _log.clear();
 
-  /// Сохраняем обычное информационное сообщение без префикса
+  /// Save a regular informational message without prefix
   void logInfoMessage(String method, Object line) =>
       _addToLog(method: method, line: line);
 
-  /// Сохраняем предупреждение - чтото пошло не так но защита сработала
-  /// (например DTO в required поле поставило значение по умолчанию)
+  /// Save a warning - something went wrong but protection worked
+  /// (e.g., DTO set a default value in a required field)
   void logWarning(String method, Object line) =>
       _addToLog(method: method, line: line, level: Level.WARNING);
 
-  /// Ошибка - чтото пошло не так
+  /// Error - something went wrong
   void logError(
     String method,
     Object line, [
@@ -100,8 +98,8 @@ final class InAppLogger {
     stacktrace: stacktrace,
   );
 
-  /// Случилось что-то ужасное, что существенно влияет на работоспособность
-  /// приложения
+  /// Something terrible happened that significantly affects the app’s
+  /// functionality
   void logCriticalError(
     String method,
     Object line, [

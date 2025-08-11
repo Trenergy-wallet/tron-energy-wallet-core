@@ -1,36 +1,36 @@
 import 'package:dio/dio.dart' show DioException;
 import 'package:tron_energy_wallet_core/src/core/core.dart';
 
-/// Базовый класс исключений, содержащий
+/// Base exception class containing
 ///
-/// сообщение [message]
-/// код ошибки [code]
+/// Message [message]
+/// Error code [code]
 /// StackTrace [stackTrace]
 abstract class AppExceptionWithCode implements Exception {
-  /// Базовыйы класс исключений содержащий
+  /// Base exception class containing
   ///
-  /// [message] - сообщение
-  /// [code] - код ошибки
-  /// [stackTrace] - StackTrace где была выкинута ошибка
+  /// [message] - message
+  /// [code] - error code
+  /// [stackTrace] - StackTrace where the error was thrown
   AppExceptionWithCode({
     required this.message,
     required this.code,
     this.stackTrace,
   });
 
-  /// Сообщение об ошибке
+  /// Error message
   final String message;
 
-  /// Код ошибки
+  /// Error code
   final ExceptionCode code;
 
-  /// StackTrace. Сохраняем для обработки при оборачивании в Either
+  /// StackTrace
   final StackTrace? stackTrace;
 }
 
-/// Ошибка расшифровки пин-кода
+/// PIN code decryption error
 class IncorrectPinCodeException implements Exception {
-  /// Ошибка расшифровки пин-кода
+  /// PIN code decryption error
   IncorrectPinCodeException();
 
   @override
@@ -39,17 +39,11 @@ class IncorrectPinCodeException implements Exception {
   }
 }
 
-/// Исключение общего типа
+/// General type exception
 class AppException extends AppExceptionWithCode implements Exception {
-  /// Исключение общего типа
-  AppException({
-    String? message,
-    ExceptionCode? code,
-    super.stackTrace,
-  }) : super(
-          message: message ?? '',
-          code: code ?? ExceptionCode.generalError,
-        );
+  /// General type exception
+  AppException({String? message, ExceptionCode? code, super.stackTrace})
+    : super(message: message ?? '', code: code ?? ExceptionCode.generalError);
 
   @override
   String toString() {
@@ -58,17 +52,14 @@ class AppException extends AppExceptionWithCode implements Exception {
   }
 }
 
-/// Исключение, получаемое при ошибках бекенда
+/// Exception for errors from backend (validations)
 class AppBackendException extends AppExceptionWithCode implements Exception {
-  /// Исключение, получаемое при ошибках бекенда
-  AppBackendException({
-    String? message,
-    ExceptionCode? code,
-    super.stackTrace,
-  }) : super(
-          message: message ?? '',
-          code: code ?? ExceptionCode.backendGeneralError,
-        );
+  /// Exception for errors from backend (validations)
+  AppBackendException({String? message, ExceptionCode? code, super.stackTrace})
+    : super(
+        message: message ?? '',
+        code: code ?? ExceptionCode.backendGeneralError,
+      );
 
   @override
   String toString() {
@@ -78,37 +69,34 @@ class AppBackendException extends AppExceptionWithCode implements Exception {
   }
 }
 
-/// Исключение, получаемое при ошибках бекенда
+/// Exception for errors from backend (Status code is not 200)
 class AppDioException extends AppExceptionWithCode implements Exception {
-  /// Исключение, получаемое при ошибках бекенда
-  AppDioException({
-    required this.dioException,
-  }) : super(
-          message: () {
-            final data = dioException.response?.data;
-            if (data is Map<String, dynamic> && data.containsKey('error')) {
-              return data['error'].toString();
-            }
-            // Ограничим длину в сообщении чтобы не всю портянку стактрейса
-            // ларавела передавать
-            final msg = data.toString();
-            return msg.length < 500 ? msg : msg.substring(0, 500);
-          }(),
-          code: ExceptionCode.fromDioException(dioException),
-          stackTrace: dioException.stackTrace,
-        );
+  /// Exception for errors from backend (Status code is not 200)
+  AppDioException({required this.dioException})
+    : super(
+        message: () {
+          final data = dioException.response?.data;
+          if (data is Map<String, dynamic> && data.containsKey('error')) {
+            return data['error'].toString();
+          }
+          final msg = data.toString();
+          return msg.length < 500 ? msg : msg.substring(0, 500);
+        }(),
+        code: ExceptionCode.fromDioException(dioException),
+        stackTrace: dioException.stackTrace,
+      );
 
-  /// Исключение от дио
+  /// Dio exception
   final DioException dioException;
 
   /// Path (endpoint)
   String get path => dioException.requestOptions.path;
 
-  /// Код ответа сервера
+  /// Server response code
   int get statusCode =>
       dioException.response?.statusCode ?? CoreConsts.invalidIntValue;
 
-  /// Ошибка по таймауту
+  /// Timeout error
   bool get isConnectionError => code == ExceptionCode.connectionTimeout;
 
   @override
@@ -119,9 +107,9 @@ class AppDioException extends AppExceptionWithCode implements Exception {
   }
 }
 
-/// Исключение при попытках обратиться к rpc/node
+/// Exception when attempting to access rpc/node
 class AppRpcException extends AppExceptionWithCode implements Exception {
-  /// Исключение при попытках обратиться к rpc/node
+  /// Exception when attempting to access rpc/node
   AppRpcException({
     required super.message,
     ExceptionCode? code,
@@ -134,15 +122,15 @@ class AppRpcException extends AppExceptionWithCode implements Exception {
   }
 }
 
-/// Исключение при попытках обратиться к неподдерживаему блокчейну
+/// Exception when attempting to access an unsupported blockchain
 class AppBlockchainIsNotSupportedException extends AppExceptionWithCode
     implements Exception {
-  /// Исключение при попытках обратиться к неподдерживаему блокчейну
+  /// Exception when attempting to access an unsupported blockchain
   AppBlockchainIsNotSupportedException(String appBlockchain)
-      : super(
-          message: '$appBlockchain is not supported',
-          code: ExceptionCode.blockchainIsNotSupported,
-        );
+    : super(
+        message: '$appBlockchain is not supported',
+        code: ExceptionCode.blockchainIsNotSupported,
+      );
 
   @override
   String toString() {
@@ -151,18 +139,21 @@ class AppBlockchainIsNotSupportedException extends AppExceptionWithCode
   }
 }
 
-/// Исключение при попытках обратиться к неподдерживаему блокчейну
+/// Exception thrown when attempting to process with an incorrectly selected
+/// blockchain
 class AppIncorrectBlockchainException extends AppExceptionWithCode
     implements Exception {
-  /// Исключение при попытках обратиться к неподдерживаему блокчейну
+  /// Exception thrown when attempting to process with an incorrectly selected
+  /// blockchain
   AppIncorrectBlockchainException(
     String expectedBlockchain,
     String actualBlockchain,
   ) : super(
-          message: 'incorrect blockchain: expected $expectedBlockchain got'
-              ' $actualBlockchain',
-          code: ExceptionCode.incorrectBlockchain,
-        );
+        message:
+            'incorrect blockchain: expected $expectedBlockchain got'
+            ' $actualBlockchain',
+        code: ExceptionCode.incorrectBlockchain,
+      );
 
   @override
   String toString() {
@@ -171,11 +162,9 @@ class AppIncorrectBlockchainException extends AppExceptionWithCode
   }
 }
 
-/// Сырое исключение с возможным стактрейсом в теле сообщения.
-/// НЕ ПОКАЗЫВАЕМ ПОЛЬЗОВАТЕЛЮ
+/// Raw exception with possible stack trace in the message body
 class AppRawException extends AppExceptionWithCode implements Exception {
-  /// Сырое исключение с возможным стактрейсом в теле сообщения.
-  /// НЕ ПОКАЗЫВАЕМ ПОЛЬЗОВАТЕЛЮ
+  /// Raw exception with possible stack trace in the message body
   AppRawException({
     required super.message,
     ExceptionCode? code,

@@ -6,26 +6,26 @@ import 'package:blockchain_utils/bip/bip/bip32/slip10/bip32_slip10_secp256k1.dar
 import 'package:blockchain_utils/bip/bip/bip39/bip39_seed_generator.dart';
 import 'package:blockchain_utils/bip/mnemonic/mnemonic.dart';
 import 'package:meta/meta.dart';
+import 'package:tron_energy_wallet_core/src/application/providers/transactions/btc/enum.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import 'enum.dart';
+/// Transactions Service
+///
+/// Provides services for creating and signing Bitcoin transactions
+///
+/// SigningKeyCreatorBTC contains shared variables for this service and
+/// the transaction length calculation service
 
-/// Сервис Transactions
-///
-/// Предоставляет сервисы по созданию и подписанию транзакций Bitcoin
-///
-/// [SingingKeyCreatorBTC] содержит общие переменные для этого сервиса и
-/// сервиса расчета длины транзакции
 class TransactionsServiceBTCImpl
     with SingingKeyCreatorBTC
     implements TransactionsService {
-  /// Сервис Transactions
+  /// Transactions Service
   ///
-  /// Предоставляет сервисы по созданию и подписанию транзакций Bitcoin
+  /// Provides services for creating and signing Bitcoin transactions
   TransactionsServiceBTCImpl({
     required this.network,
-    required LocalRepoBaseCore localRepo,
-    required BTCNodeRepo btcNodeRepo,
+    required this.localRepo,
+    required this.btcNodeRepo,
     required Future<ErrOrTransactionInfo> Function({
       required String tx,
       required AppBlockchain appBlockchain,
@@ -40,23 +40,21 @@ class TransactionsServiceBTCImpl
       String? tokenContractAddress,
     })
     estimateFee,
-  }) : this.localRepo = localRepo,
-       _postTransaction = postTransaction,
-       this.btcNodeRepo = btcNodeRepo,
+  }) : _postTransaction = postTransaction,
        _estimateFee = estimateFee;
 
-  /// Блокчейн сервиса
+  /// Blockchain of the service
   @override
   final AppBlockchain appBlockchain = AppBlockchain.bitcoin;
 
-  /// Сеть биткоина для работы сервиса
+  /// Bitcoin network used by the service
   @override
   final BitcoinNetwork network;
 
   @override
   final String name = 'TransactionsServiceBTCImpl';
 
-  /// Отправка транзакции
+  /// Transaction sending
   final Future<ErrOrTransactionInfo> Function({
     required String tx,
     required AppBlockchain appBlockchain,
@@ -74,8 +72,8 @@ class TransactionsServiceBTCImpl
 
   /// 2.4. Estimate Tx Energy Fee
   ///
-  /// Для биткоина в разделе fees выдает стоимость в sat/vB (сатоши за ОДИН
-  /// виртуальный байт)
+  /// For Bitcoin, the fees section shows the cost in sat/vB (satoshis per ONE
+  /// virtual byte)
   final Future<ErrOrEstimateFee> Function({
     required double amount,
     required AppBlockchain appBlockchain,
@@ -136,7 +134,7 @@ class TransactionsServiceBTCImpl
         message: message,
         txIdToPumpFeeBTC: txIdToPumpFeeBTC,
       );
-      // 4.2 Стоимости комиссий из расчета на 1 байт получим от бэка
+      // 4.2 Get fee rates per byte from the backend
       final networkEstimate = (await _estimateFee(
         amount: amount,
         appBlockchain: appBlockchain,
@@ -149,17 +147,16 @@ class TransactionsServiceBTCImpl
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-      // 4.3 Выберем нужную стоимость комисси в зависимости от того, что
-      // выбрал пользователь в интерфейса
-      // Если мы сюда дошли, то feeTypeBTC уже не null тк проверка была
-      // проведена
+      // 4.3 Choose the appropriate fee rate based on the user's selection in
+      // the UI
+      // If we reached this point, feeTypeBTC is already not null since it was
+      // checked earlier
       final feePer1vBCurent = networkEstimate.fees.feeForType(feeTypeBTC!);
       // Выбираем какую стоимость отправки комиссии использовать: ту, которая
       // сейчас есть в сети [feePer1vBCurent], либо ту, что уже была в rbf
       // транзакции
       final feePer1vB = max(feePer1vBCurent, maxRbfTransactionFeeRatePer1vB);
 
-      // Это не особо нужная проверка - поидее это бэк следит
       if (feePer1vB < networkEstimate.fees.minimumFee) {
         throw AppException(
           message: 'Fee is too low: $feePer1vB',
@@ -167,12 +164,12 @@ class TransactionsServiceBTCImpl
         );
       }
 
-      // 4.4 Финальная сумма комиссии
+      // 4.4 Final fee amount
       final fee = BigInt.from(feePer1vB * transactionVSize);
-      // 4.5 Если мы используем RBF входы обязательно нужно проверить
-      // условие что комиссия в новой транзакции больше чем в предыдущей
-      // RBF = транзакция с бОльшей комиссией заменяет транзакцию с
-      // меньшей комиссией при условии что у них пересекаются входы
+      // 4.5 If we use RBF inputs, it's mandatory to check that the fee in the
+      // new transaction  is higher than in the previous one
+      // RBF = a transaction with a higher fee replaces one with a lower fee,
+      // given they share inputs
       final feesInReplacedRbfTransactions = pendingTransactions.fold(
         0,
         (prev, next) => prev + next.fees!,
@@ -191,8 +188,8 @@ class TransactionsServiceBTCImpl
         '$fee ${pendingTransactions.isNotEmpty ? ''
                   ', was $feesInReplacedRbfTransactions' : ''}',
       );
-      // 5 Расчет сдачи
-      // changeValue - что мы возвращаем обратно в ввиде сдачи
+      // 5 Calculate change
+      // changeValue - the amount returned back as change
       final changeValue = sumOfUtxo - (sumOfOutputs + fee);
       logger.logInfoMessage(
         name,
@@ -204,14 +201,14 @@ class TransactionsServiceBTCImpl
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-      // 5.1 Если сдача положительная, добавляем ее в выходы на место
-      // заглушки
+      // 5.1 If change is positive, add it to the outputs replacing the
+      // placeholder
       if (changeValue > BigInt.zero) {
         outPuts.add(
           BitcoinOutput(address: spender3Taproot, value: changeValue),
         );
       }
-      // 6 Собираем транзакцию
+      // 6 Assemble the transaction
       final builder = BitcoinTransactionBuilder(
         outPuts: outPuts,
         fee: fee,
@@ -275,29 +272,34 @@ class TransactionsServiceBTCImpl
   }) async => false;
 }
 
-/// Класс для хранения метода создания ключа подписи биткоина
+/// Class for storing the method of creating a Bitcoin signing key
 mixin SingingKeyCreatorBTC {
+  /// Blockchain
   AppBlockchain get appBlockchain;
 
+  /// Имя
   @protected
   String get name;
 
+  /// Logger
   @protected
   final InAppLogger logger = InAppLogger.instance;
 
+  /// Local repo
   @protected
   LocalRepoBaseCore get localRepo;
 
+  /// BtcNodeRepo
   @protected
   BTCNodeRepo get btcNodeRepo;
 
-  /// В какой сети работаем
+  /// Which network we are working on
   BitcoinNetwork get network;
 
-  /// Создать ключ подписи для BTC
+  /// Create a signing key for BTC
   Future<ECPrivate> createSigningKeyOrThrow({required String masterKey}) async {
     final mnemonicFromRepo = await localRepo
-        // Берем текущий активный кошелек трона
+        // Take the current active Tron wallet
         .getMnemonic(
           publicKey: localRepo.getAccount().publicKey,
           masterKey: masterKey,
@@ -311,13 +313,13 @@ mixin SingingKeyCreatorBTC {
     final bip32 = Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
     // BIP-86 m/86'/0'/0'/0/0 - для taproot
     // BIP-84 m/84'/0'/0'/0/0 - для SegWit
-    // BIP-49 "m/49'/0'/0'/0/0" - для SegWit в режиме совместимости со старыми кошельками
+    // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
     final bipBase = bip32.derivePath(BtcBipPath.bip86taproot.path);
     return ECPrivate.fromBytes(bipBase.privateKey.raw);
   }
 
-  /// Все вычисления которые мы вынуждены производить чтобы вычислить
-  /// размер транзакции
+  /// All calculations we are forced to perform to determine
+  /// the transaction size
   Future<
     ({
       int transactionVSize,
@@ -363,7 +365,7 @@ mixin SingingKeyCreatorBTC {
       masterKey: masterKey,
     );
     switch (asset.token.tokenWalletType) {
-      // Никакие типы кошельков кроме master (btc) не поддерживаются
+      // No wallet types other than master (btc) are supported
       case TokenWalletType.child:
       case TokenWalletType.stable:
       case TokenWalletType.unknown:
@@ -378,16 +380,16 @@ mixin SingingKeyCreatorBTC {
           toAddress,
           network: network,
         ).baseAddress;
-        // Сообщение, которое будем записывать в транзакцию
-        // для txIdToPumpFeeBTC мы его берем от ноды
+        // Message that will be recorded in the transaction
+        // for txIdToPumpFeeBTC we get it from the node
         var messageToInclude = txIdToPumpFeeBTC == null ? message : null;
 
         final publicKey = senderPrivateKey.getPublic();
-        // 1. Выбор спендрера
-        // Берем ТОЛЬКО Taproot спендер
+        // 1. Selecting the spender
+        // Take ONLY the Taproot spender
         final spender3Taproot = publicKey.toTaprootAddress();
         final spender3TaprootAddres = spender3Taproot.toAddress(network);
-        // Проверяем что мы работаем с правильным кошельком
+        // Check that we are working with the correct wallet
         if (asset.address != spender3TaprootAddres) {
           throw AppException(
             message:
@@ -396,16 +398,16 @@ mixin SingingKeyCreatorBTC {
             code: ExceptionCode.unableToDecodeWallet,
           );
         }
-        // Мы можем забирать баланс из любого из них или из нескольких
+        // We can take the balance from any of them or from multiple
         final spenders = <BitcoinBaseAddress>[spender3Taproot];
         logger.logInfoMessage(
           name,
           'Send from address: $spender3TaprootAddres',
         );
-        // 2. Получение непотраченных выходов (UTXO)
-        // Входы, которые будем тратить (Unspent Transaction Outputs)
+        // 2. Getting unspent outputs (UTXO)
+        // Inputs that will be spent (Unspent Transaction Outputs)
         final accountsUtxos = <UtxoWithAddress>[];
-        // Выходы, которые уже связаны в неподтвержденных транзакциях
+        // Outputs that are already linked in unconfirmed transactions
         final pendingUtxos = <AppUtxo>[];
 
         // loop each spenders address and get utxos and add to accountsUtxos
@@ -414,9 +416,9 @@ mixin SingingKeyCreatorBTC {
             address: i.toAddress(network),
             confirmed: true,
           );
-          // 2.1 Забираем входы у ноды
+          // 2.1 Retrieve inputs from the node
           final utxos = utxosResponse.fold((l) => throw l, (r) => r);
-          // 2.2 Конвертируем их в модель для билдера
+          // 2.2 Convert them into a model for the builder
           final utxosWithAddress = utxos
               .map(
                 (e) => UtxoWithAddress(
@@ -435,9 +437,9 @@ mixin SingingKeyCreatorBTC {
               )
               .toList();
           accountsUtxos.addAll(utxosWithAddress);
-          // 2.3 Подготовим выходы для RBF
-          // У ноды что стоит кэш, поэтому вынужденно запрашиваем подтвержденные
-          // входы через v2 api а неподтвержденные через v1
+          // 2.3 Prepare outputs for RBF
+          // The node has a cache, so we forcibly request confirmed inputs via
+          // v2 API and unconfirmed via v1
           final pendingTransactionsResponse = await btcNodeRepo.fetchUtxosV1(
             address: i.toAddress(network),
             confirmed: false,
@@ -455,10 +457,10 @@ mixin SingingKeyCreatorBTC {
             '${pendingUtxos.map((e) => e.txid).join(',')}',
           );
         }
-        // Сумма всех входов
+        // Total sum of all inputs
         final sumOfUtxo = accountsUtxos.sumOfUtxosValue();
         logger.logInfoMessage(name, 'sumOfUtxo: $sumOfUtxo');
-        // Нечего тратить
+        // Nothing to spend
         if (sumOfUtxo == BigInt.zero) {
           throw AppException(
             message: 'sumOfUtxo is zero',
@@ -471,34 +473,34 @@ mixin SingingKeyCreatorBTC {
           'will send to $spender3TaprootAddres on ${network.identifier}',
         );
 
-        // 3. Сборка выходов (BitcoinOutput)
-        // 3.1 Добавим основной выход транзакции
+        // 3. Assembling outputs (BitcoinOutput)
+        // 3.1 Add the main transaction output
         final outPuts = <BitcoinOutput>[
-          // Если мы только подрнимаем комиссию для txIdToPumpFeeBTC данный
-          // выход не добавляем - данные транзакции будем забирать из
-          // эндпоинта
+          // If we are only bumping the fee for txIdToPumpFeeBTC this
+          // output is not added - data for this transaction will be taken
+          // from the endpoint
           if (txIdToPumpFeeBTC == null)
             BitcoinOutput(
               address: addressToSend,
               value: BtcUtils.toSatoshi(amount.toString()),
             ),
         ];
-        // 3.2 Добавим в выходы наши rbf неподтвержденные транзакции
+        // 3.2 Add our RBF unconfirmed transactions to the outputs
         final pendingTransactions = <TransactionBtcNode>[];
-        // 3.2.1 Получим информацию по каждой такой транзакции
+        // 3.2.1 Get information about each such transaction
         for (final utxo in pendingUtxos) {
           final txResponse = await btcNodeRepo.fetchTransaction(
             txId: utxo.txid,
           );
           txResponse.fold((l) => throw l, (r) {
-            // Бывает что нода глючит и выдает как неподтвержденные уже
-            // подтвержденные транзакции, проверим дополнительно, что
-            // транзакция действительно еще не имеет подтверждений
+            // Sometimes the node glitches and shows confirmed transactions as
+            // unconfirmed, we additionally check that the transaction indeed
+            // has no confirmations yet
             if (r.isPending) pendingTransactions.add(r);
           });
         }
-        // 3.3 Очистим список транзакций от тех, которые используют входы
-        // которые мы не задействуем
+        // 3.3 Clean the transaction list of those that use inputs
+        // which we do not engage
         pendingTransactions.retainWhere(
           (pt) => pt.vin.any(
             (v) =>
@@ -506,8 +508,8 @@ mixin SingingKeyCreatorBTC {
           ),
         );
 
-        // Если запрошенной транзакции на поднятие комиссии нет в списке
-        // неподтвержденных, уходим
+        // If the requested transaction for fee bump is not in the
+        // unconfirmed list, exit
         if (txIdToPumpFeeBTC != null &&
             !pendingTransactions.any((e) => e.txId == txIdToPumpFeeBTC)) {
           throw AppException(
@@ -519,10 +521,10 @@ mixin SingingKeyCreatorBTC {
 
         var maxRbfTransactionFeeRate = 0;
 
-        // 3.4 Обработаем все оставшиеся неподтвержденные транзакции
+        // 3.4 Process all remaining unconfirmed transactions
         for (final pendingTransaction in pendingTransactions) {
-          // Если не rbf транзакция заблокировала наши выходы то ничего не
-          // можем сделать
+          // If a non-RBF transaction has locked our outputs, then there’s
+          // nothing we can do
           if (!pendingTransaction.rbf) {
             throw AppException(
               message:
@@ -531,27 +533,27 @@ mixin SingingKeyCreatorBTC {
               code: ExceptionCode.unableToCreateTransaction,
             );
           }
-          // 3.5 Из ожидающих транзакций выбираем нужные нам выходы
-          // message не берем тут (будет использоваться когда мы только
-          // поднимаем комиссию существующей транзакции)
+          // 3.5 From pending transactions, select the outputs we need
+          // message is not taken here (it will be used only when bumping fee
+          // of existing transaction)
           final outputsRbfToAdd = pendingTransaction
               .onlyTransfersToOutputsOrThrow(
                 network: network,
                 includeMessage: txIdToPumpFeeBTC != null,
                 senderAddress: spender3TaprootAddres,
               );
-          // Тут мы должны посчитать с какой стоимостью отправлялась прошлая
-          // транзакция
+          // Here we need to calculate the fee rate with which the previous
+          // transaction was sent
           if (outputsRbfToAdd.outputs.isNotEmpty &&
               pendingTransaction.fees != null) {
-            // Везде для сравнения используем vSize
+            // For all comparisons, use vSize
             // https://learnmeabitcoin.com/technical/transaction/size/
             maxRbfTransactionFeeRate = max(
               (pendingTransaction.fees! / pendingTransaction.vSize).ceil(),
               maxRbfTransactionFeeRate,
             );
-            // Если у нас есть rbf транзакция, чьи входы мы используем, то
-            // добавим еще 1 sat/vB чтобы она точно заместила предыдущую
+            // If we have an RBF transaction whose inputs we use,
+            // add 1 sat/vB more so it definitely replaces the previous one
             if (maxRbfTransactionFeeRate > 0) maxRbfTransactionFeeRate++;
 
             logger.logInfoMessage(
@@ -563,7 +565,7 @@ mixin SingingKeyCreatorBTC {
             );
           }
 
-          // Сохраним в логе что мы конкретно хотим добавить в выходы
+          // Save in the log exactly what we want to add to outputs
           for (final output in outputsRbfToAdd.outputs) {
             logger.logInfoMessage(
               name,
@@ -573,7 +575,7 @@ mixin SingingKeyCreatorBTC {
             );
           }
           outPuts.addAll(outputsRbfToAdd.outputs);
-          // Забирем комментарий если мы проводим только бамп комиссии
+          // Take the comment if we are only bumping the fee
           if (pendingTransaction.txId == txIdToPumpFeeBTC) {
             messageToInclude = outputsRbfToAdd.message;
             if (messageToInclude != null) {
@@ -581,8 +583,8 @@ mixin SingingKeyCreatorBTC {
             }
           }
         }
-        // Не логично делать транзакцию только из одной сдачи, Что-то пошло
-        // не так
+        // It is illogical to create a transaction from only change output,
+        // something went wrong
         if (outPuts.isEmpty) {
           throw AppException(
             message: 'Outputs is empty',
@@ -596,14 +598,14 @@ mixin SingingKeyCreatorBTC {
           BigInt.zero,
           (previousValue, element) => previousValue + element.value,
         );
-        // 4 Расчет комиссии
-        // 4.1 Расчет размера транзакции
+        // 4 Fee calculation
+        // 4.1 Calculate transaction size
         final transactionVSize =
             BitcoinTransactionBuilder.estimateTransactionSize(
               utxos: accountsUtxos,
               outputs: [
                 ...outPuts,
-                // Выход для зачисления сдачи - пока заглушка
+                // Output for crediting change - currently a placeholder
                 BitcoinOutput(address: spender3Taproot, value: BigInt.zero),
               ],
               network: network,

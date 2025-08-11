@@ -578,7 +578,6 @@ as int,
 /// @nodoc
 mixin _$Vout {
 
-/// DTO входа Vin
  int get valueInSatoshi; int get n; String get hex; List<String> get addresses; bool get isAddress;
 /// Create a copy of Vout
 /// with the given fields replaced by the non-null parameter values.
@@ -772,7 +771,6 @@ class _Vout implements Vout {
   const _Vout({required this.valueInSatoshi, required this.n, required this.hex, required final  List<String> addresses, required this.isAddress}): _addresses = addresses;
   
 
-/// DTO входа Vin
 @override final  int valueInSatoshi;
 @override final  int n;
 @override final  String hex;

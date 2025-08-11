@@ -1,16 +1,16 @@
-/// Тип выбранной комиссии для биткоина
+/// Selected fee type for Bitcoin
 enum FeeTypeBTC {
-  /// Дешево и медленно
+  /// Cheap and slow
   economy('mobile.slow'),
 
-  /// Баланс
+  /// Balanced
   optimal('mobile.optimal'),
 
-  /// Быстрая и самая дорогая
+  /// Fastest and most expensive
   fast('mobile.fast');
 
   const FeeTypeBTC(this.trKey);
 
-  /// Ключ в переводах
+  /// Key in translations
   final String trKey;
 }

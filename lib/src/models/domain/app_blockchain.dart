@@ -1,6 +1,6 @@
-/// Поддерживаемые блокчейны в приложении
+/// Supported blockchains in the application
 enum AppBlockchain {
-  /// Неизвестный блокчейн, не поддерживается
+  /// Unknown blockchain, not supported
   unknown('unknown', false, false, '', false),
 
   /// TRON
@@ -25,24 +25,24 @@ enum AppBlockchain {
 
   /// fromJson
   factory AppBlockchain.fromJson(dynamic json) => values.firstWhere(
-        (e) => e.slug == json.toString(),
-        orElse: () => AppBlockchain.unknown,
-      );
+    (e) => e.slug == json.toString(),
+    orElse: () => AppBlockchain.unknown,
+  );
 
-  /// Slug блокчейна на бэке. Дожно совпадать со значением из эндпоинта 2.1
+  /// Blockchain slug on the backend. Must match the value from endpoint 2.1
   final String slug;
 
-  /// Поддерживается ли работа данного блокчейна в приложении
+  /// Whether this blockchain is supported in the app
   final bool isSupported;
 
-  /// True если все монеты на блокчейне обрабатываются одинаково и мы их все
-  /// поддерживаем (например [tron])
+  /// True if all coins on the blockchain are handled the same way and fully
+  /// supported (e.g., [tron])
   final bool allCoinsSupported;
 
-  /// Токен в котором списывается комиссия
+  /// Token used to pay transaction fees
   final String mainTokenName;
 
-  /// Можно ли указывать комментарий в транзакции
+  /// Whether a comment can be included in the transaction
   final bool supportsMemoMessage;
 
   /// toJson
