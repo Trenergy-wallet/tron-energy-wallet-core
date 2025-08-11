@@ -1,4 +1,5 @@
 export 'consts.dart';
+export 'enum.dart';
 export 'exceptions/app_exceptions.dart';
 export 'exceptions/exception_codes.dart';
 export 'ext.dart';

@@ -6,7 +6,6 @@ import 'package:blockchain_utils/bip/bip/bip32/slip10/bip32_slip10_secp256k1.dar
 import 'package:blockchain_utils/bip/bip/bip39/bip39_seed_generator.dart';
 import 'package:blockchain_utils/bip/mnemonic/mnemonic.dart';
 import 'package:meta/meta.dart';
-import 'package:tron_energy_wallet_core/src/application/providers/transactions/btc/enum.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
