@@ -9,7 +9,6 @@ part 'gen/transaction.cg.f.dart';
 sealed class TransactionBtcNode with _$TransactionBtcNode {
   const factory TransactionBtcNode({
     required String txId,
-    // required int version,
     required List<Vin> vin,
     required List<Vout> vout,
     required int blockHeight,
