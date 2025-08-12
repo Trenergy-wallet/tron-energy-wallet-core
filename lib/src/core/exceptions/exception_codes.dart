@@ -89,6 +89,9 @@ enum ExceptionCode {
   // Node and blockchain errors
   rpcError(code: 'RPC0', description: 'Blockchain node error'),
 
+  // Staking exceptions
+  stakingException(code: 'STK0', description: 'General staking error'),
+
   // Various types of exceptions where anything can be included in the
   // description
   rawException(
