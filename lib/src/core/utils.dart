@@ -70,8 +70,8 @@ class KeyGenerator {
       (m) {
         final mnemonicGenerated = bip.Bip39SeedGenerator(m).generate();
         final bip32 = bip.Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
-        // BIP-86 m/86'/0'/0'/0/0 - для taproot
-        // BIP-84 m/84'/0'/0'/0/0 - для SegWit
+        // BIP-86 m/86'/0'/0'/0/0 - for taproot
+        // BIP-84 m/84'/0'/0'/0/0 - for SegWit
         // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
         final bipBase = bip32.derivePath(BtcBipPath.bip86taproot.path);
         return ECPrivate.fromBytes(bipBase.privateKey.raw);

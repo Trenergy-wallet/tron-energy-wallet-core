@@ -2,9 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:bitcoin_base/bitcoin_base.dart';
-import 'package:blockchain_utils/bip/bip/bip32/slip10/bip32_slip10_secp256k1.dart';
-import 'package:blockchain_utils/bip/bip/bip39/bip39_seed_generator.dart';
-import 'package:blockchain_utils/bip/mnemonic/mnemonic.dart';
 import 'package:meta/meta.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -306,15 +303,7 @@ mixin SingingKeyCreatorBTC {
     if (mnemonicFromRepo.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }
-    final mnemonicGenerated = Bip39SeedGenerator(
-      Mnemonic.fromString(mnemonicFromRepo),
-    ).generate();
-    final bip32 = Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
-    // BIP-86 m/86'/0'/0'/0/0 - для taproot
-    // BIP-84 m/84'/0'/0'/0/0 - для SegWit
-    // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
-    final bipBase = bip32.derivePath(BtcBipPath.bip86taproot.path);
-    return ECPrivate.fromBytes(bipBase.privateKey.raw);
+    return KeyGenerator(mnemonic: mnemonicFromRepo).generateForBitcoin();
   }
 
   /// All calculations we are forced to perform to determine

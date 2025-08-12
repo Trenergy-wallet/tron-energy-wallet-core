@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:blockchain_utils/bip/mnemonic/mnemonic.dart';
-import 'package:blockchain_utils/bip/ton/mnemonic/ton_seed_generator.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:ton_wallet_service/ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
@@ -273,10 +271,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
     if (mnemonicFromRepo.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }
-    final mnemonic = Mnemonic.fromList(mnemonicFromRepo.split(' '));
-    final seed = TonSeedGenerator(mnemonic).generate();
-    final key = TonPrivateKey.fromBytes(seed);
-    return key;
+    return KeyGenerator(mnemonic: mnemonicFromRepo).generateForTon();
   }
 
   @override

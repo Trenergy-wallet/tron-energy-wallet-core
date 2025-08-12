@@ -10,7 +10,7 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
   const factory EstimateFeeModel({
     required double fee,
     required double energy,
-    required Fees fees, // <- Комиссии для биткоина
+    required Fees fees, // <- for btc
   }) = _EstimateFeeModel;
 
   const EstimateFeeModel._();
