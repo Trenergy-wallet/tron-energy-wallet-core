@@ -14,4 +14,10 @@ class CoreConsts {
 
   /// Error value -1 for double
   static const invalidDoubleValue = -1.0;
+
+  /// Contract address for USDT on TRON Mainnet
+  static const contractUSDTonMainnet = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+
+  /// Contract address for USDT on TRON Nile testnet
+  static const contractUSDTonNile = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
 }

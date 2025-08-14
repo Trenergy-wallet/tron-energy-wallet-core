@@ -129,12 +129,17 @@ sealed class AppToken with _$AppToken {
   bool get isTrx =>
       shortName == CoreConsts.tron &&
       blockchain.appBlockchain == AppBlockchain.tron &&
-      tokenWalletType == TokenWalletType.master;
+      tokenWalletType == TokenWalletType.master &&
+      contractAddress.isEmpty;
 
   /// Active token is USDT
   bool get isUSDT =>
       shortName == CoreConsts.usdt &&
-      blockchain.appBlockchain == AppBlockchain.tron;
+      blockchain.appBlockchain == AppBlockchain.tron &&
+      [
+        CoreConsts.contractUSDTonMainnet,
+        CoreConsts.contractUSDTonNile,
+      ].contains(contractAddress);
 
   /// Error/empty state
   static const AppToken empty = AppToken(
