@@ -59,6 +59,10 @@ enum ExceptionCode {
     description:
         'Something wrong here - TronRequestCreateTransaction.fromContract',
   ),
+  feeChanged(
+    code: 'TRS8',
+    description: 'Network fee has changed',
+  ),
   transitWalletError(
     code: 'T1',
     description: 'Error transit wallet is invalid',

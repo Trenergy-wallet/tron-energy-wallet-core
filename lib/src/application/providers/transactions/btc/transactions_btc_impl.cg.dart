@@ -107,6 +107,7 @@ class TransactionsServiceBTCImpl
     String? message,
     String? requestPinMessage,
     FeeTypeBTC? feeTypeBTC,
+    EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
@@ -143,15 +144,26 @@ class TransactionsServiceBTCImpl
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-      // 4.3 Choose the appropriate fee rate based on the user's selection in
+
+      // 4.3.1 Choose the appropriate fee rate based on the user's selection in
       // the UI
       // If we reached this point, feeTypeBTC is already not null since it was
       // checked earlier
-      final feePer1vBCurent = networkEstimate.fees.feeForType(feeTypeBTC!);
-      // Выбираем какую стоимость отправки комиссии использовать: ту, которая
-      // сейчас есть в сети [feePer1vBCurent], либо ту, что уже была в rbf
-      // транзакции
-      final feePer1vB = max(feePer1vBCurent, maxRbfTransactionFeeRatePer1vB);
+      final feePer1vBCurrent = networkEstimate.fees.feeForType(feeTypeBTC!);
+
+      // 4.3.1 If we got an approved model, check if the fees were changed
+      if (userApprovedFee != null) {
+        final feePer1vUserSelected = userApprovedFee.fees.feeForType(
+          feeTypeBTC,
+        );
+        if (feePer1vBCurrent > feePer1vUserSelected) {
+          throw AppFeeChangedException(userApprovedFee, networkEstimate);
+        }
+      }
+      // 4.3.3 Choose which transaction fee cost to use: either the one
+      // currently in the network [feePer1vBCurent] or the one that was already
+      // in the rbf transaction
+      final feePer1vB = max(feePer1vBCurrent, maxRbfTransactionFeeRatePer1vB);
 
       if (feePer1vB < networkEstimate.fees.minimumFee) {
         throw AppException(

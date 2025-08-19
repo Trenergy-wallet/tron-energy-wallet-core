@@ -119,6 +119,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
     required String masterKey,
     String? message,
     FeeTypeBTC? feeTypeBTC,
+    EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;

@@ -43,6 +43,7 @@ interface class TransactionsService {
     required String masterKey,
     String? message,
     FeeTypeBTC? feeTypeBTC,
+    EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());

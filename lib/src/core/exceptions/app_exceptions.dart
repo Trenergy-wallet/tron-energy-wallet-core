@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show DioException;
 import 'package:tron_energy_wallet_core/src/core/core.dart';
+import 'package:tron_energy_wallet_core/src/models/domain/info/estimate_fee.cg.dart';
 
 /// Base exception class containing
 ///
@@ -158,6 +159,28 @@ class AppIncorrectBlockchainException extends AppExceptionWithCode
   @override
   String toString() {
     return 'AppIncorrectBlockchainException: $message,'
+        ' code: $code';
+  }
+}
+
+/// Exception thrown when attempting to process while blockchain commission has
+/// changed
+class AppFeeChangedException extends AppExceptionWithCode implements Exception {
+  /// Exception thrown when attempting to process while blockchain commission
+  /// has changed
+  AppFeeChangedException(
+    EstimateFeeModel selectedCommission,
+    EstimateFeeModel actualCommission,
+  ) : super(
+        message:
+            'network commission changed: old $selectedCommission new'
+            ' $actualCommission',
+        code: ExceptionCode.feeChanged,
+      );
+
+  @override
+  String toString() {
+    return 'AppCommissionChangedException: message: $message,'
         ' code: $code';
   }
 }
