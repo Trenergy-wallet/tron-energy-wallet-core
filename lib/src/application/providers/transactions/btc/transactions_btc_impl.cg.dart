@@ -156,6 +156,11 @@ class TransactionsServiceBTCImpl
         final feePer1vUserSelected = userApprovedFee.fees.feeForType(
           feeTypeBTC,
         );
+        logger.logInfoMessage(
+          name,
+          'FeeType: $feeTypeBTC, user selected fee: $feePer1vUserSelected,'
+          ' current in blockchain: $feePer1vBCurrent',
+        );
         if (feePer1vBCurrent > feePer1vUserSelected) {
           throw AppFeeChangedException(userApprovedFee, networkEstimate);
         }
