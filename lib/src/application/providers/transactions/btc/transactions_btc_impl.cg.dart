@@ -297,7 +297,7 @@ mixin SingingKeyCreatorBTC {
   /// Blockchain
   AppBlockchain get appBlockchain;
 
-  /// Имя
+  /// Name
   @protected
   String get name;
 
@@ -385,7 +385,7 @@ mixin SingingKeyCreatorBTC {
           message: '${asset.token.tokenWalletType} is not supported',
           code: ExceptionCode.tokenIsNotSupported,
         );
-      // Работаем с самим биткоином
+      // Bitcoin:
       case TokenWalletType.master:
         logger.logInfoMessage(name, 'Creating btc transaction');
         final addressToSend = BitcoinAddress(

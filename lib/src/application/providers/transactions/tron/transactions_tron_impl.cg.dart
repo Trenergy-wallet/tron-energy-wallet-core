@@ -195,7 +195,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
       final transactionTTL = BigInt.from(
         DateTime.fromMillisecondsSinceEpoch(
           transaction.transaction!.rawData.timestamp.toInt(),
-          // 10 минут TTL по таскам 790 и 800
+          // 10 min TTL according to tickets 790 and 800
         ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
       );
 
