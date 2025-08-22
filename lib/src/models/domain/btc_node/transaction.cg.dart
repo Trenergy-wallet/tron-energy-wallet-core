@@ -39,6 +39,7 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
     required BitcoinNetwork network,
     required bool includeMessage,
     required String senderAddress,
+    TRLogger? logger,
   }) {
     final vouts = <Vout>[];
     String? message;
@@ -46,7 +47,7 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
     // If the inputs we are spending don’t include our address
     // (incoming transaction) then we take nothing from here
     if (vin.any((v) => v.isAddress && !v.addresses.contains(senderAddress))) {
-      InAppLogger.instance.logWarning(
+      (logger ?? InAppLogger()).logWarning(
         'TransactionBtcNode',
         'onlyTransfersToOutputsOrThrow: Input transaction: $txId, skipping',
       );

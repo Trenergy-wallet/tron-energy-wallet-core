@@ -28,13 +28,16 @@ class TransactionsServiceTonImpl implements TransactionsService {
     this.apiTon,
     this.apiTonJrpc,
     this.testApiKey,
+    TRLogger? logger,
   }) : _localRepo = localRepo,
        _postTransaction = postTransaction,
        _currentAccountWallet = currentAccountWallet,
        assert(
          tonProvider != null || (apiTon != null && apiTonJrpc != null),
          'Required rpc params are null',
-       );
+       ) {
+    _logger = logger ?? InAppLogger();
+  }
 
   /// Blockchain of the service
   @override
@@ -72,7 +75,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
 
   static const String _name = 'TransactionsServiceTonImpl';
 
-  static final InAppLogger _logger = InAppLogger.instance;
+  late final TRLogger _logger;
 
   /// Jetton wallets
   final Map<int, TonJettonWalletService> _jettonWallets = {};

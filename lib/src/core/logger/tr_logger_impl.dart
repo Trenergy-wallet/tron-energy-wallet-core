@@ -12,16 +12,18 @@ const Level _minimumLogLevel = Level.INFO;
 /// Class for displaying logs inside the app
 /// Resets after app restart
 /// All new events are also printed to the console
-final class InAppLogger {
-  InAppLogger._();
+final class InAppLogger implements TRLogger {
+  /// Singleton instance of the logger
+  factory InAppLogger() => _singleton;
 
-  /// Singleton InAppLogger
-  static final InAppLogger instance = InAppLogger._();
+  InAppLogger._internal();
+
+  static final InAppLogger _singleton = InAppLogger._internal();
+
+  @override
+  bool inTest = false;
 
   final _log = StringBuffer();
-
-  /// In tests, simply output prints
-  bool inTest = false;
 
   /// Add a new line to the log and console
   void _addToLog({
@@ -69,22 +71,21 @@ final class InAppLogger {
     }
   }
 
-  /// Get the current log value
+  @override
   String get getLog => _log.toString();
 
-  /// Clear the log
+  @override
   void cleanLog() => _log.clear();
 
-  /// Save a regular informational message without prefix
+  @override
   void logInfoMessage(String method, Object line) =>
       _addToLog(method: method, line: line);
 
-  /// Save a warning - something went wrong but protection worked
-  /// (e.g., DTO set a default value in a required field)
+  @override
   void logWarning(String method, Object line) =>
       _addToLog(method: method, line: line, level: Level.WARNING);
 
-  /// Error - something went wrong
+  @override
   void logError(
     String method,
     Object line, [
@@ -98,8 +99,7 @@ final class InAppLogger {
     stacktrace: stacktrace,
   );
 
-  /// Something terrible happened that significantly affects the app’s
-  /// functionality
+  @override
   void logCriticalError(
     String method,
     Object line, [

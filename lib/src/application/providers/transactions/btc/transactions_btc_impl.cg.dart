@@ -36,8 +36,11 @@ class TransactionsServiceBTCImpl
       String? tokenContractAddress,
     })
     estimateFee,
+    TRLogger? logger,
   }) : _postTransaction = postTransaction,
-       _estimateFee = estimateFee;
+       _estimateFee = estimateFee {
+    this.logger = logger ?? InAppLogger();
+  }
 
   /// Blockchain of the service
   @override
@@ -65,6 +68,10 @@ class TransactionsServiceBTCImpl
   @protected
   @override
   final LocalRepoBaseCore localRepo;
+
+  @protected
+  @override
+  late final TRLogger logger;
 
   /// 2.4. Estimate Tx Energy Fee
   ///
@@ -296,7 +303,7 @@ mixin SingingKeyCreatorBTC {
 
   /// Logger
   @protected
-  final InAppLogger logger = InAppLogger.instance;
+  TRLogger get logger;
 
   /// Local repo
   @protected
@@ -546,6 +553,7 @@ mixin SingingKeyCreatorBTC {
                 network: network,
                 includeMessage: txIdToPumpFeeBTC != null,
                 senderAddress: spender3TaprootAddres,
+                logger: logger,
               );
           // Here we need to calculate the fee rate with which the previous
           // transaction was sent
@@ -597,7 +605,7 @@ mixin SingingKeyCreatorBTC {
           );
         }
         // OP_RETURN
-        final memo = convertMessageForOpReturn(messageToInclude);
+        final memo = convertMessageForOpReturn(messageToInclude, logger);
         // SUM OF OUTOUT AMOUNTS
         final sumOfOutputs = outPuts.fold(
           BigInt.zero,

@@ -23,12 +23,15 @@ class TransactionsServiceTronImpl implements TransactionsService {
     postTransaction,
     this.tronProvider,
     this.apiTron,
+    TRLogger? logger,
   }) : _localRepo = localRepo,
        _postTransaction = postTransaction,
        assert(
          tronProvider != null || apiTron != null,
          'Required rpc params are null',
-       );
+       ) {
+    _logger = logger ?? InAppLogger();
+  }
 
   /// Blockchain of the service
   @override
@@ -52,7 +55,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
   static const String _name = 'TransactionsServiceTronImpl';
 
-  static final InAppLogger _logger = InAppLogger.instance;
+  late final TRLogger _logger;
 
   TronProvider get _tronProvider =>
       tronProvider ??
