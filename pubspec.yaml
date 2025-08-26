@@ -2,7 +2,7 @@ name: tron_energy_wallet_core
 description: The core library of Tron Energy Wallet
 repository: https://github.com/Trenergy-wallet/tron-energy-wallet-core
 issue_tracker: https://github.com/Trenergy-wallet/tron-energy-wallet-core/issues?q=is%3Aissue+is%3Aopen
-version: 0.0.2
+version: 0.0.3
 homepage: https://tr.energy/
 publish_to: 'none'
 
@@ -13,8 +13,6 @@ dependencies:
   bitcoin_base: ^6.7.0
   blockchain_utils: ^5.1.0
   dio: ^5.9.0
-  flutter:
-    sdk: flutter
   freezed_annotation: ^3.1.0
   http: ^1.5.0
   json_annotation: ^4.9.0
@@ -29,11 +27,7 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.5.4
-  flutter_test:
-    sdk: flutter
   freezed: ^3.1.0
-  #  integration_test:
-  #    sdk: flutter
   json_serializable: ^6.9.5
   very_good_analysis: ^9.0.0
 

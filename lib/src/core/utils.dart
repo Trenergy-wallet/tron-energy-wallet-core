@@ -1,8 +1,8 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/bip/bip.dart' as bip;
-import 'package:flutter/foundation.dart';
 import 'package:on_chain/tron/src/keys/private_key.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tron_energy_wallet_core/src/core/core.dart';
@@ -38,45 +38,36 @@ class KeyGenerator {
   /// Derives and returns the private key for the TRON blockchain from the
   /// stored mnemonic.
   Future<TronPrivateKey> generateForTron() async {
-    return compute<bip.Mnemonic, TronPrivateKey>(
-      (m) {
-        final seed = bip.Bip39SeedGenerator(m).generate();
-        // Derive a TRON private key from the seed
-        final bip44 = bip.Bip44.fromSeed(seed, bip.Bip44Coins.tron);
-        // Derive a child key using the default path (first account)
-        final childKey = bip44.deriveDefaultPath;
-        return TronPrivateKey.fromBytes(childKey.privateKey.raw);
-      },
-      _mnemonic,
-    );
+    return Isolate.run(() {
+      final seed = bip.Bip39SeedGenerator(_mnemonic).generate();
+      // Derive a TRON private key from the seed
+      final bip44 = bip.Bip44.fromSeed(seed, bip.Bip44Coins.tron);
+      // Derive a child key using the default path (first account)
+      final childKey = bip44.deriveDefaultPath;
+      return TronPrivateKey.fromBytes(childKey.privateKey.raw);
+    });
   }
 
   /// Derives and returns the private key for the TON blockchain from the
   /// stored mnemonic.
   Future<TonPrivateKey> generateForTon() async {
-    return compute<bip.Mnemonic, TonPrivateKey>(
-      (m) {
-        final seed = bip.TonSeedGenerator(m).generate();
-        return TonPrivateKey.fromBytes(seed);
-      },
-      _mnemonic,
-    );
+    return Isolate.run(() {
+      final seed = bip.TonSeedGenerator(_mnemonic).generate();
+      return TonPrivateKey.fromBytes(seed);
+    });
   }
 
   /// Derives and returns the private key for the Bitcoin blockchain from
   /// the stored mnemonic.
   Future<ECPrivate> generateForBitcoin() async {
-    return compute<bip.Mnemonic, ECPrivate>(
-      (m) {
-        final mnemonicGenerated = bip.Bip39SeedGenerator(m).generate();
-        final bip32 = bip.Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
-        // BIP-86 m/86'/0'/0'/0/0 - for taproot
-        // BIP-84 m/84'/0'/0'/0/0 - for SegWit
-        // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
-        final bipBase = bip32.derivePath(BtcBipPath.bip86taproot.path);
-        return ECPrivate.fromBytes(bipBase.privateKey.raw);
-      },
-      _mnemonic,
-    );
+    return Isolate.run(() {
+      final mnemonicGenerated = bip.Bip39SeedGenerator(_mnemonic).generate();
+      final bip32 = bip.Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
+      // BIP-86 m/86'/0'/0'/0/0 - for taproot
+      // BIP-84 m/84'/0'/0'/0/0 - for SegWit
+      // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
+      final bipBase = bip32.derivePath(BtcBipPath.bip86taproot.path);
+      return ECPrivate.fromBytes(bipBase.privateKey.raw);
+    });
   }
 }
