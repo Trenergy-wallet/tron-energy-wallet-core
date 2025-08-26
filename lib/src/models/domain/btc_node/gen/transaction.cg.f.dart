@@ -14,8 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransactionBtcNode {
 
- String get txId;// required int version,
- List<Vin> get vin; List<Vout> get vout; int get blockHeight; int get confirmations; bool get rbf; int? get fees; int get size; int get vSize;
+ String get txId; List<Vin> get vin; List<Vout> get vout; int get blockHeight; int get confirmations; bool get rbf; int? get fees; int get size; int get vSize;
 /// Create a copy of TransactionBtcNode
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -213,9 +212,7 @@ class _TransactionBtcNode extends TransactionBtcNode {
   
 
 @override final  String txId;
-// required int version,
  final  List<Vin> _vin;
-// required int version,
 @override List<Vin> get vin {
   if (_vin is EqualUnmodifiableListView) return _vin;
   // ignore: implicit_dynamic_type
