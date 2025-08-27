@@ -21,7 +21,7 @@ final class InAppLogger implements TRLogger {
   static final InAppLogger _singleton = InAppLogger._internal();
 
   @override
-  bool inTest = false;
+  bool usePrint = false;
 
   final _log = StringBuffer();
 
@@ -33,7 +33,7 @@ final class InAppLogger implements TRLogger {
     Object? error,
     StackTrace? stacktrace,
   }) {
-    if (inTest) {
+    if (usePrint) {
       print('[$method] $line');
       return;
     }

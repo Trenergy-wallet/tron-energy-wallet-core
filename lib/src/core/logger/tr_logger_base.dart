@@ -7,12 +7,12 @@
 /// Features:
 /// - Support for different severity levels: info, warning, error, critical.
 /// - Access to current log buffer and ability to clear it.
-/// - Explicit [inTest] flag to simplify testing (e.g. redirecting to `print`).
-///
+/// - Explicit [usePrint] flag to simplify testing (e.g. redirecting to
+/// `print`).
 abstract class TRLogger {
   /// Indicates if the logger is running in a test environment.
   /// Can be used to simplify test logging (e.g. plain prints).
-  bool get inTest;
+  bool get usePrint;
 
   /// Returns the current log buffer as a string.
   String get getLog;
