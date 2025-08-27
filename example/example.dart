@@ -1,3 +1,4 @@
+import 'package:on_chain/tron/src/provider/provider/provider.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'src/data/local/local_repo_core_impl.dart';
@@ -5,7 +6,7 @@ import 'src/example_assets.dart';
 
 Future<void> main() async {
   final localRepo = LocalRepoImpl();
-
+  final logger = InAppLogger();
   // Generate mnemonic
   // final mnemonic = bip.Bip39MnemonicGenerator()
   //     .fromWordsNumber(
@@ -15,14 +16,14 @@ Future<void> main() async {
   //
   // Or use your own (list of words with space separator)
   const mnemonic = '';
-  print(mnemonic);
+  logger.logInfoMessage('main', mnemonic);
   // Generate seed from the mnemonic
   final privateKey = await KeyGenerator(mnemonic: mnemonic).generateForTron();
 
   final publicKey = privateKey.publicKey();
   final address = publicKey.toAddress().toString();
-  print('Address: $address');
-
+  logger.logInfoMessage('main', 'Address: $address');
+  // It is recommended to create account contract as it stated in https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example/tron/transactions/account/create_account_example.dart
   await localRepo.saveAccount(
     LocalAccount.empty.copyWith(
       token: 'your token',
@@ -42,10 +43,16 @@ Future<void> main() async {
     masterKey: '',
   );
 
+  // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
   final tronService = TransactionsServiceTronImpl(
     localRepo: localRepo,
-    postTransaction: postTransaction,
-    apiTron: 'https://nile.trongrid.io',
+    postTransaction: postTransactionTron,
+    tronProvider: TronProvider(
+      TronHTTPProvider(
+        url: 'https://nile.trongrid.io',
+        authToken: 'your-token',
+      ),
+    ),
   );
 
   final tronAsset = tronAssetExample(address);
@@ -56,5 +63,7 @@ Future<void> main() async {
     asset: tronAsset,
     masterKey: '',
   );
-  print('TX: $tx');
+  logger.logInfoMessage('main', 'TX: $tx');
+  final sentTx = await tronService.postTransactionOrThrow(tx: tx);
+  logger.logInfoMessage('main', 'SENT: $sentTx');
 }
