@@ -18,11 +18,4 @@ abstract interface class BTCNodeRepo {
   Future<Either<AppExceptionWithCode, TransactionBtcNode>> fetchTransaction({
     required String txId,
   });
-
-  @Deprecated('Replaced')
-  /// Temporary method for sending transactions
-  Future<Either<AppExceptionWithCode, String>> tmpSendRawTransaction({
-    required String transactionRaw,
-    required bool isTestnet,
-  });
 }

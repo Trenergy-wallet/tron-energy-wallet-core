@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'package:blockchain_utils/utils/binary/utils.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:ton_dart/ton_dart.dart';
-import 'package:ton_wallet_service/ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../example.dart' show tonApiKey;
+import '../example.dart' show tonRpc, tronRpc;
 
 AppAsset tronAssetExample(String address) => AppAsset(
   id: 27,
   balance: 5900.13,
+  address: address,
+  walletId: 171,
+  childWalletAddress: '',
   token: const AppToken(
     id: 2,
     name: 'TRX',
@@ -33,14 +35,14 @@ AppAsset tronAssetExample(String address) => AppAsset(
     description: 'Official Token of TRON Protocol',
     precision: 2,
   ),
-  address: address,
-  walletId: 171,
-  childWalletAddress: '',
 );
 
 AppAsset tonAssetExample(String address) => AppAsset(
   id: 15,
   balance: 10,
+  address: address,
+  walletId: 211,
+  childWalletAddress: '',
   token: const AppToken(
     id: 534,
     name: 'TON',
@@ -65,9 +67,39 @@ AppAsset tonAssetExample(String address) => AppAsset(
     description: '',
     precision: 2,
   ),
+);
+
+AppAsset btcAssetExample(String address) => AppAsset(
+  id: 125,
+  balance: 1,
   address: address,
-  walletId: 211,
+  walletId: 381,
   childWalletAddress: '',
+  token: const AppToken(
+    id: 32,
+    name: 'Bitcoin',
+    shortName: 'BTC',
+    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png',
+    usdPrice: 3112870.997223,
+    prevPriceDiffPercent: -0.03,
+    contractAddress: '',
+    decimal: 8,
+    blockchain: BlockchainInfo(
+      id: 19,
+      name: 'Bitcoin',
+      shortName: 'BTC',
+      icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png',
+      isNew: false,
+      tokens: [],
+      appBlockchain: AppBlockchain.bitcoin,
+    ),
+    tokenWalletType: TokenWalletType.master,
+    description:
+        'Bitcoin is a decentralized cryptocurrency originally described in a '
+        '2008 whitepaper by a person, or group of people, using the alias '
+        'Satoshi Nakamoto. It was launched soon after, in January 2009.',
+    precision: 8,
+  ),
 );
 
 Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
@@ -76,12 +108,6 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
   String? txFee,
 }) async {
   try {
-    final tronProvider = TronProvider(
-      TronHTTPProvider(
-        url: 'https://nile.trongrid.io',
-        authToken: 'your-token',
-      ),
-    );
     // A bit complicated, first, we have to remove some data, which is
     // included in [tx] and is necessary for tronEnergy use purposes
     final decodedTxJson = jsonDecode(tx) as Map<String, dynamic>;
@@ -92,7 +118,7 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
         .map((e) => BytesUtils.fromHexString(e.toString()))
         .toList();
     final purifiedTx = Transaction(rawData: rawData, signature: signatures);
-    final res = await tronProvider.request(
+    final res = await tronRpc.request(
       TronRequestBroadcastHex(
         transaction: BytesUtils.toHexString(purifiedTx.toBuffer()),
       ),
@@ -114,15 +140,7 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTon({
   String? txFee,
 }) async {
   try {
-    final tonProvider = TonProvider(
-      TonHTTPProvider(
-        tonApiUrl: 'https://testnet.tonapi.io',
-        tonCenterUrl: 'https://testnet.toncenter.com',
-        tonApiKey: tonApiKey,
-      ),
-    );
-
-    final res = await tonProvider.request(TonCenterSendBocReturnHash(tx));
+    final res = await tonRpc.request(TonCenterSendBocReturnHash(tx));
     // Also:
     // final res = await tonProvider.request(
     //   TonApiSendBlockchainMessage(batch: [], boc: tx),

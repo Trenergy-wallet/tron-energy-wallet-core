@@ -112,13 +112,18 @@ class TransactionsServiceBTCImpl
     required AppAsset asset,
     required String masterKey,
     String? message,
-    String? requestPinMessage,
     FeeTypeBTC? feeTypeBTC,
     EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
     try {
+      if (feeTypeBTC == null) {
+        throw AppException(
+          message: 'Not selected btc fee: feeTypeBTC is null',
+          code: ExceptionCode.unableToCreateTransaction,
+        );
+      }
       final (
         transactionVSize: transactionVSize,
         pendingTransactions: pendingTransactions,
@@ -156,7 +161,7 @@ class TransactionsServiceBTCImpl
       // the UI
       // If we reached this point, feeTypeBTC is already not null since it was
       // checked earlier
-      final feePer1vBCurrent = networkEstimate.fees.feeForType(feeTypeBTC!);
+      final feePer1vBCurrent = networkEstimate.fees.feeForType(feeTypeBTC);
 
       // 4.3.1 If we got an approved model, check if the fees were changed
       if (userApprovedFee != null) {

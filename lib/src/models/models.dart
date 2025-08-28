@@ -7,3 +7,5 @@ export 'domain/info/estimate_fee.cg.dart';
 export 'domain/token_wallet_type.dart';
 export 'domain/transactions/transactions.cg.dart';
 export 'domain/wallet/wallet.cg.dart';
+export 'dto/btc_node/account_utxo.cg.dart';
+export 'dto/btc_node/transaction.cg.dart';
