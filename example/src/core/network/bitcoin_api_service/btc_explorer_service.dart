@@ -4,7 +4,7 @@ import 'package:bitcoin_base/bitcoin_base.dart' show ApiService;
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:http/http.dart' as http;
 
-//
+// Implementation from blockchain_utils
 // ignore_for_file: type_literal_in_constant_pattern, strict_raw_type,
 // ignore_for_file: empty_catches
 

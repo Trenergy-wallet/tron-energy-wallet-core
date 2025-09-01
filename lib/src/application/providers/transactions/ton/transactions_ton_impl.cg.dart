@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:ton_dart/ton_dart.dart';
-import 'package:ton_wallet_service/ton_wallet_service.dart';
+import 'package:tr_logger/tr_logger.dart';
+import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
@@ -251,6 +252,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
         tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
         publicKey: pk.toPublicKey(),
         rpc: _rpc,
+        logger: _logger,
       );
       return (
         address: _walletService!.tonWallet.address.toString(),
@@ -290,6 +292,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
             tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
             address: asset.address,
             rpc: _rpc,
+            logger: _logger,
           );
       final res = await walletService.fetchWalletAddressState(
         walletAddress: addressToCheck,

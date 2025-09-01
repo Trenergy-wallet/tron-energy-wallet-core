@@ -7,7 +7,7 @@ homepage: https://tr.energy/
 publish_to: 'none'
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
   bitcoin_base: ^6.8.0
@@ -20,11 +20,16 @@ dependencies:
   meta: ^1.16.0
   on_chain: ^7.0.0
   retrofit: ^4.7.2
-  ton_dart: ^1.9.0
-  ton_wallet_service:
+  ton_dart: ^2.0.0
+  tr_logger:
     git:
-      url: git@gitlabzz.apd.dev:KabasegDH/ton-wallet-service.git
-      ref: 898cf64f5e4dfe2288fe17c89c40da7b457fa58f
+      url: git@github.com:Trenergy-wallet/tr_logger.git
+      ref: v1.0.0
+  tr_ton_wallet_service:
+    git:
+      url: git@github.com:Trenergy-wallet/tr_ton_wallet_service.git
+      ref: v1.0.0
+#    path: ../tr_ton_wallet_service
 
 dev_dependencies:
   build_runner: ^2.5.4

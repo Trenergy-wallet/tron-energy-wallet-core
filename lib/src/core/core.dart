@@ -3,8 +3,6 @@ export 'enum.dart';
 export 'exceptions/app_exceptions.dart';
 export 'exceptions/exception_codes.dart';
 export 'ext.dart';
-export 'logger/tr_logger_base.dart';
-export 'logger/tr_logger_impl.dart';
 export 'network/btc_node_client/client.cg.dart';
 export 'network/tron_service_provider/tron_http_provider.dart';
 export 'safe_coding/safe_coding.dart';

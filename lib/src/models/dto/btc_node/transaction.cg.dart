@@ -4,7 +4,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 part 'gen/transaction.cg.f.dart';
 part 'gen/transaction.cg.g.dart';
 
-/// Модель для обращения к ноде за информацией о транзакции
+/// A model for querying a node for transaction information.
 @freezed
 sealed class TransactionBtcNodeDto with _$TransactionBtcNodeDto {
   const factory TransactionBtcNodeDto({
@@ -42,10 +42,10 @@ sealed class TransactionBtcNodeDto with _$TransactionBtcNodeDto {
   }
 }
 
-/// DTO входа Vin
+/// DTO Vin
 @freezed
 sealed class VinDto with _$VinDto {
-  /// DTO входа Vin
+  /// DTO Vin
   const factory VinDto({
     @JsonKey(name: 'txid') String? txId,
     // int? vout,
@@ -76,12 +76,12 @@ sealed class VinDto with _$VinDto {
   }
 }
 
-/// DTO выхода Vout
+/// DTO Vout
 @freezed
 sealed class VoutDto with _$VoutDto {
-  /// DTO выхода Vout
+  /// DTO Vout
   const factory VoutDto({
-    /// DTO входа Vin
+    /// DTO Vin
     String? value,
     int? n,
     String? hex,
@@ -91,7 +91,7 @@ sealed class VoutDto with _$VoutDto {
 
   const VoutDto._();
 
-  ///
+  /// fromJson
   factory VoutDto.fromJson(Map<String, dynamic> json) =>
       _$VoutDtoFromJson(json);
 

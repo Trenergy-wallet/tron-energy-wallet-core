@@ -1,7 +1,8 @@
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:on_chain/tron/src/provider/provider/provider.dart';
 import 'package:ton_dart/ton_dart.dart';
-import 'package:ton_wallet_service/ton_wallet_service.dart';
+import 'package:tr_logger/tr_logger.dart';
+import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'src/data/local/local_repo_core_impl.dart';

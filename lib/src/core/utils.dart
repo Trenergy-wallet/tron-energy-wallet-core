@@ -5,6 +5,7 @@ import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/bip/bip.dart' as bip;
 import 'package:on_chain/tron/src/keys/private_key.dart';
 import 'package:ton_dart/ton_dart.dart';
+import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/core/core.dart';
 
 /// Check and prepare a message for sending via OP_RETURN on the BTC network

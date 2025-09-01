@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:meta/meta.dart';
+import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
