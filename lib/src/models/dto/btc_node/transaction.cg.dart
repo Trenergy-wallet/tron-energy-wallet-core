@@ -69,7 +69,7 @@ sealed class VinDto with _$VinDto {
       addresses: addresses!,
       isAddress: isAddress!,
       txId: txId!,
-      // Приходит иногда null а мы его и не используем
+      // Sometimes null here, won`t use it
       // vout: vout!,
       sequence: sequence!,
     );

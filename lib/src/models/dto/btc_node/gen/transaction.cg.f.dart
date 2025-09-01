@@ -593,7 +593,7 @@ as String?,
 /// @nodoc
 mixin _$VoutDto {
 
-/// DTO входа Vin
+/// DTO Vin
  String? get value; int? get n; String? get hex; List<String>? get addresses;@JsonKey(name: 'isAddress') bool? get isAddress;
 /// Create a copy of VoutDto
 /// with the given fields replaced by the non-null parameter values.
@@ -789,7 +789,7 @@ class _VoutDto extends VoutDto {
   const _VoutDto({this.value, this.n, this.hex, final  List<String>? addresses, @JsonKey(name: 'isAddress') this.isAddress}): _addresses = addresses,super._();
   factory _VoutDto.fromJson(Map<String, dynamic> json) => _$VoutDtoFromJson(json);
 
-/// DTO входа Vin
+/// DTO Vin
 @override final  String? value;
 @override final  int? n;
 @override final  String? hex;
