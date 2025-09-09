@@ -29,7 +29,11 @@ dependencies:
     git:
       url: git@github.com:Trenergy-wallet/tr_ton_wallet_service.git
       ref: v1.0.0
-#    path: ../tr_ton_wallet_service
+  #    path: ../tr_ton_wallet_service
+  trust_wallet_core:
+    git:
+      url: git@github.com:KabaDH/flutter_trust_wallet_core.git
+      ref: 49e293a27958a1b3d00e3672fa1a2d9c97ac67c1
 
 dev_dependencies:
   build_runner: ^2.5.4
@@ -37,6 +41,9 @@ dev_dependencies:
   json_serializable: ^6.9.5
   retrofit_generator: ^9.7.0
   very_good_analysis: ^9.0.0
+
+dependency_overrides:
+  protobuf: 4.1.0
 
 topics:
   - wallet
