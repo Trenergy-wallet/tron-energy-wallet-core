@@ -3,22 +3,6 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 part 'gen/wallet.cg.f.dart';
 
-/// Main wallet of the TRON account
-///
-/// [assets] - wallets of different blockchains linked to the main account
-@freezed
-sealed class AppWallet with _$AppWallet {
-  /// Main wallet of the TRON account
-  ///
-  /// [assets] - wallets of different blockchains linked to the main account
-  const factory AppWallet({
-    required int id,
-    required String address,
-    required List<AppAsset> assets,
-    required BlockchainInfo blockchain,
-  }) = _AppWallet;
-}
-
 /// AppBlockchain
 @freezed
 sealed class BlockchainInfo with _$BlockchainInfo {
@@ -89,6 +73,9 @@ sealed class AppAsset with _$AppAsset {
   /// Active token is USDT
   bool get isUSDT => token.isUSDT;
 
+  /// Active token is BTC
+  bool get isBTC => token.isBTC;
+
   /// AppBlockchain
   AppBlockchain get appBlockchain => token.blockchain.appBlockchain;
 
@@ -140,6 +127,13 @@ sealed class AppToken with _$AppToken {
         CoreConsts.contractUSDTonMainnet,
         CoreConsts.contractUSDTonNile,
       ].contains(contractAddress);
+
+  /// Active token is BTC
+  bool get isBTC =>
+      shortName == CoreConsts.btc &&
+      blockchain.appBlockchain == AppBlockchain.bitcoin &&
+      tokenWalletType == TokenWalletType.master &&
+      contractAddress.isEmpty;
 
   /// Error/empty state
   static const AppToken empty = AppToken(
