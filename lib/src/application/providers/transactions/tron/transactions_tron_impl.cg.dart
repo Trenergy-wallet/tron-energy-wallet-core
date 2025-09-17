@@ -80,25 +80,6 @@ class TransactionsServiceTronImpl implements TransactionsService {
           code: ExceptionCode.unableToCreateTransaction,
         );
       }
-      // final txdec = json.decode(tx) as Map<String, dynamic>;
-      // final transaction = Transaction.fromJson(txdec);
-      //
-      // print(
-      //   '💡TransactionsServiceTronImpl.postTransactionOrThrow :: transaction: ${transaction.toJson(visible: true, rawDataHex: true, txID: true)}',
-      // );
-      // print(
-      //   '💡TransactionsServiceTronImpl.postTransactionOrThrow :: transaction HEX: ${transaction.toHex}',
-      // );
-      //
-      // final res = await _tronProvider.request(
-      //   TronRequestBroadcastHex(transaction: transaction.toHex),
-      // );
-      //
-      // print('!! SENT res: ${res.result}');
-      // return TransactionInfoData(
-      //   txId: res.txid,
-      //   linkToBlockchain: 'linkToBlockchain',
-      // );
       final res = await _postTransaction(
         tx: tx,
         appBlockchain: appBlockchain,
@@ -146,7 +127,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
       if (asset.isTrx) {
         _logger.logInfoMessage(_name, 'creating TRX transaction');
 
-        // create transfer contract (TRX Transfer)
+        // Create transfer contract (TRX Transfer)
         final transferContract = TransferContract(
           amount: TronHelper.toSun(amount.toString()),
           ownerAddress: TronAddress(asset.address),
@@ -155,7 +136,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
         _logger.logInfoMessage(_name, 'transferContract: $transferContract');
 
-        // validate transacation and got required data like block hash and ....
+        // Validate transacation and got required data like block hash and ....
         final transaction = await _tronProvider.request(
           TronRequestCreateTransaction.fromContract(transferContract),
         );
@@ -170,8 +151,6 @@ class TransactionsServiceTronImpl implements TransactionsService {
         //   ),
         // );
 
-        print('!!! transaction: ${transaction.toJson()}');
-
         // Transaction lifetime
         // Default in the package is 1 minute, we set it ourselves to 10 minutes
         final transactionTTL = BigInt.from(
@@ -180,6 +159,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
             // 10 minutes TTL according to tasks 790 and 800
           ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
         );
+
         final rawTr = transaction.rawData.copyWith(
           expiration: transactionTTL,
           data: message == null ? null : utf8.encode(message),

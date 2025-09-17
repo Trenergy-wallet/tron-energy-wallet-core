@@ -87,6 +87,7 @@ Future<void> tronExample(String tronAddress) async {
     amount: 1,
     asset: tronAsset,
     masterKey: '',
+    message: 'hello example',
   );
   logger.logInfoMessage('tronExample', 'TX: $tx');
   final sentTx = await tronService.postTransactionOrThrow(tx: tx);
