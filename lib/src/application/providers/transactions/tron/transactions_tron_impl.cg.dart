@@ -80,6 +80,25 @@ class TransactionsServiceTronImpl implements TransactionsService {
           code: ExceptionCode.unableToCreateTransaction,
         );
       }
+      // final txdec = json.decode(tx) as Map<String, dynamic>;
+      // final transaction = Transaction.fromJson(txdec);
+      //
+      // print(
+      //   '💡TransactionsServiceTronImpl.postTransactionOrThrow :: transaction: ${transaction.toJson(visible: true, rawDataHex: true, txID: true)}',
+      // );
+      // print(
+      //   '💡TransactionsServiceTronImpl.postTransactionOrThrow :: transaction HEX: ${transaction.toHex}',
+      // );
+      //
+      // final res = await _tronProvider.request(
+      //   TronRequestBroadcastHex(transaction: transaction.toHex),
+      // );
+      //
+      // print('!! SENT res: ${res.result}');
+      // return TransactionInfoData(
+      //   txId: res.txid,
+      //   linkToBlockchain: 'linkToBlockchain',
+      // );
       final res = await _postTransaction(
         tx: tx,
         appBlockchain: appBlockchain,
@@ -94,7 +113,8 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
   /// Send TRX
   ///
-  /// [message] is not used in the TRON network (yet)
+  /// [message] = memo field. If you include a memo, keep at least 1 TRX in
+  /// your account to safely cover the additional cost
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
@@ -140,6 +160,18 @@ class TransactionsServiceTronImpl implements TransactionsService {
           TronRequestCreateTransaction.fromContract(transferContract),
         );
 
+        // Another way of creating transaction with memo included
+        // final transaction = await _tronProvider.request(
+        //   TronRequestCreateTransaction(
+        //     ownerAddress: TronAddress(asset.address),
+        //     toAddress: TronAddress(toAddress),
+        //     amount: TronHelper.toSun(amount.toString()),
+        //     extraData: message,
+        //   ),
+        // );
+
+        print('!!! transaction: ${transaction.toJson()}');
+
         // Transaction lifetime
         // Default in the package is 1 minute, we set it ourselves to 10 minutes
         final transactionTTL = BigInt.from(
@@ -148,7 +180,10 @@ class TransactionsServiceTronImpl implements TransactionsService {
             // 10 minutes TTL according to tasks 790 and 800
           ).add(const Duration(minutes: 10)).millisecondsSinceEpoch,
         );
-        final rawTr = transaction.rawData.copyWith(expiration: transactionTTL);
+        final rawTr = transaction.rawData.copyWith(
+          expiration: transactionTTL,
+          data: message == null ? null : utf8.encode(message),
+        );
 
         // - feeLimit is not set here. See chat trenergy on 02.06.25
         return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
@@ -201,9 +236,12 @@ class TransactionsServiceTronImpl implements TransactionsService {
       );
 
       // Get transactionRaw from response and make sure set fee limit
+      // If you include a memo, keep at least 1 TRX in your account to safely
+      // cover the additional cost
       final rawTr = transaction.transaction!.rawData.copyWith(
         feeLimit: TronHelper.toSun('100'),
         expiration: transactionTTL,
+        data: message == null ? null : utf8.encode(message),
       );
 
       return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
@@ -238,14 +276,9 @@ class TransactionsServiceTronImpl implements TransactionsService {
     // Create transaction object and add raw data and signature to this
     final transaction = Transaction(rawData: rawTr, signature: [sign]);
 
-    final fullTx = {
-      'txID': transaction.rawData.txID,
-      'raw_data_hex': transaction.toHex,
-      'visible': true,
-      ...transaction.toJson(),
-    };
-
-    return json.encode(fullTx);
+    return json.encode(
+      transaction.toJson(rawDataHex: true, txID: true, visible: true),
+    );
   }
 
   @override
