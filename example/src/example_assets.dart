@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:blockchain_utils/utils/binary/utils.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
@@ -108,21 +107,12 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
   String? txFee,
 }) async {
   try {
-    // A bit complicated, first, we have to remove some data, which is
-    // included in [tx] and is necessary for tronEnergy use purposes
-    final decodedTxJson = jsonDecode(tx) as Map<String, dynamic>;
-    final rawData = TransactionRaw.fromJson(
-      decodedTxJson['raw_data'] as Map<String, dynamic>,
-    );
-    final signatures = (decodedTxJson['signature'] as List<dynamic>)
-        .map((e) => BytesUtils.fromHexString(e.toString()))
-        .toList();
-    final purifiedTx = Transaction(rawData: rawData, signature: signatures);
+    final decoded = json.decode(tx) as Map<String, dynamic>;
+    final transaction = Transaction.fromJson(decoded);
     final res = await tronRpc.request(
-      TronRequestBroadcastHex(
-        transaction: BytesUtils.toHexString(purifiedTx.toBuffer()),
-      ),
+      TronRequestBroadcastHex(transaction: transaction.toHex),
     );
+
     return Right(
       TransactionInfoData(
         txId: res.txid,
