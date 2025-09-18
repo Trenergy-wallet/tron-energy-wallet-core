@@ -9,6 +9,9 @@ class CoreConsts {
   /// USDT
   static const usdt = 'USDT';
 
+  /// BTC
+  static const btc = 'BTC';
+
   /// Error value -1 for int
   static const invalidIntValue = -1;
 
