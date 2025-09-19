@@ -9,6 +9,7 @@ import '../example.dart' show tonRpc, tronRpc;
 AppAsset tronAssetExample(String address) => AppAsset(
   id: 27,
   balance: 5900.13,
+  hold: 0,
   address: address,
   walletId: 171,
   childWalletAddress: '',
@@ -39,6 +40,7 @@ AppAsset tronAssetExample(String address) => AppAsset(
 AppAsset tonAssetExample(String address) => AppAsset(
   id: 15,
   balance: 10,
+  hold: 0,
   address: address,
   walletId: 211,
   childWalletAddress: '',
@@ -71,6 +73,7 @@ AppAsset tonAssetExample(String address) => AppAsset(
 AppAsset btcAssetExample(String address) => AppAsset(
   id: 125,
   balance: 1,
+  hold: 0,
   address: address,
   walletId: 381,
   childWalletAddress: '',

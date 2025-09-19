@@ -59,6 +59,7 @@ sealed class AppAsset with _$AppAsset {
   const factory AppAsset({
     required int id,
     required double balance,
+    required double hold,
     required AppToken token,
     required String address,
     required int walletId,
@@ -83,6 +84,7 @@ sealed class AppAsset with _$AppAsset {
   static const AppAsset empty = AppAsset(
     id: CoreConsts.invalidIntValue,
     balance: CoreConsts.invalidDoubleValue,
+    hold: CoreConsts.invalidDoubleValue,
     token: AppToken.empty,
     address: '',
     walletId: CoreConsts.invalidIntValue,
