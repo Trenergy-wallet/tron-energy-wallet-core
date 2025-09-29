@@ -80,6 +80,9 @@ sealed class AppAsset with _$AppAsset {
   /// AppBlockchain
   AppBlockchain get appBlockchain => token.blockchain.appBlockchain;
 
+  /// Balance with hold
+  double get availableBalance => (balance - hold).clamp(0, double.nan);
+
   /// Error/empty state
   static const AppAsset empty = AppAsset(
     id: CoreConsts.invalidIntValue,
