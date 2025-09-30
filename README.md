@@ -170,12 +170,6 @@ Future<void> btcExample() async {
 
 See the `/example` folder for a detailed example.
 
-## Contributors
-
-TODO: generate after publishing
-
-[//]: # ( [![]&#40;https://contrib.rocks/image?repo=Trenergy-wallet/tron-energy-wallet-core&#41;]&#40;https://github.com/Trenergy-wallet/tron-energy-wallet-core/graphs/contributors&#41;)
-
 ## Issues & Feedback
 
 Found a bug or have a feature request?  
