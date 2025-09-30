@@ -1,3 +1,7 @@
+## 1.0.5
+
+* Https dependency migration
+
 ## 1.0.4
 
 * Added Memo for TRON
