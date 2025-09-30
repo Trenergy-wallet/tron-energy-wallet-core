@@ -23,12 +23,12 @@ dependencies:
   ton_dart: ^2.0.0
   tr_logger:
     git:
-      url: git@github.com:Trenergy-wallet/tr_logger.git
+      url: https://github.com/Trenergy-wallet/tr_logger.git
       ref: v1.0.0
   tr_ton_wallet_service:
     git:
-      url: git@github.com:Trenergy-wallet/tr_ton_wallet_service.git
-      ref: v1.0.0
+      url: https://github.com/Trenergy-wallet/tr_ton_wallet_service.git
+      ref: v1.0.1
 #    path: ../tr_ton_wallet_service
 
 dev_dependencies:
