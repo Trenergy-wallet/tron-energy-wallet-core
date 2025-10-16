@@ -4,6 +4,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import '../../../../example.dart' show btcApiKey;
 import '../../../core/network/bitcoin_api_service/btc_explorer_service.dart';
+import 'client.cg.dart';
 
 const _isTestNet = true;
 
