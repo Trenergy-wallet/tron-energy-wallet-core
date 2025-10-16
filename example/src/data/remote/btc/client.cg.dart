@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:tron_energy_wallet_core/src/models/dto/btc_node/account_utxo.cg.dart';
-import 'package:tron_energy_wallet_core/src/models/dto/btc_node/transaction.cg.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/btc/data/dto/account_utxo.cg.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/btc/data/dto/transaction.cg.dart';
 
 part 'gen/client.cg.g.dart';
 

@@ -1,5 +1,6 @@
 import 'package:on_chain/on_chain.dart';
-import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
+import 'package:tron_energy_wallet_core/src/domain/models/account/local_account.cg.dart'
+    show LocalAccount;
 
 /// Abstract interface of the Core local repository
 abstract interface class LocalRepoBaseCore {

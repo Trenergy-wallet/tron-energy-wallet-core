@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tron_energy_wallet_core/src/application/providers/transactions/tron/trc20_abi.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service

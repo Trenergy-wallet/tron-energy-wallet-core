@@ -1,9 +1,5 @@
 import 'package:tron_energy_wallet_core/src/core/core.dart';
-import 'package:tron_energy_wallet_core/src/models/models.dart';
-
-export 'btc/transactions_btc_impl.cg.dart';
-export 'ton/transactions_ton_impl.cg.dart';
-export 'tron/transactions_tron_impl.cg.dart';
+import 'package:tron_energy_wallet_core/src/domain/models/models.dart';
 
 /// Transactions Service
 ///

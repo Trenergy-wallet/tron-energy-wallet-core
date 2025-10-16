@@ -1,6 +1,5 @@
 import 'package:on_chain/tron/src/keys/private_key.dart';
-import 'package:tron_energy_wallet_core/src/application/application.dart';
-import 'package:tron_energy_wallet_core/src/models/domain/account/local_account.cg.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Example!!
 ///
