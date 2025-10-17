@@ -125,9 +125,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
           fees: Fees(
             fastestFee: fees.high.toInt(),
             halfHourFee: fees.medium.toInt(),
-            hourFee: fees.hourFee?.toInt() ?? fees.medium.toInt(),
             economyFee: fees.economyFee?.toInt() ?? fees.medium.toInt(),
-            minimumFee: fees.low.toInt(),
           ),
         ),
       );

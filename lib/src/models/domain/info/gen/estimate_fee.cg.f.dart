@@ -289,7 +289,7 @@ $FeesCopyWith<$Res> get fees {
 /// @nodoc
 mixin _$Fees {
 
- int get fastestFee; int get halfHourFee; int get hourFee; int get economyFee; int get minimumFee;
+ int get fastestFee; int get halfHourFee; int get economyFee;
 /// Create a copy of Fees
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $FeesCopyWith<Fees> get copyWith => _$FeesCopyWithImpl<Fees>(this as Fees, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Fees&&(identical(other.fastestFee, fastestFee) || other.fastestFee == fastestFee)&&(identical(other.halfHourFee, halfHourFee) || other.halfHourFee == halfHourFee)&&(identical(other.hourFee, hourFee) || other.hourFee == hourFee)&&(identical(other.economyFee, economyFee) || other.economyFee == economyFee)&&(identical(other.minimumFee, minimumFee) || other.minimumFee == minimumFee));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Fees&&(identical(other.fastestFee, fastestFee) || other.fastestFee == fastestFee)&&(identical(other.halfHourFee, halfHourFee) || other.halfHourFee == halfHourFee)&&(identical(other.economyFee, economyFee) || other.economyFee == economyFee));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,fastestFee,halfHourFee,hourFee,economyFee,minimumFee);
+int get hashCode => Object.hash(runtimeType,fastestFee,halfHourFee,economyFee);
 
 @override
 String toString() {
-  return 'Fees(fastestFee: $fastestFee, halfHourFee: $halfHourFee, hourFee: $hourFee, economyFee: $economyFee, minimumFee: $minimumFee)';
+  return 'Fees(fastestFee: $fastestFee, halfHourFee: $halfHourFee, economyFee: $economyFee)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $FeesCopyWith<$Res>  {
   factory $FeesCopyWith(Fees value, $Res Function(Fees) _then) = _$FeesCopyWithImpl;
 @useResult
 $Res call({
- int fastestFee, int halfHourFee, int hourFee, int economyFee, int minimumFee
+ int fastestFee, int halfHourFee, int economyFee
 });
 
 
@@ -337,13 +337,11 @@ class _$FeesCopyWithImpl<$Res>
 
 /// Create a copy of Fees
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? fastestFee = null,Object? halfHourFee = null,Object? hourFee = null,Object? economyFee = null,Object? minimumFee = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? fastestFee = null,Object? halfHourFee = null,Object? economyFee = null,}) {
   return _then(_self.copyWith(
 fastestFee: null == fastestFee ? _self.fastestFee : fastestFee // ignore: cast_nullable_to_non_nullable
 as int,halfHourFee: null == halfHourFee ? _self.halfHourFee : halfHourFee // ignore: cast_nullable_to_non_nullable
-as int,hourFee: null == hourFee ? _self.hourFee : hourFee // ignore: cast_nullable_to_non_nullable
 as int,economyFee: null == economyFee ? _self.economyFee : economyFee // ignore: cast_nullable_to_non_nullable
-as int,minimumFee: null == minimumFee ? _self.minimumFee : minimumFee // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -426,10 +424,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int fastestFee,  int halfHourFee,  int hourFee,  int economyFee,  int minimumFee)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int fastestFee,  int halfHourFee,  int economyFee)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Fees() when $default != null:
-return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFee,_that.minimumFee);case _:
+return $default(_that.fastestFee,_that.halfHourFee,_that.economyFee);case _:
   return orElse();
 
 }
@@ -447,10 +445,10 @@ return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int fastestFee,  int halfHourFee,  int hourFee,  int economyFee,  int minimumFee)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int fastestFee,  int halfHourFee,  int economyFee)  $default,) {final _that = this;
 switch (_that) {
 case _Fees():
-return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFee,_that.minimumFee);}
+return $default(_that.fastestFee,_that.halfHourFee,_that.economyFee);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -464,10 +462,10 @@ return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int fastestFee,  int halfHourFee,  int hourFee,  int economyFee,  int minimumFee)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int fastestFee,  int halfHourFee,  int economyFee)?  $default,) {final _that = this;
 switch (_that) {
 case _Fees() when $default != null:
-return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFee,_that.minimumFee);case _:
+return $default(_that.fastestFee,_that.halfHourFee,_that.economyFee);case _:
   return null;
 
 }
@@ -479,14 +477,12 @@ return $default(_that.fastestFee,_that.halfHourFee,_that.hourFee,_that.economyFe
 
 
 class _Fees extends Fees {
-  const _Fees({required this.fastestFee, required this.halfHourFee, required this.hourFee, required this.economyFee, required this.minimumFee}): super._();
+  const _Fees({required this.fastestFee, required this.halfHourFee, required this.economyFee}): super._();
   
 
 @override final  int fastestFee;
 @override final  int halfHourFee;
-@override final  int hourFee;
 @override final  int economyFee;
-@override final  int minimumFee;
 
 /// Create a copy of Fees
 /// with the given fields replaced by the non-null parameter values.
@@ -498,16 +494,16 @@ _$FeesCopyWith<_Fees> get copyWith => __$FeesCopyWithImpl<_Fees>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Fees&&(identical(other.fastestFee, fastestFee) || other.fastestFee == fastestFee)&&(identical(other.halfHourFee, halfHourFee) || other.halfHourFee == halfHourFee)&&(identical(other.hourFee, hourFee) || other.hourFee == hourFee)&&(identical(other.economyFee, economyFee) || other.economyFee == economyFee)&&(identical(other.minimumFee, minimumFee) || other.minimumFee == minimumFee));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Fees&&(identical(other.fastestFee, fastestFee) || other.fastestFee == fastestFee)&&(identical(other.halfHourFee, halfHourFee) || other.halfHourFee == halfHourFee)&&(identical(other.economyFee, economyFee) || other.economyFee == economyFee));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,fastestFee,halfHourFee,hourFee,economyFee,minimumFee);
+int get hashCode => Object.hash(runtimeType,fastestFee,halfHourFee,economyFee);
 
 @override
 String toString() {
-  return 'Fees(fastestFee: $fastestFee, halfHourFee: $halfHourFee, hourFee: $hourFee, economyFee: $economyFee, minimumFee: $minimumFee)';
+  return 'Fees(fastestFee: $fastestFee, halfHourFee: $halfHourFee, economyFee: $economyFee)';
 }
 
 
@@ -518,7 +514,7 @@ abstract mixin class _$FeesCopyWith<$Res> implements $FeesCopyWith<$Res> {
   factory _$FeesCopyWith(_Fees value, $Res Function(_Fees) _then) = __$FeesCopyWithImpl;
 @override @useResult
 $Res call({
- int fastestFee, int halfHourFee, int hourFee, int economyFee, int minimumFee
+ int fastestFee, int halfHourFee, int economyFee
 });
 
 
@@ -535,13 +531,11 @@ class __$FeesCopyWithImpl<$Res>
 
 /// Create a copy of Fees
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? fastestFee = null,Object? halfHourFee = null,Object? hourFee = null,Object? economyFee = null,Object? minimumFee = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? fastestFee = null,Object? halfHourFee = null,Object? economyFee = null,}) {
   return _then(_Fees(
 fastestFee: null == fastestFee ? _self.fastestFee : fastestFee // ignore: cast_nullable_to_non_nullable
 as int,halfHourFee: null == halfHourFee ? _self.halfHourFee : halfHourFee // ignore: cast_nullable_to_non_nullable
-as int,hourFee: null == hourFee ? _self.hourFee : hourFee // ignore: cast_nullable_to_non_nullable
 as int,economyFee: null == economyFee ? _self.economyFee : economyFee // ignore: cast_nullable_to_non_nullable
-as int,minimumFee: null == minimumFee ? _self.minimumFee : minimumFee // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

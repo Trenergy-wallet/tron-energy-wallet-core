@@ -29,9 +29,7 @@ sealed class Fees with _$Fees {
   const factory Fees({
     required int fastestFee,
     required int halfHourFee,
-    required int hourFee,
     required int economyFee,
-    required int minimumFee,
   }) = _Fees;
 
   const Fees._();
@@ -47,9 +45,7 @@ sealed class Fees with _$Fees {
   static const invalid = Fees(
     fastestFee: CoreConsts.invalidIntValue,
     halfHourFee: CoreConsts.invalidIntValue,
-    hourFee: CoreConsts.invalidIntValue,
     economyFee: CoreConsts.invalidIntValue,
-    minimumFee: CoreConsts.invalidIntValue,
   );
 }
 
