@@ -2,31 +2,32 @@ import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:dio/dio.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../../../example.dart' show btcApiKey;
-import '../../../core/network/bitcoin_api_service/btc_explorer_service.dart';
-import 'client.cg.dart';
-
-const _isTestNet = true;
+import '../api/btc_explorer_service.dart';
+import '../api/client.cg.dart';
 
 /// BTCNodeRepoImpl
 final class BTCNodeRepoImpl implements BTCNodeRepo {
-  /// Singleton instance of BTCNodeRepoImpl
-  factory BTCNodeRepoImpl() => _singleton;
-
-  BTCNodeRepoImpl._internal()
-    : _api = ApiProvider.fromMempool(
-        BitcoinNetwork.signet,
-        BitcoinApiService(),
-      ),
-      _client = BtcNodeClient(
-        Dio(BaseOptions(baseUrl: 'https://rpc.ankr.com/')),
-      );
-
-  static final BTCNodeRepoImpl _singleton = BTCNodeRepoImpl._internal();
+  BTCNodeRepoImpl({
+    required this.apiKey,
+    required this.isTestnet,
+    required this.baseUrl,
+  }) : _api = ApiProvider.fromMempool(
+         BitcoinNetwork.signet,
+         BitcoinApiService(),
+       ),
+       _client = BtcNodeClient(
+         Dio(BaseOptions(baseUrl: baseUrl)),
+       );
 
   final ApiProvider _api;
 
   final BtcNodeClient _client;
+
+  final String apiKey;
+
+  final bool isTestnet;
+
+  final String baseUrl;
 
   @override
   Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV1({
@@ -36,9 +37,9 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
     try {
       final response = await _client.fetchUtxosV1(
         address: address,
-        blockBook: _isTestNet ? 'btc_blockbook_signet' : 'btc_blockbook',
+        blockBook: isTestnet ? 'btc_blockbook_signet' : 'btc_blockbook',
         confirmed: confirmed,
-        apiToken: btcApiKey,
+        apiToken: apiKey,
       );
       return Right(response.map((e) => e.toDomainOrThrow()).toList());
     } on Exception catch (e) {
@@ -54,9 +55,9 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
     try {
       final response = await _client.fetchUtxosV2(
         address: address,
-        blockBook: _isTestNet ? 'btc_blockbook_signet' : 'btc_blockbook',
+        blockBook: isTestnet ? 'btc_blockbook_signet' : 'btc_blockbook',
         confirmed: confirmed,
-        apiToken: btcApiKey,
+        apiToken: apiKey,
       );
       return Right(response.map((e) => e.toDomainOrThrow()).toList());
     } on Exception catch (e) {
@@ -71,8 +72,8 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
     try {
       final response = await _client.fetchTransaction(
         txId: txId,
-        blockBook: _isTestNet ? 'btc_blockbook_signet' : 'btc_blockbook',
-        apiToken: btcApiKey,
+        blockBook: isTestnet ? 'btc_blockbook_signet' : 'btc_blockbook',
+        apiToken: apiKey,
       );
       return Right(response.toDomainOrThrow());
     } on Exception catch (e) {
@@ -91,7 +92,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
     try {
       final service = BitcoinApiService();
       final api = ApiProvider.fromMempool(
-        _isTestNet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
+        isTestnet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
         service,
       );
       final txId = await api.sendRawTransaction(tx);
