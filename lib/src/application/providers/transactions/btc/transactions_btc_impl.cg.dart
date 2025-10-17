@@ -183,7 +183,7 @@ class TransactionsServiceBTCImpl
       // in the rbf transaction
       final feePer1vB = max(feePer1vBCurrent, maxRbfTransactionFeeRatePer1vB);
 
-      if (feePer1vB < networkEstimate.fees.minimumFee) {
+      if (feePer1vB < networkEstimate.fees.economyFee) {
         throw AppException(
           message: 'Fee is too low: $feePer1vB',
           code: ExceptionCode.unableToCreateTransaction,
