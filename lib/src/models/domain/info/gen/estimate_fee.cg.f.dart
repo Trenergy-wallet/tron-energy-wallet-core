@@ -14,7 +14,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EstimateFeeModel {
 
- double get fee; double get energy; Fees get fees;
+ double get fee; double get energy; Fees get fees;// <- for btc
+ BigInt get txDustThreshold;
 /// Create a copy of EstimateFeeModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +26,16 @@ $EstimateFeeModelCopyWith<EstimateFeeModel> get copyWith => _$EstimateFeeModelCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EstimateFeeModel&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.energy, energy) || other.energy == energy)&&(identical(other.fees, fees) || other.fees == fees));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EstimateFeeModel&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.energy, energy) || other.energy == energy)&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.txDustThreshold, txDustThreshold) || other.txDustThreshold == txDustThreshold));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,fee,energy,fees);
+int get hashCode => Object.hash(runtimeType,fee,energy,fees,txDustThreshold);
 
 @override
 String toString() {
-  return 'EstimateFeeModel(fee: $fee, energy: $energy, fees: $fees)';
+  return 'EstimateFeeModel(fee: $fee, energy: $energy, fees: $fees, txDustThreshold: $txDustThreshold)';
 }
 
 
@@ -45,7 +46,7 @@ abstract mixin class $EstimateFeeModelCopyWith<$Res>  {
   factory $EstimateFeeModelCopyWith(EstimateFeeModel value, $Res Function(EstimateFeeModel) _then) = _$EstimateFeeModelCopyWithImpl;
 @useResult
 $Res call({
- double fee, double energy, Fees fees
+ double fee, double energy, Fees fees, BigInt txDustThreshold
 });
 
 
@@ -62,12 +63,13 @@ class _$EstimateFeeModelCopyWithImpl<$Res>
 
 /// Create a copy of EstimateFeeModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? fee = null,Object? energy = null,Object? fees = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? fee = null,Object? energy = null,Object? fees = null,Object? txDustThreshold = null,}) {
   return _then(_self.copyWith(
 fee: null == fee ? _self.fee : fee // ignore: cast_nullable_to_non_nullable
 as double,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
 as double,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
-as Fees,
+as Fees,txDustThreshold: null == txDustThreshold ? _self.txDustThreshold : txDustThreshold // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 /// Create a copy of EstimateFeeModel
@@ -158,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel() when $default != null:
-return $default(_that.fee,_that.energy,_that.fees);case _:
+return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);case _:
   return orElse();
 
 }
@@ -179,10 +181,10 @@ return $default(_that.fee,_that.energy,_that.fees);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)  $default,) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel():
-return $default(_that.fee,_that.energy,_that.fees);}
+return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -196,10 +198,10 @@ return $default(_that.fee,_that.energy,_that.fees);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double fee,  double energy,  Fees fees)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel() when $default != null:
-return $default(_that.fee,_that.energy,_that.fees);case _:
+return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);case _:
   return null;
 
 }
@@ -211,12 +213,14 @@ return $default(_that.fee,_that.energy,_that.fees);case _:
 
 
 class _EstimateFeeModel extends EstimateFeeModel {
-  const _EstimateFeeModel({required this.fee, required this.energy, required this.fees}): super._();
+  const _EstimateFeeModel({required this.fee, required this.energy, required this.fees, required this.txDustThreshold}): super._();
   
 
 @override final  double fee;
 @override final  double energy;
 @override final  Fees fees;
+// <- for btc
+@override final  BigInt txDustThreshold;
 
 /// Create a copy of EstimateFeeModel
 /// with the given fields replaced by the non-null parameter values.
@@ -228,16 +232,16 @@ _$EstimateFeeModelCopyWith<_EstimateFeeModel> get copyWith => __$EstimateFeeMode
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EstimateFeeModel&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.energy, energy) || other.energy == energy)&&(identical(other.fees, fees) || other.fees == fees));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EstimateFeeModel&&(identical(other.fee, fee) || other.fee == fee)&&(identical(other.energy, energy) || other.energy == energy)&&(identical(other.fees, fees) || other.fees == fees)&&(identical(other.txDustThreshold, txDustThreshold) || other.txDustThreshold == txDustThreshold));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,fee,energy,fees);
+int get hashCode => Object.hash(runtimeType,fee,energy,fees,txDustThreshold);
 
 @override
 String toString() {
-  return 'EstimateFeeModel(fee: $fee, energy: $energy, fees: $fees)';
+  return 'EstimateFeeModel(fee: $fee, energy: $energy, fees: $fees, txDustThreshold: $txDustThreshold)';
 }
 
 
@@ -248,7 +252,7 @@ abstract mixin class _$EstimateFeeModelCopyWith<$Res> implements $EstimateFeeMod
   factory _$EstimateFeeModelCopyWith(_EstimateFeeModel value, $Res Function(_EstimateFeeModel) _then) = __$EstimateFeeModelCopyWithImpl;
 @override @useResult
 $Res call({
- double fee, double energy, Fees fees
+ double fee, double energy, Fees fees, BigInt txDustThreshold
 });
 
 
@@ -265,12 +269,13 @@ class __$EstimateFeeModelCopyWithImpl<$Res>
 
 /// Create a copy of EstimateFeeModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? fee = null,Object? energy = null,Object? fees = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? fee = null,Object? energy = null,Object? fees = null,Object? txDustThreshold = null,}) {
   return _then(_EstimateFeeModel(
 fee: null == fee ? _self.fee : fee // ignore: cast_nullable_to_non_nullable
 as double,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
 as double,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
-as Fees,
+as Fees,txDustThreshold: null == txDustThreshold ? _self.txDustThreshold : txDustThreshold // ignore: cast_nullable_to_non_nullable
+as BigInt,
   ));
 }
 
