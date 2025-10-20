@@ -11,15 +11,17 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
     required double fee,
     required double energy,
     required Fees fees, // <- for btc
+    required BigInt txDustThreshold,
   }) = _EstimateFeeModel;
 
   const EstimateFeeModel._();
 
   /// Error value / placeholder
-  static const empty = EstimateFeeModel(
+  static final empty = EstimateFeeModel(
     fee: CoreConsts.invalidDoubleValue,
     energy: CoreConsts.invalidDoubleValue,
     fees: Fees.invalid,
+    txDustThreshold: BigInt.zero,
   );
 }
 

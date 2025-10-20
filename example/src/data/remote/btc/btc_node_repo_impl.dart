@@ -127,6 +127,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
             halfHourFee: fees.medium.toInt(),
             economyFee: fees.economyFee?.toInt() ?? fees.medium.toInt(),
           ),
+          txDustThreshold: BigInt.from(350),
         ),
       );
     } on Exception catch (e) {
