@@ -183,7 +183,7 @@ class TransactionsServiceBTCImpl
       // in the rbf transaction
       final feePer1vB = max(feePer1vBCurrent, maxRbfTransactionFeeRatePer1vB);
 
-      if (feePer1vB < networkEstimate.fees.minimumFee) {
+      if (feePer1vB < networkEstimate.fees.economyFee) {
         throw AppException(
           message: 'Fee is too low: $feePer1vB',
           code: ExceptionCode.unableToCreateTransaction,
@@ -191,7 +191,7 @@ class TransactionsServiceBTCImpl
       }
 
       // 4.4 Final fee amount
-      final fee = BigInt.from(feePer1vB * transactionVSize);
+      var fee = BigInt.from(feePer1vB * transactionVSize);
       // 4.5 If we use RBF inputs, it's mandatory to check that the fee in the
       // new transaction  is higher than in the previous one
       // RBF = a transaction with a higher fee replaces one with a lower fee,
@@ -216,7 +216,7 @@ class TransactionsServiceBTCImpl
       );
       // 5 Calculate change
       // changeValue - the amount returned back as change
-      final changeValue = sumOfUtxo - (sumOfOutputs + fee);
+      var changeValue = sumOfUtxo - (sumOfOutputs + fee);
       logger.logInfoMessage(
         name,
         'createTransactionOrThrow: changeValue: $changeValue',
@@ -226,6 +226,30 @@ class TransactionsServiceBTCImpl
           message: 'Not enough balance: changeValue: $changeValue, fee: $fee',
           code: ExceptionCode.amountIsNotPositive,
         );
+      }
+      // We can not add too small (dust) amount to the output
+      if (changeValue < networkEstimate.txDustThreshold &&
+          changeValue > BigInt.zero) {
+        logger.logWarning(
+          name,
+          'createTransactionOrThrow: dust output detected: $changeValue, '
+          'will add dust to the fee. Fee before $fee',
+        );
+        fee += changeValue;
+        logger.logWarning(
+          name,
+          'createTransactionOrThrow: new fee: $fee',
+        );
+        changeValue = sumOfUtxo - (sumOfOutputs + fee);
+        if (changeValue < networkEstimate.txDustThreshold &&
+            changeValue > BigInt.zero) {
+          throw AppException(
+            message:
+                'Error adding dust to the fee: changeValue: $changeValue, '
+                'fee: $fee',
+            code: ExceptionCode.unableToCreateTransaction,
+          );
+        }
       }
       // 5.1 If change is positive, add it to the outputs replacing the
       // placeholder

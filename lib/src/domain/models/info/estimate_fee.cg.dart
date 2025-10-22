@@ -11,15 +11,17 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
     required double fee,
     required double energy,
     required Fees fees, // <- for btc
+    required BigInt txDustThreshold,
   }) = _EstimateFeeModel;
 
   const EstimateFeeModel._();
 
   /// Error value / placeholder
-  static const empty = EstimateFeeModel(
+  static final empty = EstimateFeeModel(
     fee: CoreConsts.invalidDoubleValue,
     energy: CoreConsts.invalidDoubleValue,
     fees: Fees.invalid,
+    txDustThreshold: BigInt.zero,
   );
 }
 
@@ -29,9 +31,7 @@ sealed class Fees with _$Fees {
   const factory Fees({
     required int fastestFee,
     required int halfHourFee,
-    required int hourFee,
     required int economyFee,
-    required int minimumFee,
   }) = _Fees;
 
   const Fees._();
@@ -47,9 +47,7 @@ sealed class Fees with _$Fees {
   static const invalid = Fees(
     fastestFee: CoreConsts.invalidIntValue,
     halfHourFee: CoreConsts.invalidIntValue,
-    hourFee: CoreConsts.invalidIntValue,
     economyFee: CoreConsts.invalidIntValue,
-    minimumFee: CoreConsts.invalidIntValue,
   );
 }
 
