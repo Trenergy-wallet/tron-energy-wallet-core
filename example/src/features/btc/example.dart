@@ -38,7 +38,7 @@ Future<void> main() async {
     amount: 0.0001,
     asset: btcAsset,
     masterKey: '',
-    feeTypeBTC: FeeTypeBTC.optimal,
+    feeType: FeeType.optimal,
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
   final sentTx = await btcService.postTransactionOrThrow(tx: tx);

@@ -1,5 +1,5 @@
-/// Selected fee type for Bitcoin
-enum FeeTypeBTC {
+/// Selected fee type
+enum FeeType {
   /// Cheap and slow
   economy('mobile.slow'),
 
@@ -9,7 +9,7 @@ enum FeeTypeBTC {
   /// Fastest and most expensive
   fast('mobile.fast');
 
-  const FeeTypeBTC(this.trKey);
+  const FeeType(this.trKey);
 
   /// Key in translations
   final String trKey;

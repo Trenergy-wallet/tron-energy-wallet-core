@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$BlockchainInfo {
 
- int get id; String get name; String get shortName; String get icon; bool get isNew; List<AppToken> get tokens; AppBlockchain get appBlockchain;
+ int get id; String get name; String get shortName; String get icon; bool get isNew; List<AppToken> get tokens; AppBlockchain get appBlockchain; bool get supportsEIP1559; int get chainId;
 /// Create a copy of BlockchainInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $BlockchainInfoCopyWith<BlockchainInfo> get copyWith => _$BlockchainInfoCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BlockchainInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&const DeepCollectionEquality().equals(other.tokens, tokens)&&(identical(other.appBlockchain, appBlockchain) || other.appBlockchain == appBlockchain));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BlockchainInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&const DeepCollectionEquality().equals(other.tokens, tokens)&&(identical(other.appBlockchain, appBlockchain) || other.appBlockchain == appBlockchain)&&(identical(other.supportsEIP1559, supportsEIP1559) || other.supportsEIP1559 == supportsEIP1559)&&(identical(other.chainId, chainId) || other.chainId == chainId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,isNew,const DeepCollectionEquality().hash(tokens),appBlockchain);
+int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,isNew,const DeepCollectionEquality().hash(tokens),appBlockchain,supportsEIP1559,chainId);
 
 @override
 String toString() {
-  return 'BlockchainInfo(id: $id, name: $name, shortName: $shortName, icon: $icon, isNew: $isNew, tokens: $tokens, appBlockchain: $appBlockchain)';
+  return 'BlockchainInfo(id: $id, name: $name, shortName: $shortName, icon: $icon, isNew: $isNew, tokens: $tokens, appBlockchain: $appBlockchain, supportsEIP1559: $supportsEIP1559, chainId: $chainId)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $BlockchainInfoCopyWith<$Res>  {
   factory $BlockchainInfoCopyWith(BlockchainInfo value, $Res Function(BlockchainInfo) _then) = _$BlockchainInfoCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String shortName, String icon, bool isNew, List<AppToken> tokens, AppBlockchain appBlockchain
+ int id, String name, String shortName, String icon, bool isNew, List<AppToken> tokens, AppBlockchain appBlockchain, bool supportsEIP1559, int chainId
 });
 
 
@@ -62,7 +62,7 @@ class _$BlockchainInfoCopyWithImpl<$Res>
 
 /// Create a copy of BlockchainInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? isNew = null,Object? tokens = null,Object? appBlockchain = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? isNew = null,Object? tokens = null,Object? appBlockchain = null,Object? supportsEIP1559 = null,Object? chainId = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -71,7 +71,9 @@ as String,icon: null == icon ? _self.icon : icon // ignore: cast_nullable_to_non
 as String,isNew: null == isNew ? _self.isNew : isNew // ignore: cast_nullable_to_non_nullable
 as bool,tokens: null == tokens ? _self.tokens : tokens // ignore: cast_nullable_to_non_nullable
 as List<AppToken>,appBlockchain: null == appBlockchain ? _self.appBlockchain : appBlockchain // ignore: cast_nullable_to_non_nullable
-as AppBlockchain,
+as AppBlockchain,supportsEIP1559: null == supportsEIP1559 ? _self.supportsEIP1559 : supportsEIP1559 // ignore: cast_nullable_to_non_nullable
+as bool,chainId: null == chainId ? _self.chainId : chainId // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -153,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain,  bool supportsEIP1559,  int chainId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BlockchainInfo() when $default != null:
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain);case _:
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain,_that.supportsEIP1559,_that.chainId);case _:
   return orElse();
 
 }
@@ -174,10 +176,10 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain,  bool supportsEIP1559,  int chainId)  $default,) {final _that = this;
 switch (_that) {
 case _BlockchainInfo():
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain);}
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain,_that.supportsEIP1559,_that.chainId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -191,10 +193,10 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String shortName,  String icon,  bool isNew,  List<AppToken> tokens,  AppBlockchain appBlockchain,  bool supportsEIP1559,  int chainId)?  $default,) {final _that = this;
 switch (_that) {
 case _BlockchainInfo() when $default != null:
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain);case _:
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that.tokens,_that.appBlockchain,_that.supportsEIP1559,_that.chainId);case _:
   return null;
 
 }
@@ -206,7 +208,7 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.isNew,_that
 
 
 class _BlockchainInfo extends BlockchainInfo {
-  const _BlockchainInfo({required this.id, required this.name, required this.shortName, required this.icon, required this.isNew, required final  List<AppToken> tokens, required this.appBlockchain}): _tokens = tokens,super._();
+  const _BlockchainInfo({required this.id, required this.name, required this.shortName, required this.icon, required this.isNew, required final  List<AppToken> tokens, required this.appBlockchain, required this.supportsEIP1559, required this.chainId}): _tokens = tokens,super._();
   
 
 @override final  int id;
@@ -222,6 +224,8 @@ class _BlockchainInfo extends BlockchainInfo {
 }
 
 @override final  AppBlockchain appBlockchain;
+@override final  bool supportsEIP1559;
+@override final  int chainId;
 
 /// Create a copy of BlockchainInfo
 /// with the given fields replaced by the non-null parameter values.
@@ -233,16 +237,16 @@ _$BlockchainInfoCopyWith<_BlockchainInfo> get copyWith => __$BlockchainInfoCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BlockchainInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&const DeepCollectionEquality().equals(other._tokens, _tokens)&&(identical(other.appBlockchain, appBlockchain) || other.appBlockchain == appBlockchain));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BlockchainInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.isNew, isNew) || other.isNew == isNew)&&const DeepCollectionEquality().equals(other._tokens, _tokens)&&(identical(other.appBlockchain, appBlockchain) || other.appBlockchain == appBlockchain)&&(identical(other.supportsEIP1559, supportsEIP1559) || other.supportsEIP1559 == supportsEIP1559)&&(identical(other.chainId, chainId) || other.chainId == chainId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,isNew,const DeepCollectionEquality().hash(_tokens),appBlockchain);
+int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,isNew,const DeepCollectionEquality().hash(_tokens),appBlockchain,supportsEIP1559,chainId);
 
 @override
 String toString() {
-  return 'BlockchainInfo(id: $id, name: $name, shortName: $shortName, icon: $icon, isNew: $isNew, tokens: $tokens, appBlockchain: $appBlockchain)';
+  return 'BlockchainInfo(id: $id, name: $name, shortName: $shortName, icon: $icon, isNew: $isNew, tokens: $tokens, appBlockchain: $appBlockchain, supportsEIP1559: $supportsEIP1559, chainId: $chainId)';
 }
 
 
@@ -253,7 +257,7 @@ abstract mixin class _$BlockchainInfoCopyWith<$Res> implements $BlockchainInfoCo
   factory _$BlockchainInfoCopyWith(_BlockchainInfo value, $Res Function(_BlockchainInfo) _then) = __$BlockchainInfoCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String shortName, String icon, bool isNew, List<AppToken> tokens, AppBlockchain appBlockchain
+ int id, String name, String shortName, String icon, bool isNew, List<AppToken> tokens, AppBlockchain appBlockchain, bool supportsEIP1559, int chainId
 });
 
 
@@ -270,7 +274,7 @@ class __$BlockchainInfoCopyWithImpl<$Res>
 
 /// Create a copy of BlockchainInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? isNew = null,Object? tokens = null,Object? appBlockchain = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? isNew = null,Object? tokens = null,Object? appBlockchain = null,Object? supportsEIP1559 = null,Object? chainId = null,}) {
   return _then(_BlockchainInfo(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -279,7 +283,9 @@ as String,icon: null == icon ? _self.icon : icon // ignore: cast_nullable_to_non
 as String,isNew: null == isNew ? _self.isNew : isNew // ignore: cast_nullable_to_non_nullable
 as bool,tokens: null == tokens ? _self._tokens : tokens // ignore: cast_nullable_to_non_nullable
 as List<AppToken>,appBlockchain: null == appBlockchain ? _self.appBlockchain : appBlockchain // ignore: cast_nullable_to_non_nullable
-as AppBlockchain,
+as AppBlockchain,supportsEIP1559: null == supportsEIP1559 ? _self.supportsEIP1559 : supportsEIP1559 // ignore: cast_nullable_to_non_nullable
+as bool,chainId: null == chainId ? _self.chainId : chainId // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

@@ -30,4 +30,7 @@ enum TokenWalletType {
 
   /// toJson
   String toJson() => name;
+
+  /// Master coin of the wallet
+  bool get isMaster => this == master;
 }

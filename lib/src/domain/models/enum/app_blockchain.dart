@@ -13,7 +13,7 @@ enum AppBlockchain {
   bitcoin('bitcoin', true, false, 'BTC', true),
 
   /// ETH
-  ethereum('ethereum', false, false, '', false);
+  ethereum('ethereum', true, true, 'ETH', false);
 
   const AppBlockchain(
     this.slug,

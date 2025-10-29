@@ -102,7 +102,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
     required AppAsset asset,
     required String masterKey,
     String? message,
-    FeeTypeBTC? feeTypeBTC,
+    FeeType? feeType,
     EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async {
@@ -168,20 +168,17 @@ class TransactionsServiceTronImpl implements TransactionsService {
         return _signTransactionOrThrow(rawTr: rawTr, masterKey: masterKey);
       }
       _logger.logInfoMessage(_name, 'creating non-TRX transaction');
-      // Send a non-TRX transaction
-      // this many zeros need to be appended to one
-      final buffer = StringBuffer()..write('1');
-      for (var i = 0; i < asset.token.decimal; i++) {
-        buffer.write('0');
-      }
-
-      final decimal = int.parse(buffer.toString());
-      final totalAmount = amount * decimal;
       final contract = ContractABI.fromJson(trc20Abi);
       final function = contract.functionFromName('transfer');
 
       // address, amount
-      final transferParams = [TronAddress(toAddress), BigInt.from(totalAmount)];
+      final transferParams = [
+        TronAddress(toAddress),
+        DecimalConverter.toBigInt(
+          amount: amount.toString(),
+          decimals: asset.token.decimal,
+        ),
+      ];
 
       final _contractAddress = TronAddress(asset.token.contractAddress);
 

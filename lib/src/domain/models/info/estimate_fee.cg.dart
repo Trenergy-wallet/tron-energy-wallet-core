@@ -36,11 +36,11 @@ sealed class Fees with _$Fees {
 
   const Fees._();
 
-  /// Select the corresponding [FeeTypeBTC] fee
-  int feeForType(FeeTypeBTC feeType) => switch (feeType) {
-    FeeTypeBTC.fast => fastestFee,
-    FeeTypeBTC.optimal => halfHourFee,
-    FeeTypeBTC.economy => economyFee,
+  /// Select the corresponding [FeeType] fee
+  int feeForType(FeeType feeType) => switch (feeType) {
+    FeeType.fast => fastestFee,
+    FeeType.optimal => halfHourFee,
+    FeeType.economy => economyFee,
   };
 
   /// Error value / placeholder

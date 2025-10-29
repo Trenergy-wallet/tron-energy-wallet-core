@@ -5,7 +5,9 @@ import 'dart:isolate';
 
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/bip/bip.dart' as bip;
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:on_chain/ethereum/src/keys/private_key.dart';
 import 'package:on_chain/tron/src/keys/private_key.dart';
 import 'package:ton_dart/ton_dart.dart';
 
@@ -55,6 +57,29 @@ class KeyGenerator {
       final bipBase = bip32.derivePath(_BtcBipPath.bip86taproot.path);
       return ECPrivate.fromBytes(bipBase.privateKey.raw);
     });
+  }
+
+  /// Derives and returns the private key for the Ethereum blockchain from the
+  /// stored mnemonic.
+  Future<ETHPrivateKey> generateForEthereum() async {
+    return Isolate.run(() {
+      final seed = bip.Bip39SeedGenerator(mnemonic).generate();
+      // Derive a Ethereum private key from the seed
+      final bip44 = bip.Bip44.fromSeed(seed, bip.Bip44Coins.ethereum);
+      // Derive a child key using the default path (first account)
+      final defaultPath = bip44.deriveDefaultPath;
+      return ETHPrivateKey.fromBytes(defaultPath.privateKey.raw);
+    });
+  }
+}
+
+/// Convert amount for tokens
+class DecimalConverter {
+  /// Convert amount for tokens
+  static BigInt toBigInt({required String amount, required int decimals}) {
+    final bigRationalAmount = BigRational.parseDecimal(amount);
+    final bigRationalDecimal = BigRational(BigInt.from(10).pow(decimals));
+    return (bigRationalAmount * bigRationalDecimal).toBigInt();
   }
 }
 

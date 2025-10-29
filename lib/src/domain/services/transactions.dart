@@ -6,10 +6,10 @@ import 'package:tron_energy_wallet_core/src/domain/models/models.dart';
 /// Provides services for creating and signing transactions
 interface class TransactionsService {
   /// Service constructor
-  TransactionsService(this.appBlockchain);
+  TransactionsService();
 
   /// Blockchain of the service
-  final AppBlockchain appBlockchain;
+  AppBlockchain get appBlockchain => AppBlockchain.unknown;
 
   /// Send transaction through our backend (6.2)
   ///
@@ -28,7 +28,7 @@ interface class TransactionsService {
   /// [asset] - wallet
   /// [masterKey] - access key to data on the device
   /// [message] - optional message to add to the transaction
-  /// [feeTypeBTC] - Bitcoin only. Selected fee type (fast, slow)
+  /// [feeType] - Bitcoin only. Selected fee type (fast, slow)
   /// [txIdToPumpFeeBTC] - Bitcoin only. Unconfirmed transaction for which the
   /// fee needs to be bumped. In this case, [toAddress], [amount], and [message]
   /// will be ignored since data will be taken from this transaction
@@ -38,7 +38,7 @@ interface class TransactionsService {
     required AppAsset asset,
     required String masterKey,
     String? message,
-    FeeTypeBTC? feeTypeBTC,
+    FeeType? feeType,
     EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async =>

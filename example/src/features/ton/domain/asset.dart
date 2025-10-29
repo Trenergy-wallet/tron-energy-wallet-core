@@ -26,6 +26,9 @@ AppAsset tonAssetExample(String address) => AppAsset(
       isNew: false,
       tokens: [],
       appBlockchain: AppBlockchain.ton,
+      // TODO(ivn): update
+      chainId: -1,
+      supportsEIP1559: false,
     ),
     tokenWalletType: TokenWalletType.master,
     description: '',

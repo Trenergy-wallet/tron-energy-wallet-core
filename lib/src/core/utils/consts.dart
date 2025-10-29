@@ -1,3 +1,5 @@
+import 'package:tron_energy_wallet_core/src/domain/domain.dart';
+
 /// Core constants live here
 class CoreConsts {
   /// TRX
@@ -23,4 +25,13 @@ class CoreConsts {
 
   /// Contract address for USDT on TRON Nile testnet
   static const contractUSDTonNile = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+
+  /// How many blocks are used to calculate the fee
+  static const ethBlockCountForFee = 25;
+
+  /// Percentiles for fee calculation
+  static const List<double> ethRewardPercentilesForFee = [25, 50, 90];
+
+  /// Default ethereum FeeType if it was not selected
+  static const FeeType defaultEthFeeType = FeeType.optimal;
 }

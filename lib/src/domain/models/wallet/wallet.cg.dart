@@ -15,6 +15,8 @@ sealed class BlockchainInfo with _$BlockchainInfo {
     required bool isNew,
     required List<AppToken> tokens,
     required AppBlockchain appBlockchain,
+    required bool supportsEIP1559,
+    required int chainId,
   }) = _BlockchainInfo;
 
   const BlockchainInfo._();
@@ -28,6 +30,8 @@ sealed class BlockchainInfo with _$BlockchainInfo {
     isNew: false,
     tokens: [],
     appBlockchain: AppBlockchain.unknown,
+    supportsEIP1559: false,
+    chainId: -1,
   );
 }
 
