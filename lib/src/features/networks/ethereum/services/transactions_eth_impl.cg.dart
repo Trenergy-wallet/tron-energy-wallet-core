@@ -104,7 +104,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     }
   }
 
-  /// Send Ethereum or compatible token
+  /// Create signed transaction for Ethereum or compatible token
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
@@ -117,75 +117,15 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     String? txIdToPumpFeeBTC,
   }) async {
     try {
-      if (asset.token.blockchain.appBlockchain != appBlockchain) {
-        throw AppIncorrectBlockchainException(
-          appBlockchain.toString(),
-          asset.token.blockchain.appBlockchain.toString(),
-        );
-      }
-
-      if (amount <= 0) {
-        throw AppException(
-          message:
-              'unable to create transaction: amount is not positive: $amount',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-
-      _nonce ??= await _ethereumProvider.request(
-        EthereumRequestGetTransactionCount(address: asset.address),
+      final tx = await _tryCreateTransaction(
+        toAddress: toAddress,
+        amount: amount,
+        asset: asset,
+        message: message,
+        feeType: feeType,
+        userApprovedFee: userApprovedFee,
       );
-      if (_nonce == null) {
-        throw AppException(
-          message: 'Unable to retrieve wallet nonce',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-
-      final to = ETHAddress(toAddress);
-
-      BigInt? gasPrice;
-      FeeHistorical? eip1559Fee;
-      if (asset.token.blockchain.supportsEIP1559) {
-        final eip1559Historical = await _ethereumProvider.request(
-          EthereumRequestGetFeeHistory(
-            blockCount: CoreConsts.ethBlockCountForFee,
-            newestBlock: BlockTagOrNumber.pending,
-            rewardPercentiles: CoreConsts.ethRewardPercentilesForFee,
-          ),
-        );
-        eip1559Fee = eip1559Historical?.toFee();
-      } else {
-        gasPrice = await _ethereumProvider.request(
-          EthereumRequestGetGasPrice(),
-        );
-      }
-      final tx = asset.token.tokenWalletType.isMaster
-          ? await createTransaction(
-              rpc: _ethereumProvider,
-              asset: asset,
-              toAddress: to,
-              nonce: _nonce!,
-              feeType: feeType ?? CoreConsts.defaultEthFeeType,
-              amount: amount,
-              memo: message,
-              gasPrice: gasPrice,
-              eip1559Fee: eip1559Fee,
-            )
-          // Memo is not supported for standard ERC20 contracts
-          : await createERC20Transaction(
-              rpc: _ethereumProvider,
-              asset: asset,
-              toAddress: to,
-              nonce: _nonce!,
-              feeType: feeType ?? CoreConsts.defaultEthFeeType,
-              amount: amount,
-              gasPrice: gasPrice,
-              eip1559Fee: eip1559Fee,
-            );
-      _logger.logInfoMessage(_name, 'Transaction: ${tx.toJson()}');
-
-      return _signTransactionOrThrow(tx: tx, masterKey: masterKey);
+      return _trySignTransaction(tx: tx, masterKey: masterKey);
     } catch (_) {
       _nonce = null;
       rethrow;
@@ -194,7 +134,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
 
   /// Create the transaction for the main coin of the blockchain (ex-Ethereum)
   @visibleForTesting
-  Future<ETHTransaction> createTransaction({
+  Future<ETHTransaction> buildTransaction({
     required EthereumProvider rpc,
     required AppAsset asset,
     required ETHAddress toAddress,
@@ -270,7 +210,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
 
   /// Create the transaction for ERC-20 token
   @visibleForTesting
-  Future<ETHTransaction> createERC20Transaction({
+  Future<ETHTransaction> buildERC20Transaction({
     required EthereumProvider rpc,
     required AppAsset asset,
     required ETHAddress toAddress,
@@ -355,21 +295,68 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     return tx;
   }
 
-  Future<String> _signTransactionOrThrow({
-    required ETHTransaction tx,
-    required String masterKey,
+  @override
+  Future<bool> checkWalletIsFrozen({
+    required AppAsset asset,
+    required String addressToCheck,
+  }) async => false;
+
+  /// Estimate gas fee for the dummy transaction
+  Future<String> tryEstimateFee({
+    required String addressToSend,
+    required AppAsset asset,
+    // ERC20 token transfer fee depends on amount
+    double amount = 0,
+    String? message,
+    FeeType? feeType,
+    BigInt? gasPrice,
+    FeeHistorical? eip1559Fee,
   }) async {
-    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
-
-    // Get transaaction digest and sign with private key
-    final sign = pk.sign(tx.serialized);
-
-    /// Serialize the signed transaction
-    final signedSerialized = BytesUtils.toHexString(
-      tx.signedSerialized(sign),
-      prefix: '0x',
+    final tx = await _tryCreateTransaction(
+      toAddress: addressToSend,
+      amount: amount,
+      asset: asset,
+      message: message,
+      feeType: feeType,
+      gasPrice: gasPrice,
+      eip1559Fee: eip1559Fee,
     );
-    return signedSerialized;
+    final feeInWei = switch (tx.transactionType) {
+      ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
+      _ => tx.gasPrice! * tx.gasLimit,
+    };
+    _logger.logInfoMessage(
+      _name,
+      'tryEstimateFee: $feeInWei (maxFeePerGas: ${tx.maxFeePerGas}, '
+      'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit})',
+    );
+    return ETHHelper.fromWei(feeInWei);
+  }
+
+  /// Gas price for legacy transaction
+  Future<BigInt> tryGetGasPrice() async =>
+      _ethereumProvider.request(EthereumRequestGetGasPrice());
+
+  /// Gas price for Eip1559 transaction
+  Future<FeeHistorical> tryGetEip1559Fee() async {
+    final eip1559Historical = await _ethereumProvider.request(
+      EthereumRequestGetFeeHistory(
+        blockCount: CoreConsts.ethBlockCountForFee,
+        newestBlock: BlockTagOrNumber.pending,
+        rewardPercentiles: CoreConsts.ethRewardPercentilesForFee,
+      ),
+    );
+    return eip1559Historical!.toFee();
+  }
+
+  @override
+  Future<({String address, List<int> pkAsBytes})>
+  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
+    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
+    return (
+      address: pk.publicKey().toAddress().address,
+      pkAsBytes: pk.toBytes(),
+    );
   }
 
   /// Create a signing key for Ethereum
@@ -388,19 +375,94 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     return KeyGenerator(mnemonic: mnemonicFromRepo).generateForEthereum();
   }
 
-  @override
-  Future<({String address, List<int> pkAsBytes})>
-  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
-    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
-    return (
-      address: pk.publicKey().toAddress().address,
-      pkAsBytes: pk.toBytes(),
-    );
+  /// Create transaction for Ethereum or compatible token
+  Future<ETHTransaction> _tryCreateTransaction({
+    required String toAddress,
+    required double amount,
+    required AppAsset asset,
+    String? message,
+    FeeType? feeType,
+    EstimateFeeModel? userApprovedFee,
+    BigInt? gasPrice,
+    FeeHistorical? eip1559Fee,
+  }) async {
+    try {
+      if (asset.token.blockchain.appBlockchain != appBlockchain) {
+        throw AppIncorrectBlockchainException(
+          appBlockchain.toString(),
+          asset.token.blockchain.appBlockchain.toString(),
+        );
+      }
+
+      if (amount < 0) {
+        throw AppException(
+          message:
+              'unable to create transaction: amount is not positive: $amount',
+          code: ExceptionCode.amountIsNotPositive,
+        );
+      }
+
+      _nonce ??= await _ethereumProvider.request(
+        EthereumRequestGetTransactionCount(address: asset.address),
+      );
+      if (_nonce == null) {
+        throw AppException(
+          message: 'Unable to retrieve wallet nonce',
+          code: ExceptionCode.unableToCreateTransaction,
+        );
+      }
+
+      final to = ETHAddress(toAddress);
+
+      if (asset.token.blockchain.supportsEIP1559) {
+        eip1559Fee ??= await tryGetEip1559Fee();
+      } else {
+        gasPrice ??= await tryGetGasPrice();
+      }
+
+      return asset.token.tokenWalletType.isMaster
+          ? await buildTransaction(
+              rpc: _ethereumProvider,
+              asset: asset,
+              toAddress: to,
+              nonce: _nonce!,
+              feeType: feeType ?? CoreConsts.defaultEthFeeType,
+              amount: amount,
+              memo: message,
+              gasPrice: gasPrice,
+              eip1559Fee: eip1559Fee,
+            )
+          // Memo is not supported for standard ERC20 contracts
+          : await buildERC20Transaction(
+              rpc: _ethereumProvider,
+              asset: asset,
+              toAddress: to,
+              nonce: _nonce!,
+              feeType: feeType ?? CoreConsts.defaultEthFeeType,
+              amount: amount,
+              gasPrice: gasPrice,
+              eip1559Fee: eip1559Fee,
+            );
+    } catch (_) {
+      _nonce = null;
+      rethrow;
+    }
   }
 
-  @override
-  Future<bool> checkWalletIsFrozen({
-    required AppAsset asset,
-    required String addressToCheck,
-  }) async => false;
+  Future<String> _trySignTransaction({
+    required ETHTransaction tx,
+    required String masterKey,
+  }) async {
+    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
+
+    // Get transaction digest and sign with private key
+    final sign = pk.sign(tx.serialized);
+
+    /// Serialize the signed transaction
+    final signedSerialized = BytesUtils.toHexString(
+      tx.signedSerialized(sign),
+      prefix: '0x',
+    );
+    return signedSerialized;
+  }
 }
