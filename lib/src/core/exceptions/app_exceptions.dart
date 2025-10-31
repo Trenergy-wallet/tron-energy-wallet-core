@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart' show DioException;
 import 'package:tron_energy_wallet_core/src/core/core.dart';
-import 'package:tron_energy_wallet_core/src/models/domain/info/estimate_fee.cg.dart';
+import 'package:tron_energy_wallet_core/src/domain/models/info/estimate_fee.cg.dart';
 
 /// Base exception class containing
 ///
