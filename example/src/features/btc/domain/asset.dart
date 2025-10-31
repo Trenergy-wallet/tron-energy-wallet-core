@@ -24,8 +24,8 @@ AppAsset btcAssetExample(String address) => AppAsset(
       isNew: false,
       tokens: [],
       appBlockchain: AppBlockchain.bitcoin,
-      // TODO(ivn): update
-      chainId: -1,
+      networkId: 0,
+      chainId: 0,
       supportsEIP1559: false,
     ),
     tokenWalletType: TokenWalletType.master,

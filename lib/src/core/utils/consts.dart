@@ -14,6 +14,9 @@ class CoreConsts {
   /// BTC
   static const btc = 'BTC';
 
+  /// ETH
+  static const ethereum = 'ETH';
+
   /// Error value -1 for int
   static const invalidIntValue = -1;
 
@@ -34,4 +37,7 @@ class CoreConsts {
 
   /// Default ethereum FeeType if it was not selected
   static const FeeType defaultEthFeeType = FeeType.optimal;
+
+  /// Еth decimals
+  static const ethDecimals = 16;
 }

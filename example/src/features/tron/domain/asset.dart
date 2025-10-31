@@ -24,8 +24,8 @@ AppAsset tronAssetExample(String address) => AppAsset(
       isNew: false,
       tokens: [],
       appBlockchain: AppBlockchain.tron,
-      // TODO(ivn): update
-      chainId: -1,
+      chainId: 0xcd8690dc,
+      networkId: 0xcd8690dc,
       supportsEIP1559: false,
     ),
     tokenWalletType: TokenWalletType.master,

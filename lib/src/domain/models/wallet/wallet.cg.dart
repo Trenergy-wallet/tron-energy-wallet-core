@@ -17,6 +17,7 @@ sealed class BlockchainInfo with _$BlockchainInfo {
     required AppBlockchain appBlockchain,
     required bool supportsEIP1559,
     required int chainId,
+    required int networkId,
   }) = _BlockchainInfo;
 
   const BlockchainInfo._();
@@ -31,7 +32,8 @@ sealed class BlockchainInfo with _$BlockchainInfo {
     tokens: [],
     appBlockchain: AppBlockchain.unknown,
     supportsEIP1559: false,
-    chainId: -1,
+    chainId: CoreConsts.invalidIntValue,
+    networkId: CoreConsts.invalidIntValue,
   );
 }
 
@@ -81,11 +83,18 @@ sealed class AppAsset with _$AppAsset {
   /// Active token is BTC
   bool get isBTC => token.isBTC;
 
+  /// Active token is Ethereum
+  bool get isEthereum => token.isEthereum;
+
   /// AppBlockchain
   AppBlockchain get appBlockchain => token.blockchain.appBlockchain;
 
   /// Balance with hold
   double get availableBalance => (balance - hold).clamp(0, double.nan);
+
+  /// Coin to pay fees
+  bool get isMasterWalletForBlockchain =>
+      token.tokenWalletType == TokenWalletType.master;
 
   /// Error/empty state
   static const AppAsset empty = AppAsset(
@@ -141,6 +150,13 @@ sealed class AppToken with _$AppToken {
   bool get isBTC =>
       shortName == CoreConsts.btc &&
       blockchain.appBlockchain == AppBlockchain.bitcoin &&
+      tokenWalletType == TokenWalletType.master &&
+      contractAddress.isEmpty;
+
+  /// Active token is Ethereum
+  bool get isEthereum =>
+      shortName == CoreConsts.ethereum &&
+      blockchain.appBlockchain == AppBlockchain.ethereum &&
       tokenWalletType == TokenWalletType.master &&
       contractAddress.isEmpty;
 

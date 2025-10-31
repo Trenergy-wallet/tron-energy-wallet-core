@@ -71,7 +71,10 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   EthereumProvider get _ethereumProvider =>
       rpc ??
       EthereumProvider(
-        EthereumHTTPProvider(apiUri!, _localRepo.getAccount().token),
+        EthereumHTTPProvider(
+          apiUri!,
+          _localRepo.getAccount().token,
+        ),
       );
 
   /// Current wallet nonce (outgoing transaction index)
@@ -125,6 +128,32 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         feeType: feeType,
         userApprovedFee: userApprovedFee,
       );
+      if (userApprovedFee != null) {
+        final userApproved = ETHHelper.toWei(userApprovedFee.fee.toString());
+        final feeInWei = switch (tx.transactionType) {
+          ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
+          _ => tx.gasPrice! * tx.gasLimit,
+        };
+        _logger.logInfoMessage(
+          _name,
+          'createTransactionOrThrow: feeInWei: $feeInWei '
+          '(maxFeePerGas: ${tx.maxFeePerGas}, '
+          'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}), '
+          'user approved: $userApproved',
+        );
+        if (userApproved < feeInWei) {
+          final feeChangedPercent =
+              ((userApproved - feeInWei) / userApproved * 100).abs().toInt();
+          if (feeChangedPercent > 50) {
+            throw AppFeeChangedException(
+              userApprovedFee,
+              EstimateFeeModel.empty.copyWith(
+                fee: double.parse(ETHHelper.fromWei(feeInWei)),
+              ),
+            );
+          }
+        }
+      }
       return _trySignTransaction(tx: tx, masterKey: masterKey);
     } catch (_) {
       _nonce = null;
