@@ -146,6 +146,8 @@ class TransactionsServiceBTCImpl
       );
       // 4.2 Get fee rates per byte from the backend
       final networkEstimate = (await _estimateFee(
+        // Ok to send amount here, bs we operate with rates per vB not
+        // calculated fee by backend
         amount: amount,
         appBlockchain: appBlockchain,
         tokenWalletType: asset.token.tokenWalletType,

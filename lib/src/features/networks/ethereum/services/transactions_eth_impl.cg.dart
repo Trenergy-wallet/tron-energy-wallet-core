@@ -142,16 +142,12 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
           'user approved: $userApproved',
         );
         if (userApproved < feeInWei) {
-          final feeChangedPercent =
-              ((userApproved - feeInWei) / userApproved * 100).abs().toInt();
-          if (feeChangedPercent > 50) {
-            throw AppFeeChangedException(
-              userApprovedFee,
-              EstimateFeeModel.empty.copyWith(
-                fee: double.parse(ETHHelper.fromWei(feeInWei)),
-              ),
-            );
-          }
+          throw AppFeeChangedException(
+            userApprovedFee,
+            EstimateFeeModel.empty.copyWith(
+              fee: double.parse(ETHHelper.fromWei(feeInWei)),
+            ),
+          );
         }
       }
       return _trySignTransaction(tx: tx, masterKey: masterKey);
@@ -331,13 +327,15 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   }) async => false;
 
   /// Estimate gas fee for the dummy transaction
+  ///
+  /// [CoreConsts.defaultEthFeeType] = default for ETH
   Future<String> tryEstimateFee({
     required String addressToSend,
     required AppAsset asset,
+    FeeType? feeType,
     // ERC20 token transfer fee depends on amount
     double amount = 0,
     String? message,
-    FeeType? feeType,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
