@@ -123,4 +123,7 @@ enum ExceptionCode {
 
   @override
   String toString() => code;
+
+  /// Timeout
+  bool get isTimeout => this == connectionTimeout;
 }
