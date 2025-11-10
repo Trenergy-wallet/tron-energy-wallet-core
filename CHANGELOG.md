@@ -1,3 +1,11 @@
+## 1.1.0
+
+* NEW blockchain: Ethereum
+
+## 1.0.7
+
+* Btc dust calculations
+
 ## 1.0.5
 
 * Https dependency migration
