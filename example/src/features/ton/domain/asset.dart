@@ -26,7 +26,6 @@ AppAsset tonAssetExample(String address) => AppAsset(
       isNew: false,
       tokens: [],
       appBlockchain: AppBlockchain.ton,
-      // TODO(ivn): update
       chainId: -3,
       networkId: -3,
       supportsEIP1559: false,
