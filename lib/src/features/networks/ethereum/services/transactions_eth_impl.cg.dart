@@ -347,6 +347,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       feeType: feeType,
       gasPrice: gasPrice,
       eip1559Fee: eip1559Fee,
+      forceUpdateNonce: false,
     );
     final feeInWei = switch (tx.transactionType) {
       ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
@@ -403,6 +404,8 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   }
 
   /// Create transaction for Ethereum or compatible token
+  ///
+  /// [forceUpdateNonce] - do not use cached nonce
   Future<ETHTransaction> _tryCreateTransaction({
     required String toAddress,
     required double amount,
@@ -412,6 +415,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     EstimateFeeModel? userApprovedFee,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
+    bool forceUpdateNonce = true,
   }) async {
     try {
       if (asset.token.blockchain.appBlockchain != appBlockchain) {
@@ -428,10 +432,11 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-
-      _nonce ??= await _ethereumProvider.request(
-        EthereumRequestGetTransactionCount(address: asset.address),
-      );
+      _nonce = (forceUpdateNonce || _nonce == null)
+          ? await _ethereumProvider.request(
+              EthereumRequestGetTransactionCount(address: asset.address),
+            )
+          : _nonce;
       if (_nonce == null) {
         throw AppException(
           message: 'Unable to retrieve wallet nonce',

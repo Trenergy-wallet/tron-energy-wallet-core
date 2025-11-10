@@ -32,7 +32,7 @@ Future<void> main() async {
 
   logger.logInfoMessage('ethExample', 'Main address: ${walletInfo.address}');
 
-  final asset = ethAssetExample(
+  final asset = ethERC20AssetExample(
     address: walletInfo.address,
     supportsEIP1559: true,
   );
@@ -43,12 +43,18 @@ Future<void> main() async {
   //   supportsEIP1559: true,
   // );
 
+  // final feeEstimate = await ethService.tryEstimateFee(
+  //   addressToSend: '0xB191c75e9401205A578B7caD7cBEc160B88Db558',
+  //   asset: asset,
+  //   message: 'hi',
+  // );
+
   final tx = await ethService.createTransactionOrThrow(
     toAddress: '0xB191c75e9401205A578B7caD7cBEc160B88Db558',
-    amount: 0.00006,
+    amount: 0.00001,
     asset: asset,
     masterKey: '',
-    message: 'hello example',
+    message: 'hi',
   );
   logger.logInfoMessage('ethExample', 'TX: $tx');
   final sentTx = await ethService.postTransactionOrThrow(tx: tx);
