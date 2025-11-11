@@ -1,27 +1,57 @@
 /// Supported blockchains in the application
 enum AppBlockchain {
   /// Unknown blockchain, not supported
-  unknown('unknown', false, false, '', false),
+  unknown(
+    slug: 'unknown',
+    isSupported: false,
+    allCoinsSupported: false,
+    mainTokenName: '',
+    supportsMemoMessage: false,
+  ),
 
   /// TRON
-  tron('tron', true, true, 'TRX', false),
+  tron(
+    slug: 'tron',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'TRX',
+    supportsMemoMessage: false,
+  ),
 
   /// TON
-  ton('ton', true, false, 'TON', true),
+  ton(
+    slug: 'ton',
+    isSupported: true,
+    allCoinsSupported: false,
+    mainTokenName: 'TON',
+    supportsMemoMessage: true,
+  ),
 
   /// BTC
-  bitcoin('bitcoin', true, false, 'BTC', true),
+  bitcoin(
+    slug: 'bitcoin',
+    isSupported: true,
+    allCoinsSupported: false,
+    mainTokenName: 'BTC',
+    supportsMemoMessage: true,
+  ),
 
   /// ETH
-  ethereum('ethereum', true, true, 'ETH', false);
-
-  const AppBlockchain(
-    this.slug,
-    this.isSupported,
-    this.allCoinsSupported,
-    this.mainTokenName,
-    this.supportsMemoMessage,
+  ethereum(
+    slug: 'ethereum',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'ETH',
+    supportsMemoMessage: false,
   );
+
+  const AppBlockchain({
+    required this.slug,
+    required this.isSupported,
+    required this.allCoinsSupported,
+    required this.mainTokenName,
+    required this.supportsMemoMessage,
+  });
 
   /// fromJson
   factory AppBlockchain.fromJson(dynamic json) => values.firstWhere(

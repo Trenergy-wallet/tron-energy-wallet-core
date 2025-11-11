@@ -10,10 +10,10 @@ part 'gen/account_utxo.cg.g.dart';
 // "height": 900608,
 // "confirmations": 12
 
-/// AccountUtxo для Bitcoin
+/// AccountUtxo for Bitcoin
 @freezed
 sealed class AppUtxoDtoV2 with _$AppUtxoDtoV2 {
-  /// AccountUtxo для Bitcoin
+  /// AccountUtxo for Bitcoin
   const factory AppUtxoDtoV2({
     required String txid,
     required int vout,
@@ -30,18 +30,18 @@ sealed class AppUtxoDtoV2 with _$AppUtxoDtoV2 {
 
   /// AccountUtxoDtoV2 => AccountUtxo
   AppUtxo toDomainOrThrow() => AppUtxo(
-        txid: txid,
-        vout: vout,
-        value: BigInt.parse(value),
-        height: height ?? CoreConsts.invalidIntValue,
-        confirmations: confirmations,
-      );
+    txid: txid,
+    vout: vout,
+    value: BigInt.parse(value),
+    height: height ?? CoreConsts.invalidIntValue,
+    confirmations: confirmations,
+  );
 }
 
-/// AccountUtxo для Bitcoin
+/// AccountUtxo for Bitcoin
 @freezed
 sealed class AppUtxoDtoV1 with _$AppUtxoDtoV1 {
-  /// AccountUtxo для Bitcoin
+  /// AccountUtxo for Bitcoin
   const factory AppUtxoDtoV1({
     required String txid,
     required int vout,
@@ -58,10 +58,10 @@ sealed class AppUtxoDtoV1 with _$AppUtxoDtoV1 {
 
   /// AccountUtxoDtoV1 => AccountUtxo
   AppUtxo toDomainOrThrow() => AppUtxo(
-        txid: txid,
-        vout: vout,
-        value: BigInt.from(satoshis),
-        confirmations: confirmations,
-        height: height ?? CoreConsts.invalidIntValue,
-      );
+    txid: txid,
+    vout: vout,
+    value: BigInt.from(satoshis),
+    confirmations: confirmations,
+    height: height ?? CoreConsts.invalidIntValue,
+  );
 }
