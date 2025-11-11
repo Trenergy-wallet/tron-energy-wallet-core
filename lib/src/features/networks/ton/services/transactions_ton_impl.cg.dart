@@ -87,8 +87,8 @@ class TransactionsServiceTonImpl implements TransactionsService {
         TonHTTPProvider(
           tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
           tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
-          tonApiKey: isTestnet ? testApiKey : null,
-          authToken: isTestnet ? null : _localRepo.getAccount().token,
+          tonApiKey: testApiKey,
+          authToken: _localRepo.getAccount().token,
         ),
         // TonHTTPProvider(
         //     tonApiUrl: 'https://tonapi.io',
