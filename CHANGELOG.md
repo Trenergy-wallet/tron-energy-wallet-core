@@ -1,3 +1,7 @@
+## 1.2.0
+
+* NEW blockchain: BNB Smart Chain (BSC)
+
 ## 1.1.0
 
 * NEW blockchain: Ethereum
