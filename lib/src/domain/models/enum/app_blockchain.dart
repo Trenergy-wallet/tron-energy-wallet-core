@@ -43,6 +43,15 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: false,
+  ),
+
+  /// BNB Smart Chain
+  bsc(
+    slug: 'bnb',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'BNB',
+    supportsMemoMessage: false,
   );
 
   const AppBlockchain({

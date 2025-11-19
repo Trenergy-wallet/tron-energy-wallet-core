@@ -21,8 +21,9 @@ Future<void> main() async {
   final localRepo = LocalRepoImpl();
   final logger = InAppLogger();
   final ethService = TransactionsServiceEthereumImpl(
+    appBlockchain: AppBlockchain.ethereum,
     localRepo: localRepo,
-    postTransaction: postTransactionTron,
+    postTransaction: _postTransactionEth,
     rpc: _rpc,
   );
 
@@ -61,7 +62,7 @@ Future<void> main() async {
   logger.logInfoMessage('ethExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
+Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionEth({
   required AppBlockchain appBlockchain,
   required String tx,
   String? txFee,

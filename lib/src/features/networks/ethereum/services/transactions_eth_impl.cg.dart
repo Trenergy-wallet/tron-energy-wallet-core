@@ -13,7 +13,6 @@ import 'package:on_chain/ethereum/src/rpc/methds/get_transaction_count.dart';
 import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
 import 'package:on_chain/ethereum/src/transaction/eth_transaction.dart';
 import 'package:on_chain/ethereum/src/utils/helper.dart';
-import 'package:on_chain/solidity/contract/fragments.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -25,6 +24,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   ///
   /// Provides services for creating and signing ETHEREUM transactions
   TransactionsServiceEthereumImpl({
+    required this.appBlockchain,
     required LocalRepoBaseCore localRepo,
     required Future<ErrOrTransactionInfo> Function({
       required String tx,
@@ -40,13 +40,17 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
+       ),
+       assert(
+         supportedBlockchains.contains(appBlockchain),
+         '$appBlockchain is not supported',
        ) {
     _logger = logger ?? InAppLogger();
   }
 
   /// Blockchain of the service
   @override
-  AppBlockchain get appBlockchain => AppBlockchain.ethereum;
+  final AppBlockchain appBlockchain;
 
   final LocalRepoBaseCore _localRepo;
 
@@ -79,6 +83,12 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
 
   /// Current wallet nonce (outgoing transaction index)
   int? _nonce;
+
+  /// Supported blockchains by this service
+  static const List<AppBlockchain> supportedBlockchains = [
+    AppBlockchain.ethereum,
+    AppBlockchain.bsc,
+  ];
 
   /// 6 Store (Broadcast)
   @override
@@ -246,10 +256,6 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     FeeHistorical? eip1559Fee,
   }) async {
     ETHTransaction? tx;
-    // Transfer function fragment using ABI
-    final transferFragment = AbiFunctionFragment.fromJson(
-      ethTransferAbiFragment,
-    );
 
     if (asset.token.blockchain.supportsEIP1559 && eip1559Fee != null) {
       _logger.logInfoMessage(
@@ -271,7 +277,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         gasLimit: BigInt.zero,
         maxFeePerGas: maxFeePerGas,
         maxPriorityFeePerGas: selectedFee,
-        data: transferFragment.encode([
+        data: ethTransferAbiFragment.encode([
           toAddress,
           DecimalConverter.toBigInt(
             amount: amount.toString(),
@@ -301,7 +307,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         nonce: nonce,
         gasLimit: BigInt.zero,
         gasPrice: gasPrice,
-        data: transferFragment.encode([
+        data: ethTransferAbiFragment.encode([
           toAddress,
           DecimalConverter.toBigInt(
             amount: amount.toString(),
