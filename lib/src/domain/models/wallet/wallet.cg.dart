@@ -132,14 +132,12 @@ sealed class AppToken with _$AppToken {
 
   /// Active token is TRX
   bool get isTrx =>
-      shortName == CoreConsts.tron &&
       blockchain.appBlockchain == AppBlockchain.tron &&
       tokenWalletType == TokenWalletType.master &&
       contractAddress.isEmpty;
 
   /// Active token is USDT
   bool get isUSDT =>
-      shortName == CoreConsts.usdt &&
       blockchain.appBlockchain == AppBlockchain.tron &&
       [
         CoreConsts.contractUSDTonMainnet,
@@ -148,14 +146,12 @@ sealed class AppToken with _$AppToken {
 
   /// Active token is BTC
   bool get isBTC =>
-      shortName == CoreConsts.btc &&
       blockchain.appBlockchain == AppBlockchain.bitcoin &&
       tokenWalletType == TokenWalletType.master &&
       contractAddress.isEmpty;
 
   /// Active token is Ethereum
   bool get isEthereum =>
-      shortName == CoreConsts.ethereum &&
       blockchain.appBlockchain == AppBlockchain.ethereum &&
       tokenWalletType == TokenWalletType.master &&
       contractAddress.isEmpty;
