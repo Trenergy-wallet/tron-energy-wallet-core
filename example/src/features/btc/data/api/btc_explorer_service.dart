@@ -64,6 +64,8 @@ class BitcoinApiService implements ApiService {
 
   T _readResponse<T>(http.Response response) {
     final toString = _readBody(response);
+    // TODO(ivn): fix later
+    // ignore: switch_on_type
     switch (T) {
       case String:
         return toString as T;
