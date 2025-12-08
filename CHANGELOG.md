@@ -1,3 +1,7 @@
+## 1.2.1
+
+* Dependency update
+
 ## 1.2.0
 
 * NEW blockchain: BNB Smart Chain (BSC)
