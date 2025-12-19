@@ -106,6 +106,9 @@ sealed class AppAsset with _$AppAsset {
     walletId: CoreConsts.invalidIntValue,
     childWalletAddress: '',
   );
+
+  /// isEmpty
+  bool get isEmpty => this == empty;
 }
 
 /// AppTokens
