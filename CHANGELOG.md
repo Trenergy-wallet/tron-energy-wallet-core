@@ -1,3 +1,7 @@
+## 1.3.0
+
+* [BREAKING] Amount is BigRational
+
 ## 1.2.1
 
 * Dependency update
