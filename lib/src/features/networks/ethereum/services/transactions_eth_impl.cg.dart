@@ -121,7 +121,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,
@@ -130,6 +130,12 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     String? txIdToPumpFeeBTC,
   }) async {
     try {
+      if (amount <= BigRational.zero) {
+        throw AppException(
+          message: 'unable to create transaction: amount is not valid: $amount',
+          code: ExceptionCode.amountIsNotPositive,
+        );
+      }
       final tx = await _tryCreateTransaction(
         toAddress: toAddress,
         amount: amount,
@@ -175,7 +181,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     required ETHAddress toAddress,
     required int nonce,
     required FeeType feeType,
-    required double amount,
+    required BigRational amount,
     String? memo,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
@@ -251,7 +257,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     required ETHAddress toAddress,
     required int nonce,
     required FeeType feeType,
-    required double amount,
+    required BigRational amount,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
@@ -340,14 +346,21 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     required AppAsset asset,
     FeeType? feeType,
     // ERC20 token transfer fee depends on amount
-    double amount = 0,
+    String amount = '0',
     String? message,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
+    final parsedAmount = BigRational.tryParseDecimaal(amount);
+    if (parsedAmount == null || parsedAmount <= BigRational.zero) {
+      throw AppException(
+        message: 'unable to create transaction: amount is not valid: $amount',
+        code: ExceptionCode.amountIsNotPositive,
+      );
+    }
     final tx = await _tryCreateTransaction(
       toAddress: addressToSend,
-      amount: amount,
+      amount: parsedAmount,
       asset: asset,
       message: message,
       feeType: feeType,
@@ -414,7 +427,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   /// [forceUpdateNonce] - do not use cached nonce
   Future<ETHTransaction> _tryCreateTransaction({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     String? message,
     FeeType? feeType,
@@ -431,7 +444,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         );
       }
 
-      if (amount < 0) {
+      if (amount < BigRational.zero) {
         throw AppException(
           message:
               'unable to create transaction: amount is not positive: $amount',

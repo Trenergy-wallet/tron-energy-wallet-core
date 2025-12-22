@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -64,8 +65,8 @@ sealed class AppAsset with _$AppAsset {
   /// AppAssets
   const factory AppAsset({
     required int id,
-    required double balance,
-    required double hold,
+    required BigRational balance,
+    required BigRational hold,
     required AppToken token,
     required String address,
     required int walletId,
@@ -90,17 +91,18 @@ sealed class AppAsset with _$AppAsset {
   AppBlockchain get appBlockchain => token.blockchain.appBlockchain;
 
   /// Balance with hold
-  double get availableBalance => (balance - hold).clamp(0, double.nan);
+  BigRational get availableBalance =>
+      (balance - hold).isNegative ? BigRational.zero : (balance - hold);
 
   /// Coin to pay fees
   bool get isMasterWalletForBlockchain =>
       token.tokenWalletType == TokenWalletType.master;
 
   /// Error/empty state
-  static const AppAsset empty = AppAsset(
+  static final AppAsset empty = AppAsset(
     id: CoreConsts.invalidIntValue,
-    balance: CoreConsts.invalidDoubleValue,
-    hold: CoreConsts.invalidDoubleValue,
+    balance: CoreConsts.invalidBigRational,
+    hold: CoreConsts.invalidBigRational,
     token: AppToken.empty,
     address: '',
     walletId: CoreConsts.invalidIntValue,

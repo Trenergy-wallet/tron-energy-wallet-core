@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
@@ -118,7 +119,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,
@@ -134,10 +135,9 @@ class TransactionsServiceTonImpl implements TransactionsService {
           asset.token.blockchain.appBlockchain.toString(),
         );
       }
-      if (amount <= 0) {
+      if (!amount.isPositive) {
         throw AppException(
-          message:
-              'unable to create transaction: amount is not positive: $amount',
+          message: 'unable to create transaction: amount is not valid: $amount',
           code: ExceptionCode.amountIsNotPositive,
         );
       }

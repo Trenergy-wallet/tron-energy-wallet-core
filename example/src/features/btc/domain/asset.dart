@@ -1,9 +1,10 @@
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 AppAsset btcAssetExample(String address) => AppAsset(
   id: 125,
-  balance: 1,
-  hold: 0,
+  balance: BigRational.one,
+  hold: BigRational.zero,
   address: address,
   walletId: 381,
   childWalletAddress: '',

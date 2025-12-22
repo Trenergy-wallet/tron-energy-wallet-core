@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/ethereum/src/rpc/methds/send_raw_transaction.dart';
 import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -52,7 +53,7 @@ Future<void> main() async {
 
   final tx = await ethService.createTransactionOrThrow(
     toAddress: '0xB191c75e9401205A578B7caD7cBEc160B88Db558',
-    amount: 0.00001,
+    amount: BigRational.parseDecimal('0.00001'),
     asset: asset,
     masterKey: '',
     message: 'hi',

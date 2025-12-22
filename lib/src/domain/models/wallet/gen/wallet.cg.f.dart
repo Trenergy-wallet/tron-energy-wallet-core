@@ -561,7 +561,7 @@ as int?,
 /// @nodoc
 mixin _$AppAsset {
 
- int get id; double get balance; double get hold; AppToken get token; String get address; int get walletId; String get childWalletAddress;
+ int get id; BigRational get balance; BigRational get hold; AppToken get token; String get address; int get walletId; String get childWalletAddress;
 /// Create a copy of AppAsset
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -592,7 +592,7 @@ abstract mixin class $AppAssetCopyWith<$Res>  {
   factory $AppAssetCopyWith(AppAsset value, $Res Function(AppAsset) _then) = _$AppAssetCopyWithImpl;
 @useResult
 $Res call({
- int id, double balance, double hold, AppToken token, String address, int walletId, String childWalletAddress
+ int id, BigRational balance, BigRational hold, AppToken token, String address, int walletId, String childWalletAddress
 });
 
 
@@ -613,8 +613,8 @@ class _$AppAssetCopyWithImpl<$Res>
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,balance: null == balance ? _self.balance : balance // ignore: cast_nullable_to_non_nullable
-as double,hold: null == hold ? _self.hold : hold // ignore: cast_nullable_to_non_nullable
-as double,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
+as BigRational,hold: null == hold ? _self.hold : hold // ignore: cast_nullable_to_non_nullable
+as BigRational,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
 as AppToken,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String,walletId: null == walletId ? _self.walletId : walletId // ignore: cast_nullable_to_non_nullable
 as int,childWalletAddress: null == childWalletAddress ? _self.childWalletAddress : childWalletAddress // ignore: cast_nullable_to_non_nullable
@@ -709,7 +709,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  double balance,  double hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  BigRational balance,  BigRational hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppAsset() when $default != null:
 return $default(_that.id,_that.balance,_that.hold,_that.token,_that.address,_that.walletId,_that.childWalletAddress);case _:
@@ -730,7 +730,7 @@ return $default(_that.id,_that.balance,_that.hold,_that.token,_that.address,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  double balance,  double hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  BigRational balance,  BigRational hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)  $default,) {final _that = this;
 switch (_that) {
 case _AppAsset():
 return $default(_that.id,_that.balance,_that.hold,_that.token,_that.address,_that.walletId,_that.childWalletAddress);}
@@ -747,7 +747,7 @@ return $default(_that.id,_that.balance,_that.hold,_that.token,_that.address,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  double balance,  double hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  BigRational balance,  BigRational hold,  AppToken token,  String address,  int walletId,  String childWalletAddress)?  $default,) {final _that = this;
 switch (_that) {
 case _AppAsset() when $default != null:
 return $default(_that.id,_that.balance,_that.hold,_that.token,_that.address,_that.walletId,_that.childWalletAddress);case _:
@@ -766,8 +766,8 @@ class _AppAsset extends AppAsset {
   
 
 @override final  int id;
-@override final  double balance;
-@override final  double hold;
+@override final  BigRational balance;
+@override final  BigRational hold;
 @override final  AppToken token;
 @override final  String address;
 @override final  int walletId;
@@ -803,7 +803,7 @@ abstract mixin class _$AppAssetCopyWith<$Res> implements $AppAssetCopyWith<$Res>
   factory _$AppAssetCopyWith(_AppAsset value, $Res Function(_AppAsset) _then) = __$AppAssetCopyWithImpl;
 @override @useResult
 $Res call({
- int id, double balance, double hold, AppToken token, String address, int walletId, String childWalletAddress
+ int id, BigRational balance, BigRational hold, AppToken token, String address, int walletId, String childWalletAddress
 });
 
 
@@ -824,8 +824,8 @@ class __$AppAssetCopyWithImpl<$Res>
   return _then(_AppAsset(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,balance: null == balance ? _self.balance : balance // ignore: cast_nullable_to_non_nullable
-as double,hold: null == hold ? _self.hold : hold // ignore: cast_nullable_to_non_nullable
-as double,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
+as BigRational,hold: null == hold ? _self.hold : hold // ignore: cast_nullable_to_non_nullable
+as BigRational,token: null == token ? _self.token : token // ignore: cast_nullable_to_non_nullable
 as AppToken,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
 as String,walletId: null == walletId ? _self.walletId : walletId // ignore: cast_nullable_to_non_nullable
 as int,childWalletAddress: null == childWalletAddress ? _self.childWalletAddress : childWalletAddress // ignore: cast_nullable_to_non_nullable

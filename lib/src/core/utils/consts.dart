@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tron_energy_wallet_core/src/domain/domain.dart';
 
 /// Core constants live here
@@ -22,6 +23,11 @@ class CoreConsts {
 
   /// Error value -1 for double
   static const invalidDoubleValue = -1.0;
+
+  /// Error value -1 for BigRational
+  static final BigRational invalidBigRational = BigRational.parseDecimal(
+    '-1',
+  );
 
   /// Contract address for USDT on TRON Mainnet
   static const contractUSDTonMainnet = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';

@@ -1,4 +1,5 @@
 import 'package:bitcoin_base/bitcoin_base.dart';
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -35,7 +36,7 @@ Future<void> main() async {
   final btcAsset = btcAssetExample(walletInfo.address);
   final tx = await btcService.createTransactionOrThrow(
     toAddress: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
-    amount: 0.0001,
+    amount: BigRational.parseDecimal('0.0001'),
     asset: btcAsset,
     masterKey: '',
     feeType: FeeType.optimal,
