@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tron_energy_wallet_core/src/core/core.dart';
 import 'package:tron_energy_wallet_core/src/domain/models/models.dart';
 
@@ -34,7 +35,7 @@ interface class TransactionsService {
   /// will be ignored since data will be taken from this transaction
   Future<String> createTransactionOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,

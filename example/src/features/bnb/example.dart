@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:on_chain/solidity/address/core.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -61,7 +62,7 @@ Future<void> main() async {
   //
   final tx = await ethService.createTransactionOrThrow(
     toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-    amount: 0.01,
+    amount: BigRational.parseDecimal('0.01'),
     asset: assetBEP20,
     masterKey: '',
     // message: 'hi',

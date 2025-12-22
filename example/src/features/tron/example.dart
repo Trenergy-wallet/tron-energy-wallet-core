@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/tron/src/models/contract/transaction/transaction.dart'
     show Transaction;
 import 'package:on_chain/tron/src/provider/methods/broadcast_hex.dart'
@@ -36,7 +37,7 @@ Future<void> main() async {
 
   final tx = await tronService.createTransactionOrThrow(
     toAddress: 'TP8KmXDvKVYg5WVTTyqaNT61Htguw2NJBs',
-    amount: 1,
+    amount: BigRational.parseDecimal('1'),
     asset: tronAsset,
     masterKey: '',
     message: 'hello example',

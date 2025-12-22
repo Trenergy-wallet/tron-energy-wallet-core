@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:bitcoin_base/bitcoin_base.dart';
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
@@ -109,7 +110,7 @@ class TransactionsServiceBTCImpl
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,
@@ -123,6 +124,12 @@ class TransactionsServiceBTCImpl
         throw AppException(
           message: 'Not selected btc fee: feeTypeBTC is null',
           code: ExceptionCode.unableToCreateTransaction,
+        );
+      }
+      if (amount <= BigRational.zero) {
+        throw AppException(
+          message: 'unable to create transaction: amount is not valid: $amount',
+          code: ExceptionCode.amountIsNotPositive,
         );
       }
       final (
@@ -148,7 +155,7 @@ class TransactionsServiceBTCImpl
       final networkEstimate = (await _estimateFee(
         // Ok to send amount here, bs we operate with rates per vB not
         // calculated fee by backend
-        amount: amount,
+        amount: amount.toDouble(),
         appBlockchain: appBlockchain,
         tokenWalletType: asset.token.tokenWalletType,
         tokenContractAddress: asset.token.contractAddress,
@@ -380,7 +387,7 @@ mixin SingingKeyCreatorBTC {
   >
   prepareTransactionAndCalculateSizeOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,
@@ -392,10 +399,9 @@ mixin SingingKeyCreatorBTC {
         asset.token.blockchain.appBlockchain.toString(),
       );
     }
-    if (amount <= 0) {
+    if (!amount.isPositive) {
       throw AppException(
-        message:
-            'unable to create transaction: amount is not positive: $amount',
+        message: 'unable to create transaction: amount is not valid: $amount',
         code: ExceptionCode.amountIsNotPositive,
       );
     }

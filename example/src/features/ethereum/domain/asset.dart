@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 AppAsset ethAssetExample({
@@ -5,8 +6,8 @@ AppAsset ethAssetExample({
   required bool supportsEIP1559,
 }) => AppAsset(
   id: 1225,
-  balance: 1,
-  hold: 0,
+  balance: BigRational.one,
+  hold: BigRational.zero,
   address: address,
   walletId: 3821,
   childWalletAddress: '',
@@ -46,8 +47,8 @@ AppAsset ethERC20AssetExample({
   required bool supportsEIP1559,
 }) => AppAsset(
   id: 115,
-  balance: 1,
-  hold: 0,
+  balance: BigRational.one,
+  hold: BigRational.zero,
   address: address,
   walletId: 433,
   childWalletAddress: '',

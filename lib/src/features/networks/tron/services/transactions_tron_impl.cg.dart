@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -98,7 +99,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
   @override
   Future<String> createTransactionOrThrow({
     required String toAddress,
-    required double amount,
+    required BigRational amount,
     required AppAsset asset,
     required String masterKey,
     String? message,
@@ -113,15 +114,12 @@ class TransactionsServiceTronImpl implements TransactionsService {
           asset.token.blockchain.appBlockchain.toString(),
         );
       }
-
-      if (amount <= 0) {
+      if (!amount.isPositive) {
         throw AppException(
-          message:
-              'unable to create transaction: amount is not positive: $amount',
+          message: 'unable to create transaction: amount is not valid: $amount',
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-
       // Sending a transaction in TRX
       if (asset.isTrx) {
         _logger.logInfoMessage(_name, 'creating TRX transaction');

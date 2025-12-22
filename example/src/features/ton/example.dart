@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
@@ -38,7 +39,7 @@ Future<void> main() async {
   final tonAsset = tonAssetExample(walletInfo.address);
   final tx = await tonService.createTransactionOrThrow(
     toAddress: 'Uf_a4Onq2UrxzOsJWYrKWohBfVsv-cW1Gd6yTQmQF2b84L8C',
-    amount: 0.05,
+    amount: BigRational.parseDecimal('0.05'),
     asset: tonAsset,
     masterKey: '',
   );

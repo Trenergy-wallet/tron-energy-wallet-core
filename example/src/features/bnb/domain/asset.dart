@@ -1,11 +1,12 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 AppAsset bnbAssetExample({
   required String address,
 }) => AppAsset(
   id: 884,
-  balance: 1,
-  hold: 0,
+  balance: BigRational.one,
+  hold: BigRational.zero,
   address: address,
   walletId: 4422,
   childWalletAddress: '',
@@ -40,8 +41,8 @@ AppAsset bscBEP20AssetExample({
   required String address,
 }) => AppAsset(
   id: 212,
-  balance: 1,
-  hold: 0,
+  balance: BigRational.one,
+  hold: BigRational.zero,
   address: address,
   walletId: 4323,
   childWalletAddress: '',
