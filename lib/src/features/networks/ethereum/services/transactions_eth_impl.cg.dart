@@ -88,6 +88,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   static const List<AppBlockchain> supportedBlockchains = [
     AppBlockchain.ethereum,
     AppBlockchain.bsc,
+    AppBlockchain.arbitrum,
   ];
 
   /// 6 Store (Broadcast)
