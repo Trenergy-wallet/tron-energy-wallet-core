@@ -52,7 +52,17 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'BNB',
     supportsMemoMessage: false,
-  );
+  ),
+
+  /// Arbitrum Chain (L2 Eth)
+  arbitrum(
+    slug: 'arb',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'ARB',
+    supportsMemoMessage: false,
+  )
+  ;
 
   const AppBlockchain({
     required this.slug,
