@@ -199,7 +199,11 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
       };
-      final maxFeePerGas = selectedFee + eip1559Fee.baseFee;
+      // Arbitrum uses a sequencer, so we add a safety buffer
+      final maxFeePerGas =
+          selectedFee +
+          eip1559Fee.baseFee *
+              (appBlockchain.isArbitrum ? BigInt.two : BigInt.one);
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
@@ -242,9 +246,11 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         chainId: BigInt.from(asset.token.blockchain.chainId),
       );
     }
-    final gasLimit = await rpc.request(
+    var gasLimit = await rpc.request(
       EthereumRequestEstimateGas(transaction: tx.toEstimate()),
     );
+    // Adding safety buffer
+    gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
     _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
@@ -275,7 +281,11 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
       };
-      final maxFeePerGas = selectedFee + eip1559Fee.baseFee;
+      // Arbitrum uses a sequencer, so we add a safety buffer
+      final maxFeePerGas =
+          selectedFee +
+          eip1559Fee.baseFee *
+              (appBlockchain.isArbitrum ? BigInt.two : BigInt.one);
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
@@ -325,9 +335,11 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         chainId: BigInt.from(asset.token.blockchain.chainId),
       );
     }
-    final gasLimit = await rpc.request(
+    var gasLimit = await rpc.request(
       EthereumRequestEstimateGas(transaction: tx.toEstimate()),
     );
+    // Adding safety buffer
+    gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
     _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
