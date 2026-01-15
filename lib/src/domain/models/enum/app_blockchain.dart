@@ -94,6 +94,9 @@ enum AppBlockchain {
   /// Whether a comment can be included in the transaction
   final bool supportsMemoMessage;
 
+  /// Arbitrum
+  bool get isArbitrum => this == arbitrum;
+
   /// toJson
   String toJson() => slug;
 }
