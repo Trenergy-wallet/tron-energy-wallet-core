@@ -18,6 +18,7 @@ interface class TransactionsService {
   /// or an empty string (if failed)
   Future<TransactionInfoData> postTransactionOrThrow({
     required String tx,
+    String? transactionType,
     String? txFee,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());

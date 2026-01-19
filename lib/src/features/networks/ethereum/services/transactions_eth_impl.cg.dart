@@ -29,6 +29,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     required Future<ErrOrTransactionInfo> Function({
       required String tx,
       required AppBlockchain appBlockchain,
+      String? transactionType,
       String? txFee,
     })
     postTransaction,
@@ -58,6 +59,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   final Future<ErrOrTransactionInfo> Function({
     required String tx,
     required AppBlockchain appBlockchain,
+    String? transactionType,
     String? txFee,
   })
   _postTransaction;
@@ -95,6 +97,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   @override
   Future<TransactionInfoData> postTransactionOrThrow({
     required String tx,
+    String? transactionType,
     String? txFee,
   }) async {
     try {
@@ -108,6 +111,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         tx: tx,
         appBlockchain: appBlockchain,
         txFee: txFee,
+        transactionType: transactionType,
       );
       return res.fold((l) => throw l, (r) => r);
     } on Exception catch (e) {

@@ -74,6 +74,7 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionARB({
   required AppBlockchain appBlockchain,
   required String tx,
   String? txFee,
+  String? transactionType,
 }) async {
   try {
     final res = await _rpc.request(
