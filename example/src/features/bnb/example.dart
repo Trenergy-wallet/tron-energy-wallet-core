@@ -75,6 +75,7 @@ Future<void> main() async {
 Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionBSC({
   required AppBlockchain appBlockchain,
   required String tx,
+  String? transactionType,
   String? txFee,
 }) async {
   try {

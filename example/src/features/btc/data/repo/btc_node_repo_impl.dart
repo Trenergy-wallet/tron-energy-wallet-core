@@ -87,6 +87,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
   Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransaction({
     required AppBlockchain appBlockchain,
     required String tx,
+    String? transactionType,
     String? txFee,
   }) async {
     try {

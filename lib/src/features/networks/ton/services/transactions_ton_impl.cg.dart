@@ -21,6 +21,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
     required Future<ErrOrTransactionInfo> Function({
       required String tx,
       required AppBlockchain appBlockchain,
+      String? transactionType,
       String? txFee,
     })
     postTransaction,
@@ -54,6 +55,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
   final Future<ErrOrTransactionInfo> Function({
     required String tx,
     required AppBlockchain appBlockchain,
+    String? transactionType,
     String? txFee,
   })
   _postTransaction;
@@ -101,13 +103,18 @@ class TransactionsServiceTonImpl implements TransactionsService {
   @override
   Future<TransactionInfoData> postTransactionOrThrow({
     required String tx,
+    String? transactionType,
     String? txFee,
   }) async {
     try {
       if (tx.isEmpty) {
         throw AppException(code: ExceptionCode.unableToCreateTransaction);
       }
-      final res = await _postTransaction(tx: tx, appBlockchain: appBlockchain);
+      final res = await _postTransaction(
+        tx: tx,
+        appBlockchain: appBlockchain,
+        transactionType: transactionType,
+      );
 
       return res.fold((l) => throw l, (r) => r);
     } on Exception catch (e) {
