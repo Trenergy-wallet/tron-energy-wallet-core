@@ -67,6 +67,7 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionEth({
   required AppBlockchain appBlockchain,
   required String tx,
   String? transactionType,
+  int? operationId,
   String? txFee,
 }) async {
   try {
