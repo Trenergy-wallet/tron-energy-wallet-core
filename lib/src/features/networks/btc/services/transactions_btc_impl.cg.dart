@@ -28,6 +28,7 @@ class TransactionsServiceBTCImpl
       required String tx,
       required AppBlockchain appBlockchain,
       String? transactionType,
+      int? operationId,
       String? txFee,
     })
     postTransaction,
@@ -61,6 +62,7 @@ class TransactionsServiceBTCImpl
     required String tx,
     required AppBlockchain appBlockchain,
     String? transactionType,
+    int? operationId,
     String? txFee,
   })
   _postTransaction;
@@ -95,6 +97,7 @@ class TransactionsServiceBTCImpl
   Future<TransactionInfoData> postTransactionOrThrow({
     required String tx,
     String? transactionType,
+    int? operationId,
     String? txFee,
   }) async {
     try {
@@ -105,6 +108,7 @@ class TransactionsServiceBTCImpl
         tx: tx,
         appBlockchain: appBlockchain,
         transactionType: transactionType,
+        operationId: operationId,
       );
 
       return res.fold((l) => throw l, (r) => r);

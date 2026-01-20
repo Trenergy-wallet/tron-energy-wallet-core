@@ -75,6 +75,7 @@ Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionARB({
   required String tx,
   String? txFee,
   String? transactionType,
+  int? operationId,
 }) async {
   try {
     final res = await _rpc.request(
