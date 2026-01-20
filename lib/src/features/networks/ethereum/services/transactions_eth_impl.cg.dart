@@ -26,18 +26,10 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   TransactionsServiceEthereumImpl({
     required this.appBlockchain,
     required LocalRepoBaseCore localRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      String? txFee,
-    })
-    postTransaction,
     this.rpc,
     this.apiUri,
     TRLogger? logger,
   }) : _localRepo = localRepo,
-       _postTransaction = postTransaction,
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
@@ -54,15 +46,6 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   final AppBlockchain appBlockchain;
 
   final LocalRepoBaseCore _localRepo;
-
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    String? txFee,
-  })
-  _postTransaction;
 
   /// Node provider
   final EthereumProvider? rpc;
@@ -83,9 +66,6 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         ),
       );
 
-  /// Current wallet nonce (outgoing transaction index)
-  int? _nonce;
-
   /// Supported blockchains by this service
   static const List<AppBlockchain> supportedBlockchains = [
     AppBlockchain.ethereum,
@@ -93,38 +73,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     AppBlockchain.arbitrum,
   ];
 
-  /// 6 Store (Broadcast)
-  @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty) {
-        throw AppException(
-          message: 'tx: $tx, txFee: $txFee',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        txFee: txFee,
-        transactionType: transactionType,
-      );
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
-      rethrow;
-    } finally {
-      _nonce = null;
-    }
-  }
-
   /// Create signed transaction for Ethereum or compatible token
   @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,
@@ -173,7 +124,6 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       }
       return _trySignTransaction(tx: tx, masterKey: masterKey);
     } catch (_) {
-      _nonce = null;
       rethrow;
     }
   }
@@ -468,17 +418,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
           code: ExceptionCode.amountIsNotPositive,
         );
       }
-      _nonce = (forceUpdateNonce || _nonce == null)
-          ? await _ethereumProvider.request(
-              EthereumRequestGetTransactionCount(address: asset.address),
-            )
-          : _nonce;
-      if (_nonce == null) {
-        throw AppException(
-          message: 'Unable to retrieve wallet nonce',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
+      final nonce = await _ethereumProvider.request(
+        EthereumRequestGetTransactionCount(address: asset.address),
+      );
 
       final to = ETHAddress(toAddress);
 
@@ -493,7 +435,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
               rpc: _ethereumProvider,
               asset: asset,
               toAddress: to,
-              nonce: _nonce!,
+              nonce: nonce,
               feeType: feeType ?? CoreConsts.defaultEthFeeType,
               amount: amount,
               memo: message,
@@ -505,14 +447,13 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
               rpc: _ethereumProvider,
               asset: asset,
               toAddress: to,
-              nonce: _nonce!,
+              nonce: nonce,
               feeType: feeType ?? CoreConsts.defaultEthFeeType,
               amount: amount,
               gasPrice: gasPrice,
               eip1559Fee: eip1559Fee,
             );
     } catch (_) {
-      _nonce = null;
       rethrow;
     }
   }

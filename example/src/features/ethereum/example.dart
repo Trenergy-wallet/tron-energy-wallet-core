@@ -24,7 +24,6 @@ Future<void> main() async {
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.ethereum,
     localRepo: localRepo,
-    postTransaction: _postTransactionEth,
     rpc: _rpc,
   );
 
@@ -51,7 +50,7 @@ Future<void> main() async {
   //   message: 'hi',
   // );
 
-  final tx = await ethService.createTransactionOrThrow(
+  final tx = await ethService.createTransaction(
     toAddress: '0xB191c75e9401205A578B7caD7cBEc160B88Db558',
     amount: BigRational.parseDecimal('0.00001'),
     asset: asset,
@@ -59,27 +58,18 @@ Future<void> main() async {
     message: 'hi',
   );
   logger.logInfoMessage('ethExample', 'TX: $tx');
-  final sentTx = await ethService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionEth(tx: tx);
   logger.logInfoMessage('ethExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionEth({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionEth({
   required String tx,
-  String? transactionType,
-  String? txFee,
 }) async {
-  try {
-    final res = await _rpc.request(
-      EthereumRequestSendRawTransaction(transaction: tx),
-    );
-    return Right(
-      TransactionInfoData(
-        txId: res,
-        linkToBlockchain: 'https://sepolia.etherscan.io/tx/$res',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://sepolia.etherscan.io/tx/$res',
+  );
 }

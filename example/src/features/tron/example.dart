@@ -29,13 +29,12 @@ Future<void> main() async {
   // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
   final tronService = TransactionsServiceTronImpl(
     localRepo: localRepo,
-    postTransaction: postTransactionTron,
     tronProvider: tronRpc,
   );
 
   final tronAsset = tronAssetExample(tronAddress);
 
-  final tx = await tronService.createTransactionOrThrow(
+  final tx = await tronService.createTransaction(
     toAddress: 'TP8KmXDvKVYg5WVTTyqaNT61Htguw2NJBs',
     amount: BigRational.parseDecimal('1'),
     asset: tronAsset,
@@ -43,30 +42,21 @@ Future<void> main() async {
     message: 'hello example',
   );
   logger.logInfoMessage('tronExample', 'TX: $tx');
-  final sentTx = await tronService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionTron(tx: tx);
   logger.logInfoMessage('tronExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> postTransactionTron({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionTron({
   required String tx,
-  String? transactionType,
-  String? txFee,
 }) async {
-  try {
-    final decoded = json.decode(tx) as Map<String, dynamic>;
-    final transaction = Transaction.fromJson(decoded);
-    final res = await tronRpc.request(
-      TronRequestBroadcastHex(transaction: transaction.toHex),
-    );
+  final decoded = json.decode(tx) as Map<String, dynamic>;
+  final transaction = Transaction.fromJson(decoded);
+  final res = await tronRpc.request(
+    TronRequestBroadcastHex(transaction: transaction.toHex),
+  );
 
-    return Right(
-      TransactionInfoData(
-        txId: res.txid,
-        linkToBlockchain: 'https://nile.tronscan.org/#/transaction/${res.txid}',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  return TransactionInfoData(
+    txId: res.txid,
+    linkToBlockchain: 'https://nile.tronscan.org/#/transaction/${res.txid}',
+  );
 }

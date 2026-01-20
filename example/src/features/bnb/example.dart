@@ -25,7 +25,6 @@ Future<void> main() async {
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.bsc,
     localRepo: localRepo,
-    postTransaction: _postTransactionBSC,
     rpc: _rpc,
   );
 
@@ -60,7 +59,7 @@ Future<void> main() async {
   //   message: 'hi',
   // );
   //
-  final tx = await ethService.createTransactionOrThrow(
+  final tx = await ethService.createTransaction(
     toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
     amount: BigRational.parseDecimal('0.01'),
     asset: assetBEP20,
@@ -68,27 +67,18 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage('bnbExample', 'TX: $tx');
-  final sentTx = await ethService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionBSC(tx: tx);
   logger.logInfoMessage('bnbExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionBSC({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionBSC({
   required String tx,
-  String? transactionType,
-  String? txFee,
 }) async {
-  try {
-    final res = await _rpc.request(
-      EthereumRequestSendRawTransaction(transaction: tx),
-    );
-    return Right(
-      TransactionInfoData(
-        txId: res,
-        linkToBlockchain: 'https://testnet.bsctrace.com/tx/$res',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://testnet.bsctrace.com/tx/$res',
+  );
 }

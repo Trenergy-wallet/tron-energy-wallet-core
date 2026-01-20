@@ -18,13 +18,6 @@ class TransactionsServiceTonImpl implements TransactionsService {
   /// or [testApiKey]
   TransactionsServiceTonImpl({
     required LocalRepoBaseCore localRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      String? txFee,
-    })
-    postTransaction,
     required String? Function() currentAccountWallet,
     required this.isTestnet,
     this.tonProvider,
@@ -33,7 +26,6 @@ class TransactionsServiceTonImpl implements TransactionsService {
     this.testApiKey,
     TRLogger? logger,
   }) : _localRepo = localRepo,
-       _postTransaction = postTransaction,
        _currentAccountWallet = currentAccountWallet,
        assert(
          tonProvider != null || (apiTon != null && apiTonJrpc != null),
@@ -50,15 +42,6 @@ class TransactionsServiceTonImpl implements TransactionsService {
   final bool isTestnet;
 
   final LocalRepoBaseCore _localRepo;
-
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    String? txFee,
-  })
-  _postTransaction;
 
   final String? Function() _currentAccountWallet;
 
@@ -99,32 +82,8 @@ class TransactionsServiceTonImpl implements TransactionsService {
         //     authToken: _mainNetApiKey),
       );
 
-  /// 6 Store (Broadcast)
   @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty) {
-        throw AppException(code: ExceptionCode.unableToCreateTransaction);
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        transactionType: transactionType,
-      );
-
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,

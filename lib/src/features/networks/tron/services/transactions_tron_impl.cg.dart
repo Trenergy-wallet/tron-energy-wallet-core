@@ -16,18 +16,10 @@ class TransactionsServiceTronImpl implements TransactionsService {
   /// Provides services for creating and signing TRON transactions
   TransactionsServiceTronImpl({
     required LocalRepoBaseCore localRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      String? txFee,
-    })
-    postTransaction,
     this.tronProvider,
     this.apiTron,
     TRLogger? logger,
   }) : _localRepo = localRepo,
-       _postTransaction = postTransaction,
        assert(
          tronProvider != null || apiTron != null,
          'Required rpc params are null',
@@ -40,15 +32,6 @@ class TransactionsServiceTronImpl implements TransactionsService {
   final AppBlockchain appBlockchain = AppBlockchain.tron;
 
   final LocalRepoBaseCore _localRepo;
-
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    String? txFee,
-  })
-  _postTransaction;
 
   /// Node provider
   final TronProvider? tronProvider;
@@ -69,39 +52,12 @@ class TransactionsServiceTronImpl implements TransactionsService {
         ),
       );
 
-  /// 6 Store (Broadcast)
-  @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty || (txFee != null && txFee.isEmpty)) {
-        throw AppException(
-          message: 'tx: $tx, txFee: $txFee',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        txFee: txFee,
-        transactionType: transactionType,
-      );
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
-      rethrow;
-    }
-  }
-
   /// Send TRX
   ///
   /// [message] = memo field. If you include a memo, keep at least 1 TRX in
   /// your account to safely cover the additional cost
   @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,

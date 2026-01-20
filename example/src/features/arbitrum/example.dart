@@ -24,7 +24,6 @@ Future<void> main() async {
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.arbitrum,
     localRepo: localRepo,
-    postTransaction: _postTransactionARB,
     rpc: _rpc,
   );
 
@@ -58,7 +57,7 @@ Future<void> main() async {
   );
   logger.logInfoMessage('arbExample', 'tokenBalance: $tokenBalance');
 
-  final tx = await ethService.createTransactionOrThrow(
+  final tx = await ethService.createTransaction(
     toAddress: '0x077B122c047a58174f1e8B011C8A6F768C0AC190',
     amount: BigRational.parseDecimal('0.001'),
     asset: assetBEP20,
@@ -66,27 +65,18 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage('arbExample', 'TX: $tx');
-  final sentTx = await ethService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionARB(tx: tx);
   logger.logInfoMessage('arbExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionARB({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionARB({
   required String tx,
-  String? txFee,
-  String? transactionType,
 }) async {
-  try {
-    final res = await _rpc.request(
-      EthereumRequestSendRawTransaction(transaction: tx),
-    );
-    return Right(
-      TransactionInfoData(
-        txId: res,
-        linkToBlockchain: 'https://sepolia.arbiscan.io/tx/$res',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://sepolia.arbiscan.io/tx/$res',
+  );
 }

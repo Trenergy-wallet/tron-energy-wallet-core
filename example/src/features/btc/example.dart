@@ -23,7 +23,6 @@ Future<void> main() async {
 
   final btcService = TransactionsServiceBTCImpl(
     localRepo: localRepo,
-    postTransaction: btcNodeRepo.postTransaction,
     btcNodeRepo: btcNodeRepo,
     estimateFee: btcNodeRepo.getEstimateFee,
     network: BitcoinNetwork.signet,
@@ -34,7 +33,7 @@ Future<void> main() async {
   );
   logger.logInfoMessage('btcExample', 'Address: ${walletInfo.address}');
   final btcAsset = btcAssetExample(walletInfo.address);
-  final tx = await btcService.createTransactionOrThrow(
+  final tx = await btcService.createTransaction(
     toAddress: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
     amount: BigRational.parseDecimal('0.0001'),
     asset: btcAsset,
@@ -42,6 +41,6 @@ Future<void> main() async {
     feeType: FeeType.optimal,
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
-  final sentTx = await btcService.postTransactionOrThrow(tx: tx);
+  final sentTx = await btcNodeRepo.postTransaction(tx: tx);
   logger.logInfoMessage('btcExample', 'SENT: $sentTx');
 }

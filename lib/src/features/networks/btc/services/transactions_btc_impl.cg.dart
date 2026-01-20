@@ -24,13 +24,6 @@ class TransactionsServiceBTCImpl
     required this.network,
     required this.localRepo,
     required this.btcNodeRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      String? txFee,
-    })
-    postTransaction,
     required Future<ErrOrEstimateFee> Function({
       required double amount,
       required AppBlockchain appBlockchain,
@@ -40,8 +33,7 @@ class TransactionsServiceBTCImpl
     })
     estimateFee,
     TRLogger? logger,
-  }) : _postTransaction = postTransaction,
-       _estimateFee = estimateFee {
+  }) : _estimateFee = estimateFee {
     this.logger = logger ?? InAppLogger();
   }
 
@@ -55,15 +47,6 @@ class TransactionsServiceBTCImpl
 
   @override
   final String name = 'TransactionsServiceBTCImpl';
-
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    String? txFee,
-  })
-  _postTransaction;
 
   @protected
   @override
@@ -90,32 +73,8 @@ class TransactionsServiceBTCImpl
   })
   _estimateFee;
 
-  /// 6 Store (Broadcast)
   @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty) {
-        throw AppException(code: ExceptionCode.unableToCreateTransaction);
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        transactionType: transactionType,
-      );
-
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      logger.logCriticalError(name, 'postTransactionOrThrow: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,
