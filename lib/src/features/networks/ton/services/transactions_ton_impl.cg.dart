@@ -17,15 +17,17 @@ class TransactionsServiceTonImpl implements TransactionsService {
   /// For working on the testnet, you must provide either [tonProvider]
   /// or [testApiKey]
   TransactionsServiceTonImpl({
-    required LocalRepoBaseCore localRepo,
     required String? Function() currentAccountWallet,
+    required Future<String> Function(String masterKey) getSigningKey,
     required this.isTestnet,
     this.tonProvider,
     this.apiTon,
     this.apiTonJrpc,
     this.testApiKey,
+    String Function()? getAuthToken,
     TRLogger? logger,
-  }) : _localRepo = localRepo,
+  }) : _getSigningKey = getSigningKey,
+       _getAuthToken = getAuthToken,
        _currentAccountWallet = currentAccountWallet,
        assert(
          tonProvider != null || (apiTon != null && apiTonJrpc != null),
@@ -41,9 +43,13 @@ class TransactionsServiceTonImpl implements TransactionsService {
   /// Network for which the initialization was completed
   final bool isTestnet;
 
-  final LocalRepoBaseCore _localRepo;
-
   final String? Function() _currentAccountWallet;
+
+  /// Auth token for the backend
+  final String Function()? _getAuthToken;
+
+  /// Get Tron private key as String
+  final Future<String> Function(String masterKey) _getSigningKey;
 
   /// TON Wallet service
   TonWalletService? _walletService;
@@ -74,7 +80,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
           tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
           tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
           tonApiKey: testApiKey,
-          authToken: _localRepo.getAccount().token,
+          authToken: _getAuthToken?.call(),
         ),
         // TonHTTPProvider(
         //     tonApiUrl: 'https://tonapi.io',
@@ -94,152 +100,137 @@ class TransactionsServiceTonImpl implements TransactionsService {
     String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
-    try {
-      if (asset.token.blockchain.appBlockchain != appBlockchain) {
-        throw AppIncorrectBlockchainException(
-          appBlockchain.toString(),
-          asset.token.blockchain.appBlockchain.toString(),
-        );
-      }
-      if (!amount.isPositive) {
-        throw AppException(
-          message: 'unable to create transaction: amount is not valid: $amount',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-      final walletInfo = await tryInitializeWalletAndGetInfoOrThrow(
-        masterKey: masterKey,
+    if (asset.token.blockchain.appBlockchain != appBlockchain) {
+      throw AppIncorrectBlockchainException(
+        appBlockchain.toString(),
+        asset.token.blockchain.appBlockchain.toString(),
       );
-      // Failed to initialize the service, exiting
-      if (_walletService == null) {
-        throw AppException(
-          message:
-              'Initialisation error for walletService: asset: '
-              '${asset.token.name}',
-          code: ExceptionCode.unableToInitializeWalletService,
-        );
-      }
-      // If the key is provided, use it directly
-      final key = walletInfo.pkAsBytes.isEmpty
-          ? await _createSigningKeyOrThrow(masterKey: masterKey)
-          : TonPrivateKey.fromBytes(walletInfo.pkAsBytes);
-      switch (asset.token.tokenWalletType) {
-        case TokenWalletType.master:
-          signedTransaction = await _walletService?.createTransfer(
-            accessKey: key,
-            addressTo: toAddress,
-            amount: amount.toString(),
-            message: message,
-            sendToBlockchain: false,
-          );
-        case TokenWalletType.child:
-          var jettonWalletService = _jettonWallets[asset.token.id];
-          if (asset.childWalletAddress.isEmpty) {
-            throw AppException(
-              message:
-                  'No jettonWalletAddress provided for master '
-                  'wallet ${asset.address}',
-              code: ExceptionCode.noJettonWallet,
-            );
-          }
-          jettonWalletService ??= await _walletService?.openJettonWallet(
-            jettonContractAddress: asset.token.contractAddress,
-            jettonWalletAddress: asset.childWalletAddress,
-            jettonOnChainMetadata: JettonOnChainMetadata.snakeFormat(
-              name: asset.token.name,
-              image: asset.token.icon,
-              symbol: asset.token.shortName,
-              decimals: asset.token.decimal,
-            ),
-          );
-          if (jettonWalletService == null) {
-            throw AppException(
-              message:
-                  'Unable to initialise jetton service for '
-                  'token ${asset.token.name}',
-              code: ExceptionCode.unableToInitializeWalletService,
-            );
-          }
-          _jettonWallets[asset.token.id] = jettonWalletService;
-          signedTransaction = await jettonWalletService.sendJettons(
-            key: key,
-            amount: amount.toString(),
-            recipient: TonAddress(toAddress),
-            sendToBlockchain: false,
-            message: message,
-          );
-        case TokenWalletType.stable:
-        case TokenWalletType.unknown:
-          throw AppException(
-            message: '${asset.token.tokenWalletType} is not supported',
-            code: ExceptionCode.tokenIsNotSupported,
-          );
-      }
-      if (signedTransaction == null || signedTransaction.isEmpty) {
-        throw AppException(code: ExceptionCode.unableToCreateTransaction);
-      }
-      return signedTransaction;
-    } catch (e) {
-      if (e is! IncorrectPinCodeException) {
-        _logger.logCriticalError(_name, 'createTransaction: $e');
-      }
-      rethrow;
     }
+    if (!amount.isPositive) {
+      throw AppException(
+        message: 'unable to create transaction: amount is not valid: $amount',
+        code: ExceptionCode.amountIsNotPositive,
+      );
+    }
+    final walletInfo = await initializeWalletAndGetInfo(
+      masterKey: masterKey,
+    );
+    // Failed to initialize the service, exiting
+    if (_walletService == null) {
+      throw AppException(
+        message:
+            'Initialisation error for walletService: asset: '
+            '${asset.token.name}',
+        code: ExceptionCode.unableToInitializeWalletService,
+      );
+    }
+    // If the key is provided, use it directly
+    final key = walletInfo.pkAsBytes.isEmpty
+        ? await _createSigningKey(masterKey: masterKey)
+        : TonPrivateKey.fromBytes(walletInfo.pkAsBytes);
+    switch (asset.token.tokenWalletType) {
+      case TokenWalletType.master:
+        signedTransaction = await _walletService?.createTransfer(
+          accessKey: key,
+          addressTo: toAddress,
+          amount: amount.toString(),
+          message: message,
+          sendToBlockchain: false,
+        );
+      case TokenWalletType.child:
+        var jettonWalletService = _jettonWallets[asset.token.id];
+        if (asset.childWalletAddress.isEmpty) {
+          throw AppException(
+            message:
+                'No jettonWalletAddress provided for master '
+                'wallet ${asset.address}',
+            code: ExceptionCode.noJettonWallet,
+          );
+        }
+        jettonWalletService ??= await _walletService?.openJettonWallet(
+          jettonContractAddress: asset.token.contractAddress,
+          jettonWalletAddress: asset.childWalletAddress,
+          jettonOnChainMetadata: JettonOnChainMetadata.snakeFormat(
+            name: asset.token.name,
+            image: asset.token.icon,
+            symbol: asset.token.shortName,
+            decimals: asset.token.decimal,
+          ),
+        );
+        if (jettonWalletService == null) {
+          throw AppException(
+            message:
+                'Unable to initialise jetton service for '
+                'token ${asset.token.name}',
+            code: ExceptionCode.unableToInitializeWalletService,
+          );
+        }
+        _jettonWallets[asset.token.id] = jettonWalletService;
+        signedTransaction = await jettonWalletService.sendJettons(
+          key: key,
+          amount: amount.toString(),
+          recipient: TonAddress(toAddress),
+          sendToBlockchain: false,
+          message: message,
+        );
+      case TokenWalletType.stable:
+      case TokenWalletType.unknown:
+        throw AppException(
+          message: '${asset.token.tokenWalletType} is not supported',
+          code: ExceptionCode.tokenIsNotSupported,
+        );
+    }
+    if (signedTransaction == null || signedTransaction.isEmpty) {
+      throw AppException(code: ExceptionCode.unableToCreateTransaction);
+    }
+    return signedTransaction;
   }
 
   /// Wallet initialization check
   ///
   /// String address = success
   /// null = failure
+  /// THROWS
   @override
-  Future<({String address, List<int> pkAsBytes})>
-  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
-    try {
-      if (_walletService != null) {
-        // Check if the account switch has been done to reset
-        // the current state
-        final initializedTonAddress = _walletService!.tonWallet.address
-            .toString();
-        // On the backend, if the address matches the already initialized one,
-        // return it otherwise, perform initialization
-        if (_currentAccountWallet() == initializedTonAddress) {
-          return (address: initializedTonAddress, pkAsBytes: <int>[]);
-        }
-        _logger.logInfoMessage(
-          _name,
-          'tryInitializeWallet: reset wallet success. '
-          'Old wallet: $initializedTonAddress',
-        );
-        _walletService = null;
-        _jettonWallets.clear();
+  Future<({String address, List<int> pkAsBytes})> initializeWalletAndGetInfo({
+    required String masterKey,
+  }) async {
+    if (_walletService != null) {
+      // Check if the account switch has been done to reset
+      // the current state
+      final initializedTonAddress = _walletService!.tonWallet.address
+          .toString();
+      // On the backend, if the address matches the already initialized one,
+      // return it otherwise, perform initialization
+      if (_currentAccountWallet() == initializedTonAddress) {
+        return (address: initializedTonAddress, pkAsBytes: <int>[]);
       }
-      final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
-      _walletService = TonWalletService.fromPublicKey(
-        tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
-        publicKey: pk.toPublicKey(),
-        rpc: _rpc,
-        logger: _logger,
+      _logger.logInfoMessage(
+        _name,
+        'tryInitializeWallet: reset wallet success. '
+        'Old wallet: $initializedTonAddress',
       );
-      return (
-        address: _walletService!.tonWallet.address.toString(),
-        pkAsBytes: pk.toBytes(),
-      );
-    } catch (e) {
-      if (e is! IncorrectPinCodeException) {
-        _logger.logCriticalError(_name, 'tryInitializeWallet: $e');
-      }
-      rethrow;
+      _walletService = null;
+      _jettonWallets.clear();
     }
+    final pk = await _createSigningKey(masterKey: masterKey);
+    _walletService = TonWalletService.fromPublicKey(
+      tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
+      publicKey: pk.toPublicKey(),
+      rpc: _rpc,
+      logger: _logger,
+    );
+    return (
+      address: _walletService!.tonWallet.address.toString(),
+      pkAsBytes: pk.toBytes(),
+    );
   }
 
-  Future<TonPrivateKey> _createSigningKeyOrThrow({
+  Future<TonPrivateKey> _createSigningKey({
     required String masterKey,
   }) async {
     // Take the current active Tron wallet
-    final mnemonicFromRepo = await _localRepo.getMnemonic(
-      publicKey: _localRepo.getAccount().publicKey,
-      masterKey: masterKey,
-    );
+    final mnemonicFromRepo = await _getSigningKey(masterKey);
     if (mnemonicFromRepo.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }

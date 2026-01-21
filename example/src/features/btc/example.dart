@@ -3,17 +3,10 @@ import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../common/setup_account.dart';
-import '../../data/repo/local_repo_core_impl.dart';
 import 'data/repo/btc_node_repo_impl.dart';
 import 'domain/asset.dart';
 
 Future<void> main() async {
-  await setupAccount(
-    mnemonic: 'mnemonic',
-  );
-
-  final localRepo = LocalRepoImpl();
   final btcNodeRepo = BTCNodeRepoImpl(
     apiKey: 'api-key',
     isTestnet: true,
@@ -22,13 +15,13 @@ Future<void> main() async {
   final logger = InAppLogger();
 
   final btcService = TransactionsServiceBTCImpl(
-    localRepo: localRepo,
     btcNodeRepo: btcNodeRepo,
     estimateFee: btcNodeRepo.getEstimateFee,
     network: BitcoinNetwork.signet,
+    getSigningKey: (_) async => 'mnemonic',
   );
 
-  final walletInfo = await btcService.tryInitializeWalletAndGetInfoOrThrow(
+  final walletInfo = await btcService.initializeWalletAndGetInfo(
     masterKey: '',
   );
   logger.logInfoMessage('btcExample', 'Address: ${walletInfo.address}');

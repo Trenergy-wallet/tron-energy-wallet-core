@@ -9,8 +9,6 @@ import 'package:on_chain/tron/src/provider/provider/provider.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../common/setup_account.dart';
-import '../../data/repo/local_repo_core_impl.dart';
 import 'domain/asset.dart';
 
 final tronRpc = TronProvider(
@@ -21,15 +19,16 @@ final tronRpc = TronProvider(
 );
 
 Future<void> main() async {
-  final tronAddress = await setupAccount(
+  final privateKey = await KeyGenerator(
     mnemonic: 'test mnemonic',
-  );
-  final localRepo = LocalRepoImpl();
+  ).generateForTron();
+
+  final tronAddress = privateKey.publicKey().toAddress().toString();
   final logger = InAppLogger();
   // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
   final tronService = TransactionsServiceTronImpl(
-    localRepo: localRepo,
     tronProvider: tronRpc,
+    getSigningKey: (_) async => privateKey,
   );
 
   final tronAsset = tronAssetExample(tronAddress);

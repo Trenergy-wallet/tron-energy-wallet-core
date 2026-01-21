@@ -42,8 +42,9 @@ interface class TransactionsService {
   ///
   /// Returning the private key is needed so the user doesn’t have to enter the
   /// PIN twice when sending funds after switching accounts
-  Future<({String address, List<int> pkAsBytes})>
-  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async =>
+  Future<({String address, List<int> pkAsBytes})> initializeWalletAndGetInfo({
+    required String masterKey,
+  }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
   /// Wallet status check (frozen or not)

@@ -5,8 +5,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../common/setup_account.dart';
-import '../../data/repo/local_repo_core_impl.dart';
 import 'domain/asset.dart';
 
 final _rpc = EthereumProvider(
@@ -18,16 +16,14 @@ final _rpc = EthereumProvider(
 );
 
 Future<void> main() async {
-  await setupAccount(mnemonic: 'your-mnemonic');
-  final localRepo = LocalRepoImpl();
   final logger = InAppLogger();
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.arbitrum,
-    localRepo: localRepo,
     rpc: _rpc,
+    getSigningKey: (_) async => 'your-mnemonic',
   );
 
-  final walletInfo = await ethService.tryInitializeWalletAndGetInfoOrThrow(
+  final walletInfo = await ethService.initializeWalletAndGetInfo(
     masterKey: '',
   );
 
