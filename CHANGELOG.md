@@ -1,3 +1,18 @@
+## 1.4.0
+
+### Added
+
+- Arbitrum network support
+
+### Breaking changes
+
+- Removed `postTransaction` from `TransactionsService`
+- Renamed public methods in `TransactionsService` to better reflect their contracts
+- Removed `LocalRepository` dependency from `TransactionsService` constructor  
+  New required parameters:
+    - `getSigningKey`
+    - `getAuthToken`
+
 ## 1.3.0
 
 * [BREAKING] Amount is BigRational
