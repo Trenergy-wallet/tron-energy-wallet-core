@@ -4,8 +4,6 @@ import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../common/setup_account.dart';
-import '../../data/repo/local_repo_core_impl.dart';
 import 'domain/asset.dart';
 
 final _rpc = EthereumProvider(
@@ -16,19 +14,14 @@ final _rpc = EthereumProvider(
 );
 
 Future<void> main() async {
-  await setupAccount(
-    mnemonic: 'your-mnemonic',
-  );
-  final localRepo = LocalRepoImpl();
   final logger = InAppLogger();
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.ethereum,
-    localRepo: localRepo,
-    postTransaction: _postTransactionEth,
     rpc: _rpc,
+    getSigningKey: (_) async => 'your-mnemonic',
   );
 
-  final walletInfo = await ethService.tryInitializeWalletAndGetInfoOrThrow(
+  final walletInfo = await ethService.initializeWalletAndGetInfo(
     masterKey: '',
   );
 
@@ -51,7 +44,7 @@ Future<void> main() async {
   //   message: 'hi',
   // );
 
-  final tx = await ethService.createTransactionOrThrow(
+  final tx = await ethService.createTransaction(
     toAddress: '0xB191c75e9401205A578B7caD7cBEc160B88Db558',
     amount: BigRational.parseDecimal('0.00001'),
     asset: asset,
@@ -59,28 +52,18 @@ Future<void> main() async {
     message: 'hi',
   );
   logger.logInfoMessage('ethExample', 'TX: $tx');
-  final sentTx = await ethService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionEth(tx: tx);
   logger.logInfoMessage('ethExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionEth({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionEth({
   required String tx,
-  String? transactionType,
-  int? operationId,
-  String? txFee,
 }) async {
-  try {
-    final res = await _rpc.request(
-      EthereumRequestSendRawTransaction(transaction: tx),
-    );
-    return Right(
-      TransactionInfoData(
-        txId: res,
-        linkToBlockchain: 'https://sepolia.etherscan.io/tx/$res',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://sepolia.etherscan.io/tx/$res',
+  );
 }

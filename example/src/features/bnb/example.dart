@@ -5,8 +5,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import '../../common/setup_account.dart';
-import '../../data/repo/local_repo_core_impl.dart';
 import 'domain/asset.dart';
 
 final _rpc = EthereumProvider(
@@ -17,19 +15,14 @@ final _rpc = EthereumProvider(
 );
 
 Future<void> main() async {
-  await setupAccount(
-    mnemonic: 'your-mnemonic',
-  );
-  final localRepo = LocalRepoImpl();
   final logger = InAppLogger();
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.bsc,
-    localRepo: localRepo,
-    postTransaction: _postTransactionBSC,
     rpc: _rpc,
+    getSigningKey: (_) async => 'your-mnemonic',
   );
 
-  final walletInfo = await ethService.tryInitializeWalletAndGetInfoOrThrow(
+  final walletInfo = await ethService.initializeWalletAndGetInfo(
     masterKey: '',
   );
 
@@ -60,7 +53,7 @@ Future<void> main() async {
   //   message: 'hi',
   // );
   //
-  final tx = await ethService.createTransactionOrThrow(
+  final tx = await ethService.createTransaction(
     toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
     amount: BigRational.parseDecimal('0.01'),
     asset: assetBEP20,
@@ -68,28 +61,18 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage('bnbExample', 'TX: $tx');
-  final sentTx = await ethService.postTransactionOrThrow(tx: tx);
+  final sentTx = await _postTransactionBSC(tx: tx);
   logger.logInfoMessage('bnbExample', 'SENT: $sentTx');
 }
 
-Future<Either<AppExceptionWithCode, TransactionInfoData>> _postTransactionBSC({
-  required AppBlockchain appBlockchain,
+Future<TransactionInfoData> _postTransactionBSC({
   required String tx,
-  String? transactionType,
-  int? operationId,
-  String? txFee,
 }) async {
-  try {
-    final res = await _rpc.request(
-      EthereumRequestSendRawTransaction(transaction: tx),
-    );
-    return Right(
-      TransactionInfoData(
-        txId: res,
-        linkToBlockchain: 'https://testnet.bsctrace.com/tx/$res',
-      ),
-    );
-  } on Exception catch (e) {
-    return Left(AppException(message: e.toString()));
-  }
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://testnet.bsctrace.com/tx/$res',
+  );
 }

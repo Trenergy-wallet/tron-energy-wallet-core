@@ -25,20 +25,14 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   /// Provides services for creating and signing ETHEREUM transactions
   TransactionsServiceEthereumImpl({
     required this.appBlockchain,
-    required LocalRepoBaseCore localRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      int? operationId,
-      String? txFee,
-    })
-    postTransaction,
+    required Future<String> Function(String masterKey) getSigningKey,
+    String Function()? getAuthToken,
     this.rpc,
     this.apiUri,
     TRLogger? logger,
-  }) : _localRepo = localRepo,
-       _postTransaction = postTransaction,
+  }) : _getAuthToken = getAuthToken,
+       _getSigningKey = getSigningKey,
+
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
@@ -54,23 +48,17 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   @override
   final AppBlockchain appBlockchain;
 
-  final LocalRepoBaseCore _localRepo;
-
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    int? operationId,
-    String? txFee,
-  })
-  _postTransaction;
-
   /// Node provider
   final EthereumProvider? rpc;
 
   /// Ethereum API address
   final String? apiUri;
+
+  /// Auth token for the backend
+  final String Function()? _getAuthToken;
+
+  /// Get Tron private key as String
+  final Future<String> Function(String masterKey) _getSigningKey;
 
   String get _name => 'TransactionsServiceEthereumImpl-${appBlockchain.slug}';
 
@@ -81,12 +69,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       EthereumProvider(
         EthereumHTTPProvider(
           apiUri!,
-          _localRepo.getAccount().token,
+          _getAuthToken?.call(),
         ),
       );
-
-  /// Current wallet nonce (outgoing transaction index)
-  int? _nonce;
 
   /// Supported blockchains by this service
   static const List<AppBlockchain> supportedBlockchains = [
@@ -95,40 +80,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     AppBlockchain.arbitrum,
   ];
 
-  /// 6 Store (Broadcast)
-  @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    int? operationId,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty) {
-        throw AppException(
-          message: 'tx: $tx, txFee: $txFee',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        txFee: txFee,
-        transactionType: transactionType,
-        operationId: operationId,
-      );
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      _logger.logCriticalError(_name, 'postTransactionOrThrow: $e');
-      rethrow;
-    } finally {
-      _nonce = null;
-    }
-  }
-
   /// Create signed transaction for Ethereum or compatible token
   @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,
@@ -138,48 +92,43 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     EstimateFeeModel? userApprovedFee,
     String? txIdToPumpFeeBTC,
   }) async {
-    try {
-      if (amount <= BigRational.zero) {
-        throw AppException(
-          message: 'unable to create transaction: amount is not valid: $amount',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-      final tx = await _tryCreateTransaction(
-        toAddress: toAddress,
-        amount: amount,
-        asset: asset,
-        message: message,
-        feeType: feeType,
-        userApprovedFee: userApprovedFee,
+    if (amount <= BigRational.zero) {
+      throw AppException(
+        message: 'unable to create transaction: amount is not valid: $amount',
+        code: ExceptionCode.amountIsNotPositive,
       );
-      if (userApprovedFee != null) {
-        final userApproved = ETHHelper.toWei(userApprovedFee.fee.toString());
-        final feeInWei = switch (tx.transactionType) {
-          ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
-          _ => tx.gasPrice! * tx.gasLimit,
-        };
-        _logger.logInfoMessage(
-          _name,
-          'createTransactionOrThrow: feeInWei: $feeInWei '
-          '(maxFeePerGas: ${tx.maxFeePerGas}, '
-          'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}), '
-          'user approved: $userApproved',
-        );
-        if (userApproved < feeInWei) {
-          throw AppFeeChangedException(
-            userApprovedFee,
-            EstimateFeeModel.empty.copyWith(
-              fee: double.parse(ETHHelper.fromWei(feeInWei)),
-            ),
-          );
-        }
-      }
-      return _trySignTransaction(tx: tx, masterKey: masterKey);
-    } catch (_) {
-      _nonce = null;
-      rethrow;
     }
+    final tx = await _tryCreateTransaction(
+      toAddress: toAddress,
+      amount: amount,
+      asset: asset,
+      message: message,
+      feeType: feeType,
+      userApprovedFee: userApprovedFee,
+    );
+    if (userApprovedFee != null) {
+      final userApproved = ETHHelper.toWei(userApprovedFee.fee.toString());
+      final feeInWei = switch (tx.transactionType) {
+        ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
+        _ => tx.gasPrice! * tx.gasLimit,
+      };
+      _logger.logInfoMessage(
+        _name,
+        'createTransactionOrThrow: feeInWei: $feeInWei '
+        '(maxFeePerGas: ${tx.maxFeePerGas}, '
+        'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}), '
+        'user approved: $userApproved',
+      );
+      if (userApproved < feeInWei) {
+        throw AppFeeChangedException(
+          userApprovedFee,
+          EstimateFeeModel.empty.copyWith(
+            fee: double.parse(ETHHelper.fromWei(feeInWei)),
+          ),
+        );
+      }
+    }
+    return _trySignTransaction(tx: tx, masterKey: masterKey);
   }
 
   /// Create the transaction for the main coin of the blockchain (ex-Ethereum)
@@ -418,9 +367,10 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   }
 
   @override
-  Future<({String address, List<int> pkAsBytes})>
-  tryInitializeWalletAndGetInfoOrThrow({required String masterKey}) async {
-    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
+  Future<({String address, List<int> pkAsBytes})> initializeWalletAndGetInfo({
+    required String masterKey,
+  }) async {
+    final pk = await _createSigningKey(masterKey: masterKey);
     return (
       address: pk.publicKey().toAddress().address,
       pkAsBytes: pk.toBytes(),
@@ -428,19 +378,16 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   }
 
   /// Create a signing key for Ethereum
-  Future<ETHPrivateKey> _createSigningKeyOrThrow({
+  ///
+  /// THROWS
+  Future<ETHPrivateKey> _createSigningKey({
     required String masterKey,
   }) async {
-    final mnemonicFromRepo = await _localRepo
-        // Take the current active Tron wallet
-        .getMnemonic(
-          publicKey: _localRepo.getAccount().publicKey,
-          masterKey: masterKey,
-        );
-    if (mnemonicFromRepo.isEmpty) {
+    final mnemonic = await _getSigningKey(masterKey);
+    if (mnemonic.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }
-    return KeyGenerator(mnemonic: mnemonicFromRepo).generateForEthereum();
+    return KeyGenerator(mnemonic: mnemonic).generateForEthereum();
   }
 
   /// Create transaction for Ethereum or compatible token
@@ -457,75 +404,62 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     FeeHistorical? eip1559Fee,
     bool forceUpdateNonce = true,
   }) async {
-    try {
-      if (asset.token.blockchain.appBlockchain != appBlockchain) {
-        throw AppIncorrectBlockchainException(
-          appBlockchain.toString(),
-          asset.token.blockchain.appBlockchain.toString(),
-        );
-      }
-
-      if (amount < BigRational.zero) {
-        throw AppException(
-          message:
-              'unable to create transaction: amount is not positive: $amount',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-      _nonce = (forceUpdateNonce || _nonce == null)
-          ? await _ethereumProvider.request(
-              EthereumRequestGetTransactionCount(address: asset.address),
-            )
-          : _nonce;
-      if (_nonce == null) {
-        throw AppException(
-          message: 'Unable to retrieve wallet nonce',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-
-      final to = ETHAddress(toAddress);
-
-      if (asset.token.blockchain.supportsEIP1559) {
-        eip1559Fee ??= await tryGetEip1559Fee();
-      } else {
-        gasPrice ??= await tryGetGasPrice();
-      }
-
-      return asset.token.tokenWalletType.isMaster
-          ? await buildTransaction(
-              rpc: _ethereumProvider,
-              asset: asset,
-              toAddress: to,
-              nonce: _nonce!,
-              feeType: feeType ?? CoreConsts.defaultEthFeeType,
-              amount: amount,
-              memo: message,
-              gasPrice: gasPrice,
-              eip1559Fee: eip1559Fee,
-            )
-          // Memo is not supported for standard ERC20 contracts
-          : await buildERC20Transaction(
-              rpc: _ethereumProvider,
-              asset: asset,
-              toAddress: to,
-              nonce: _nonce!,
-              feeType: feeType ?? CoreConsts.defaultEthFeeType,
-              amount: amount,
-              gasPrice: gasPrice,
-              eip1559Fee: eip1559Fee,
-            );
-    } catch (_) {
-      _nonce = null;
-      rethrow;
+    if (asset.token.blockchain.appBlockchain != appBlockchain) {
+      throw AppIncorrectBlockchainException(
+        appBlockchain.toString(),
+        asset.token.blockchain.appBlockchain.toString(),
+      );
     }
+
+    if (amount < BigRational.zero) {
+      throw AppException(
+        message:
+            'unable to create transaction: amount is not positive: $amount',
+        code: ExceptionCode.amountIsNotPositive,
+      );
+    }
+    final nonce = await _ethereumProvider.request(
+      EthereumRequestGetTransactionCount(address: asset.address),
+    );
+
+    final to = ETHAddress(toAddress);
+
+    if (asset.token.blockchain.supportsEIP1559) {
+      eip1559Fee ??= await tryGetEip1559Fee();
+    } else {
+      gasPrice ??= await tryGetGasPrice();
+    }
+
+    return asset.token.tokenWalletType.isMaster
+        ? await buildTransaction(
+            rpc: _ethereumProvider,
+            asset: asset,
+            toAddress: to,
+            nonce: nonce,
+            feeType: feeType ?? CoreConsts.defaultEthFeeType,
+            amount: amount,
+            memo: message,
+            gasPrice: gasPrice,
+            eip1559Fee: eip1559Fee,
+          )
+        // Memo is not supported for standard ERC20 contracts
+        : await buildERC20Transaction(
+            rpc: _ethereumProvider,
+            asset: asset,
+            toAddress: to,
+            nonce: nonce,
+            feeType: feeType ?? CoreConsts.defaultEthFeeType,
+            amount: amount,
+            gasPrice: gasPrice,
+            eip1559Fee: eip1559Fee,
+          );
   }
 
   Future<String> _trySignTransaction({
     required ETHTransaction tx,
     required String masterKey,
   }) async {
-    final pk = await _createSigningKeyOrThrow(masterKey: masterKey);
+    final pk = await _createSigningKey(masterKey: masterKey);
 
     // Get transaction digest and sign with private key
     final sign = pk.sign(tx.serialized);

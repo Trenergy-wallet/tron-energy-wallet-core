@@ -22,16 +22,8 @@ class TransactionsServiceBTCImpl
   /// Provides services for creating and signing Bitcoin transactions
   TransactionsServiceBTCImpl({
     required this.network,
-    required this.localRepo,
     required this.btcNodeRepo,
-    required Future<ErrOrTransactionInfo> Function({
-      required String tx,
-      required AppBlockchain appBlockchain,
-      String? transactionType,
-      int? operationId,
-      String? txFee,
-    })
-    postTransaction,
+    required this.getSigningKey,
     required Future<ErrOrEstimateFee> Function({
       required double amount,
       required AppBlockchain appBlockchain,
@@ -41,8 +33,7 @@ class TransactionsServiceBTCImpl
     })
     estimateFee,
     TRLogger? logger,
-  }) : _postTransaction = postTransaction,
-       _estimateFee = estimateFee {
+  }) : _estimateFee = estimateFee {
     this.logger = logger ?? InAppLogger();
   }
 
@@ -57,23 +48,14 @@ class TransactionsServiceBTCImpl
   @override
   final String name = 'TransactionsServiceBTCImpl';
 
-  /// Transaction sending
-  final Future<ErrOrTransactionInfo> Function({
-    required String tx,
-    required AppBlockchain appBlockchain,
-    String? transactionType,
-    int? operationId,
-    String? txFee,
-  })
-  _postTransaction;
-
   @protected
   @override
   final BTCNodeRepo btcNodeRepo;
 
+  /// Get Tron private key as String
   @protected
   @override
-  final LocalRepoBaseCore localRepo;
+  final Future<String> Function(String masterKey) getSigningKey;
 
   @protected
   @override
@@ -92,34 +74,8 @@ class TransactionsServiceBTCImpl
   })
   _estimateFee;
 
-  /// 6 Store (Broadcast)
   @override
-  Future<TransactionInfoData> postTransactionOrThrow({
-    required String tx,
-    String? transactionType,
-    int? operationId,
-    String? txFee,
-  }) async {
-    try {
-      if (tx.isEmpty) {
-        throw AppException(code: ExceptionCode.unableToCreateTransaction);
-      }
-      final res = await _postTransaction(
-        tx: tx,
-        appBlockchain: appBlockchain,
-        transactionType: transactionType,
-        operationId: operationId,
-      );
-
-      return res.fold((l) => throw l, (r) => r);
-    } on Exception catch (e) {
-      logger.logCriticalError(name, 'postTransactionOrThrow: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<String> createTransactionOrThrow({
+  Future<String> createTransaction({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,
@@ -130,204 +86,198 @@ class TransactionsServiceBTCImpl
     String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
-    try {
-      if (feeType == null) {
-        throw AppException(
-          message: 'Not selected btc fee: feeTypeBTC is null',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-      if (amount <= BigRational.zero) {
-        throw AppException(
-          message: 'unable to create transaction: amount is not valid: $amount',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-      final (
-        transactionVSize: transactionVSize,
-        pendingTransactions: pendingTransactions,
-        sumOfUtxo: sumOfUtxo,
-        sumOfOutputs: sumOfOutputs,
-        outPuts: outPuts,
-        spender3Taproot: spender3Taproot,
-        accountsUtxos: accountsUtxos,
-        senderPrivateKey: senderPrivateKey,
-        memo: memo,
-        maxRbfTransactionFeeRatePer1B: maxRbfTransactionFeeRatePer1vB,
-      ) = await prepareTransactionAndCalculateSizeOrThrow(
-        toAddress: toAddress,
-        amount: amount,
-        asset: asset,
-        masterKey: masterKey,
-        message: message,
-        txIdToPumpFeeBTC: txIdToPumpFeeBTC,
+    if (feeType == null) {
+      throw AppException(
+        message: 'Not selected btc fee: feeTypeBTC is null',
+        code: ExceptionCode.unableToCreateTransaction,
       );
-      // 4.2 Get fee rates per byte from the backend
-      final networkEstimate = (await _estimateFee(
-        // Ok to send amount here, bs we operate with rates per vB not
-        // calculated fee by backend
-        amount: amount.toDouble(),
-        appBlockchain: appBlockchain,
-        tokenWalletType: asset.token.tokenWalletType,
-        tokenContractAddress: asset.token.contractAddress,
-      )).fold((l) => throw l, (r) => r);
-      if (networkEstimate.fees == Fees.invalid) {
-        throw AppException(
-          message: 'BTC fees are invalid: ${networkEstimate.fees}',
-          code: ExceptionCode.amountIsNotPositive,
-        );
-      }
-
-      // 4.3.1 Choose the appropriate fee rate based on the user's selection in
-      // the UI
-      // If we reached this point, feeTypeBTC is already not null since it was
-      // checked earlier
-      final feePer1vBCurrent = networkEstimate.fees.feeForType(feeType);
-
-      // 4.3.1 If we got an approved model, check if the fees were changed
-      if (userApprovedFee != null) {
-        final feePer1vUserSelected = userApprovedFee.fees.feeForType(
-          feeType,
-        );
-        logger.logInfoMessage(
-          name,
-          'FeeType: $feeType, user selected fee: $feePer1vUserSelected,'
-          ' current in blockchain: $feePer1vBCurrent',
-        );
-        if (feePer1vBCurrent > feePer1vUserSelected) {
-          throw AppFeeChangedException(userApprovedFee, networkEstimate);
-        }
-      }
-      // 4.3.3 Choose which transaction fee cost to use: either the one
-      // currently in the network [feePer1vBCurent] or the one that was already
-      // in the rbf transaction
-      final feePer1vB = max(feePer1vBCurrent, maxRbfTransactionFeeRatePer1vB);
-
-      if (feePer1vB < networkEstimate.fees.economyFee) {
-        throw AppException(
-          message: 'Fee is too low: $feePer1vB',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
-
-      // 4.4 Final fee amount
-      var fee = BigInt.from(feePer1vB * transactionVSize);
-      // 4.5 If we use RBF inputs, it's mandatory to check that the fee in the
-      // new transaction  is higher than in the previous one
-      // RBF = a transaction with a higher fee replaces one with a lower fee,
-      // given they share inputs
-      final feesInReplacedRbfTransactions = pendingTransactions.fold(
-        0,
-        (prev, next) => prev + next.fees!,
+    }
+    if (amount <= BigRational.zero) {
+      throw AppException(
+        message: 'unable to create transaction: amount is not valid: $amount',
+        code: ExceptionCode.amountIsNotPositive,
       );
-      if (BigInt.from(feesInReplacedRbfTransactions).compareTo(fee) >= 0) {
-        throw AppException(
-          message:
-              'New transaction fee $fee is less or equal sum of '
-              'replaced RBF transactions: $feesInReplacedRbfTransactions',
-          code: ExceptionCode.unableToCreateTransaction,
-        );
-      }
+    }
+    final (
+      transactionVSize: transactionVSize,
+      pendingTransactions: pendingTransactions,
+      sumOfUtxo: sumOfUtxo,
+      sumOfOutputs: sumOfOutputs,
+      outPuts: outPuts,
+      spender3Taproot: spender3Taproot,
+      accountsUtxos: accountsUtxos,
+      senderPrivateKey: senderPrivateKey,
+      memo: memo,
+      maxRbfTransactionFeeRatePer1B: maxRbfTransactionFeeRatePer1vB,
+    ) = await prepareTransactionAndCalculateSize(
+      toAddress: toAddress,
+      amount: amount,
+      asset: asset,
+      masterKey: masterKey,
+      message: message,
+      txIdToPumpFeeBTC: txIdToPumpFeeBTC,
+    );
+    // 4.2 Get fee rates per byte from the backend
+    final networkEstimate = (await _estimateFee(
+      // Ok to send amount here, bs we operate with rates per vB not
+      // calculated fee by backend
+      amount: amount.toDouble(),
+      appBlockchain: appBlockchain,
+      tokenWalletType: asset.token.tokenWalletType,
+      tokenContractAddress: asset.token.contractAddress,
+    )).fold((l) => throw l, (r) => r);
+    if (networkEstimate.fees == Fees.invalid) {
+      throw AppException(
+        message: 'BTC fees are invalid: ${networkEstimate.fees}',
+        code: ExceptionCode.amountIsNotPositive,
+      );
+    }
+
+    // 4.3.1 Choose the appropriate fee rate based on the user's selection in
+    // the UI
+    // If we reached this point, feeTypeBTC is already not null since it was
+    // checked earlier
+    final feePer1vBCurrent = networkEstimate.fees.feeForType(feeType);
+
+    // 4.3.1 If we got an approved model, check if the fees were changed
+    if (userApprovedFee != null) {
+      final feePer1vUserSelected = userApprovedFee.fees.feeForType(
+        feeType,
+      );
       logger.logInfoMessage(
         name,
-        'createTransactionOrThrow: fee per vB: $feePer1vB, total fee: '
-        '$fee ${pendingTransactions.isNotEmpty ? ''
-                  ', was $feesInReplacedRbfTransactions' : ''}',
+        'FeeType: $feeType, user selected fee: $feePer1vUserSelected,'
+        ' current in blockchain: $feePer1vBCurrent',
       );
-      // 5 Calculate change
-      // changeValue - the amount returned back as change
-      var changeValue = sumOfUtxo - (sumOfOutputs + fee);
-      logger.logInfoMessage(
-        name,
-        'createTransactionOrThrow: changeValue: $changeValue',
-      );
-      if (changeValue.isNegative || fee.isNegative) {
-        throw AppException(
-          message: 'Not enough balance: changeValue: $changeValue, fee: $fee',
-          code: ExceptionCode.amountIsNotPositive,
-        );
+      if (feePer1vBCurrent > feePer1vUserSelected) {
+        throw AppFeeChangedException(userApprovedFee, networkEstimate);
       }
-      // We can not add too small (dust) amount to the output
+    }
+    // 4.3.3 Choose which transaction fee cost to use: either the one
+    // currently in the network [feePer1vBCurent] or the one that was already
+    // in the rbf transaction
+    final feePer1vB = max(feePer1vBCurrent, maxRbfTransactionFeeRatePer1vB);
+
+    if (feePer1vB < networkEstimate.fees.economyFee) {
+      throw AppException(
+        message: 'Fee is too low: $feePer1vB',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
+    }
+
+    // 4.4 Final fee amount
+    var fee = BigInt.from(feePer1vB * transactionVSize);
+    // 4.5 If we use RBF inputs, it's mandatory to check that the fee in the
+    // new transaction  is higher than in the previous one
+    // RBF = a transaction with a higher fee replaces one with a lower fee,
+    // given they share inputs
+    final feesInReplacedRbfTransactions = pendingTransactions.fold(
+      0,
+      (prev, next) => prev + next.fees!,
+    );
+    if (BigInt.from(feesInReplacedRbfTransactions).compareTo(fee) >= 0) {
+      throw AppException(
+        message:
+            'New transaction fee $fee is less or equal sum of '
+            'replaced RBF transactions: $feesInReplacedRbfTransactions',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
+    }
+    logger.logInfoMessage(
+      name,
+      'createTransactionOrThrow: fee per vB: $feePer1vB, total fee: '
+      '$fee ${pendingTransactions.isNotEmpty ? ''
+                ', was $feesInReplacedRbfTransactions' : ''}',
+    );
+    // 5 Calculate change
+    // changeValue - the amount returned back as change
+    var changeValue = sumOfUtxo - (sumOfOutputs + fee);
+    logger.logInfoMessage(
+      name,
+      'createTransactionOrThrow: changeValue: $changeValue',
+    );
+    if (changeValue.isNegative || fee.isNegative) {
+      throw AppException(
+        message: 'Not enough balance: changeValue: $changeValue, fee: $fee',
+        code: ExceptionCode.amountIsNotPositive,
+      );
+    }
+    // We can not add too small (dust) amount to the output
+    if (changeValue < networkEstimate.txDustThreshold &&
+        changeValue > BigInt.zero) {
+      logger.logWarning(
+        name,
+        'createTransactionOrThrow: dust output detected: $changeValue, '
+        'will add dust to the fee. Fee before $fee',
+      );
+      fee += changeValue;
+      logger.logWarning(
+        name,
+        'createTransactionOrThrow: new fee: $fee',
+      );
+      changeValue = sumOfUtxo - (sumOfOutputs + fee);
       if (changeValue < networkEstimate.txDustThreshold &&
           changeValue > BigInt.zero) {
-        logger.logWarning(
-          name,
-          'createTransactionOrThrow: dust output detected: $changeValue, '
-          'will add dust to the fee. Fee before $fee',
-        );
-        fee += changeValue;
-        logger.logWarning(
-          name,
-          'createTransactionOrThrow: new fee: $fee',
-        );
-        changeValue = sumOfUtxo - (sumOfOutputs + fee);
-        if (changeValue < networkEstimate.txDustThreshold &&
-            changeValue > BigInt.zero) {
-          throw AppException(
-            message:
-                'Error adding dust to the fee: changeValue: $changeValue, '
-                'fee: $fee',
-            code: ExceptionCode.unableToCreateTransaction,
-          );
-        }
-      }
-      // 5.1 If change is positive, add it to the outputs replacing the
-      // placeholder
-      if (changeValue > BigInt.zero) {
-        outPuts.add(
-          BitcoinOutput(address: spender3Taproot, value: changeValue),
+        throw AppException(
+          message:
+              'Error adding dust to the fee: changeValue: $changeValue, '
+              'fee: $fee',
+          code: ExceptionCode.unableToCreateTransaction,
         );
       }
-      // 6 Assemble the transaction
-      final builder = BitcoinTransactionBuilder(
-        outPuts: outPuts,
-        fee: fee,
-        network: network,
-        utxos: accountsUtxos,
-        memo: memo,
-        enableRBF: true,
-      );
-      final transaction = await builder.buildTransactionAsync((
-        trDigest,
-        utxo,
-        publicKey,
-        sigHash,
-      ) async {
-        if (utxo.utxo.isP2tr) {
-          return senderPrivateKey.signBip340(trDigest, sighash: sigHash);
-        }
-        return senderPrivateKey.signECDSA(trDigest, sighash: sigHash);
-      });
-
-      final txId = transaction.txId();
-      logger.logInfoMessage(name, 'createTransactionOrThrow: txId: $txId');
-      signedTransaction = transaction.serialize();
-      logger.logInfoMessage(
-        name,
-        'createTransactionOrThrow: signedTransaction: $signedTransaction',
-      );
-      if (signedTransaction.isEmpty) {
-        throw AppException(code: ExceptionCode.unableToCreateTransaction);
-      }
-      return signedTransaction;
-    } catch (e) {
-      if (e is! IncorrectPinCodeException) {
-        logger.logCriticalError(name, 'createTransactionOrThrow: $e');
-      }
-      rethrow;
     }
+    // 5.1 If change is positive, add it to the outputs replacing the
+    // placeholder
+    if (changeValue > BigInt.zero) {
+      outPuts.add(
+        BitcoinOutput(address: spender3Taproot, value: changeValue),
+      );
+    }
+    // 6 Assemble the transaction
+    final builder = BitcoinTransactionBuilder(
+      outPuts: outPuts,
+      fee: fee,
+      network: network,
+      utxos: accountsUtxos,
+      memo: memo,
+      enableRBF: true,
+    );
+    final transaction = await builder.buildTransactionAsync((
+      trDigest,
+      utxo,
+      publicKey,
+      sigHash,
+    ) async {
+      if (utxo.utxo.isP2tr) {
+        return senderPrivateKey.signBip340(trDigest, sighash: sigHash);
+      }
+      return senderPrivateKey.signECDSA(trDigest, sighash: sigHash);
+    });
+
+    final txId = transaction.txId();
+    logger.logInfoMessage(name, 'createTransactionOrThrow: txId: $txId');
+    signedTransaction = transaction.serialize();
+    logger.logInfoMessage(
+      name,
+      'createTransactionOrThrow: signedTransaction: $signedTransaction',
+    );
+    if (signedTransaction.isEmpty) {
+      throw AppException(code: ExceptionCode.unableToCreateTransaction);
+    }
+    return signedTransaction;
   }
 
   @override
-  Future<({String address, List<int> pkAsBytes})>
-  tryInitializeWalletAndGetInfoOrThrow({String? masterKey}) async {
+  Future<({String address, List<int> pkAsBytes})> initializeWalletAndGetInfo({
+    String? masterKey,
+  }) async {
     if (masterKey == null) {
       throw AppException(
         message: 'master key is null',
         code: ExceptionCode.unableToDecodeWallet,
       );
     }
-    final pk = await createSigningKeyOrThrow(masterKey: masterKey);
+    final pk = await createSigningKey(masterKey: masterKey);
     final publicKey = pk.getPublic();
     return (
       address: publicKey.toTaprootAddress().toAddress(network),
@@ -355,9 +305,9 @@ mixin SingingKeyCreatorBTC {
   @protected
   TRLogger get logger;
 
-  /// Local repo
+  /// Signer
   @protected
-  LocalRepoBaseCore get localRepo;
+  Future<String> Function(String masterKey) get getSigningKey;
 
   /// BtcNodeRepo
   @protected
@@ -367,21 +317,20 @@ mixin SingingKeyCreatorBTC {
   BitcoinNetwork get network;
 
   /// Create a signing key for BTC
-  Future<ECPrivate> createSigningKeyOrThrow({required String masterKey}) async {
-    final mnemonicFromRepo = await localRepo
-        // Take the current active Tron wallet
-        .getMnemonic(
-          publicKey: localRepo.getAccount().publicKey,
-          masterKey: masterKey,
-        );
-    if (mnemonicFromRepo.isEmpty) {
+  ///
+  /// THROWS
+  Future<ECPrivate> createSigningKey({required String masterKey}) async {
+    final mnemonic = await getSigningKey(masterKey);
+    if (mnemonic.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }
-    return KeyGenerator(mnemonic: mnemonicFromRepo).generateForBitcoin();
+    return KeyGenerator(mnemonic: mnemonic).generateForBitcoin();
   }
 
   /// All calculations we are forced to perform to determine
   /// the transaction size
+  ///
+  /// THROWS
   Future<
     ({
       int transactionVSize,
@@ -396,7 +345,7 @@ mixin SingingKeyCreatorBTC {
       String? memo,
     })
   >
-  prepareTransactionAndCalculateSizeOrThrow({
+  prepareTransactionAndCalculateSize({
     required String toAddress,
     required BigRational amount,
     required AppAsset asset,
@@ -422,7 +371,7 @@ mixin SingingKeyCreatorBTC {
         code: ExceptionCode.unableToCreateTransaction,
       );
     }
-    final senderPrivateKey = await createSigningKeyOrThrow(
+    final senderPrivateKey = await createSigningKey(
       masterKey: masterKey,
     );
     switch (asset.token.tokenWalletType) {
