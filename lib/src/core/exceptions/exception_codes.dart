@@ -19,6 +19,10 @@ enum ExceptionCode {
     code: 'E6',
     description: 'Tron wallet is not loaded to the account',
   ),
+  timeout(
+    code: 'E7',
+    description: 'Timeout',
+  ),
 
   // Service initialization errors
   unableToInitializeWalletService(
@@ -101,7 +105,8 @@ enum ExceptionCode {
   rawException(
     code: 'R0',
     description: 'Raw exception. Message can be too big',
-  );
+  )
+  ;
 
   const ExceptionCode({required this.code, required this.description});
 
@@ -125,5 +130,5 @@ enum ExceptionCode {
   String toString() => code;
 
   /// Timeout
-  bool get isTimeout => this == connectionTimeout;
+  bool get isTimeout => this == connectionTimeout || this == timeout;
 }
