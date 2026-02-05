@@ -2,7 +2,7 @@ name: tron_energy_wallet_core
 description: The core library of Tron Energy Wallet
 repository: https://github.com/Trenergy-wallet/tron-energy-wallet-core
 issue_tracker: https://github.com/Trenergy-wallet/tron-energy-wallet-core/issues?q=is%3Aissue+is%3Aopen
-version: 1.4.1
+version: 1.5.0
 homepage: https://tr.energy/
 publish_to: 'none'
 

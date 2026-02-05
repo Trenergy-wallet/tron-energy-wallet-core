@@ -1,3 +1,9 @@
+## 1.5.0
+
+### Added
+
+- Polygon network support
+
 ## 1.4.0
 
 ### Added
