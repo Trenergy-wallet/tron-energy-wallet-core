@@ -37,7 +37,7 @@ AppAsset arbAssetExample({
   ),
 );
 
-AppAsset arbBEP20AssetExample({
+AppAsset arbERC20AssetExample({
   required String address,
 }) => AppAsset(
   id: 322,

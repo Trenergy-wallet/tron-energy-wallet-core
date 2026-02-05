@@ -45,7 +45,7 @@ enum AppBlockchain {
     supportsMemoMessage: false,
   ),
 
-  /// BNB Smart Chain
+  /// BNB Smart Chain (EVM)
   bsc(
     slug: 'bnb',
     isSupported: true,
@@ -54,12 +54,21 @@ enum AppBlockchain {
     supportsMemoMessage: false,
   ),
 
-  /// Arbitrum Chain (L2 Eth)
+  /// Arbitrum Chain (EVM L2 Eth)
   arbitrum(
     slug: 'arb',
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ARB',
+    supportsMemoMessage: false,
+  ),
+
+  /// Polygon (EVM)
+  polygon(
+    slug: 'polygon',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'POL',
     supportsMemoMessage: false,
   )
   ;
@@ -96,6 +105,9 @@ enum AppBlockchain {
 
   /// Arbitrum
   bool get isArbitrum => this == arbitrum;
+
+  /// Polygon
+  bool get isPolygon => this == polygon;
 
   /// toJson
   String toJson() => slug;
