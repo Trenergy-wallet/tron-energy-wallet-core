@@ -7,10 +7,19 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'domain/asset.dart';
 
+// Network details
+// https://docs.polygon.technology/pos/reference/rpc-endpoints/
+
+// Explorer
+// https://amoy.polygonscan.com/
+
+// Faucet
+// https://faucet.polygon.technology/
+
 final _rpc = EthereumProvider(
   EthereumHTTPProvider(
-    // 'https://arb1.arbitrum.io/rpc/',
-    'https://sepolia-rollup.arbitrum.io/rpc/',
+    // 'https://polygon-rpc.com/',
+    'https://rpc-amoy.polygon.technology/',
     '',
   ),
 );
@@ -18,54 +27,55 @@ final _rpc = EthereumProvider(
 Future<void> main() async {
   final logger = InAppLogger();
   final ethService = TransactionsServiceEthereumImpl(
-    appBlockchain: AppBlockchain.arbitrum,
+    appBlockchain: AppBlockchain.polygon,
     rpc: _rpc,
-    getSigningKey: (_) async => 'your-mnemonic',
+    getSigningKey: (_) async => 'your mnemonic',
   );
 
   final walletInfo = await ethService.initializeWalletAndGetInfo(
     masterKey: '',
   );
 
-  logger.logInfoMessage('arbExample', 'Main address: ${walletInfo.address}');
-
-  // final asset = arbAssetExample(
-  //   address: walletInfo.address,
-  // );
+  logger.logInfoMessage('polExample', 'Main address: ${walletInfo.address}');
+  final asset = polTestnetAmoyAssetExample(
+    address: walletInfo.address,
+  );
 
   final bal = await _rpc.request(
     EthereumRequestGetBalance(address: walletInfo.address),
   );
-  logger.logInfoMessage('arbExample', 'Balance: $bal');
-
+  logger.logInfoMessage('polExample', 'Balance: $bal');
   // final gasPrice = await _rpc.request(
   //   EthereumRequestGetGasPrice(),
   // );
-  // logger.logInfoMessage('arbExample', 'Gas Price: $gasPrice');
+  // logger.logInfoMessage('polExample', 'Gas Price: $gasPrice');
 
   // Example asset for ERC20 token transfer
-  final assetERC20 = arbERC20AssetExample(address: walletInfo.address);
+  final assetERC20 = polUSDCMockTestnetAmoyAssetExample(
+    address: walletInfo.address,
+  );
   final tokenBalance = await _rpc.request(
     RPCERC20TokenBalance(
       assetERC20.token.contractAddress,
       SolidityAddress(walletInfo.address),
     ),
   );
-  logger.logInfoMessage('arbExample', 'tokenBalance: $tokenBalance');
+  logger.logInfoMessage('polExample', 'tokenBalance: $tokenBalance');
 
   final tx = await ethService.createTransaction(
-    toAddress: '0x077B122c047a58174f1e8B011C8A6F768C0AC190',
-    amount: BigRational.parseDecimal('0.001'),
-    asset: assetERC20,
+    toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+    amount: BigRational.parseDecimal('0.002'),
+    asset: asset,
     masterKey: '',
     // message: 'hi',
   );
-  logger.logInfoMessage('arbExample', 'TX: $tx');
-  final sentTx = await _postTransactionARB(tx: tx);
-  logger.logInfoMessage('arbExample', 'SENT: $sentTx');
+  logger.logInfoMessage('polExample', 'TX: $tx');
+  final sentTx = await _postTransactionPol(tx: tx);
+
+  logger.logInfoMessage('polExample', 'SENT: $sentTx');
 }
 
-Future<TransactionInfoData> _postTransactionARB({
+Future<TransactionInfoData> _postTransactionPol({
   required String tx,
 }) async {
   final res = await _rpc.request(
@@ -73,6 +83,6 @@ Future<TransactionInfoData> _postTransactionARB({
   );
   return TransactionInfoData(
     txId: res,
-    linkToBlockchain: 'https://sepolia.arbiscan.io/tx/$res',
+    linkToBlockchain: 'https://amoy.polygonscan.com/tx/$res',
   );
 }

@@ -78,6 +78,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     AppBlockchain.ethereum,
     AppBlockchain.bsc,
     AppBlockchain.arbitrum,
+    AppBlockchain.polygon,
   ];
 
   /// Create signed transaction for Ethereum or compatible token
@@ -160,7 +161,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       final maxFeePerGas =
           selectedFee +
           eip1559Fee.baseFee *
-              (appBlockchain.isArbitrum ? BigInt.two : BigInt.one);
+              (appBlockchain.isArbitrum || appBlockchain.isPolygon
+                  ? BigInt.two
+                  : BigInt.one);
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
@@ -242,7 +245,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       final maxFeePerGas =
           selectedFee +
           eip1559Fee.baseFee *
-              (appBlockchain.isArbitrum ? BigInt.two : BigInt.one);
+              (appBlockchain.isArbitrum || appBlockchain.isPolygon
+                  ? BigInt.two
+                  : BigInt.one);
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
