@@ -12,12 +12,13 @@ Future<void> main() async {
     isTestnet: true,
     baseUrl: 'https://rpc.ankr.com/',
   );
-  final logger = InAppLogger();
+  final logger = InAppLogger()..usePrint = true;
 
   final btcService = TransactionsServiceBTCImpl(
     btcNodeRepo: btcNodeRepo,
     estimateFee: btcNodeRepo.getEstimateFee,
     network: BitcoinNetwork.signet,
+    logger: logger,
     getSigningKey: (_) async => 'mnemonic',
   );
 

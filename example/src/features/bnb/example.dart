@@ -15,10 +15,11 @@ final _rpc = EthereumProvider(
 );
 
 Future<void> main() async {
-  final logger = InAppLogger();
+  final logger = InAppLogger()..usePrint = true;
   final ethService = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.bsc,
     rpc: _rpc,
+    logger: logger,
     getSigningKey: (_) async => 'your-mnemonic',
   );
 
