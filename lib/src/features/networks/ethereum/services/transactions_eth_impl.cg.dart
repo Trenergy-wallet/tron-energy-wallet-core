@@ -2,19 +2,13 @@ import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:meta/meta.dart';
-import 'package:on_chain/ethereum/src/address/evm_address.dart';
-import 'package:on_chain/ethereum/src/keys/private_key.dart';
-import 'package:on_chain/ethereum/src/models/block_tag.dart';
-import 'package:on_chain/ethereum/src/models/fee_history.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/estimate_gas.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/fee_history.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/get_gas_price.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/get_transaction_count.dart';
-import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
-import 'package:on_chain/ethereum/src/transaction/eth_transaction.dart';
-import 'package:on_chain/ethereum/src/utils/helper.dart';
+import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/ethereum/abi/abi.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/optimism_getl1fee.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
+
+part 'transactions_optimism_impl.dart';
 
 /// Transactions Service
 ///
@@ -32,7 +26,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     TRLogger? logger,
   }) : _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
-
+       _onEstimateL1Fee = null,
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
@@ -42,6 +36,13 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
          '$appBlockchain is not supported',
        ) {
     _logger = logger ?? InAppLogger();
+    if (appBlockchain.isOptimism) {
+      assert(
+        _onEstimateL1Fee != null,
+        'onEstimateL1Fee is required for Optimism. Consider using '
+        'TransactionsServiceOptimismImpl',
+      );
+    }
   }
 
   /// Blockchain of the service
@@ -79,7 +80,24 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     AppBlockchain.bsc,
     AppBlockchain.arbitrum,
     AppBlockchain.polygon,
+    AppBlockchain.optimism,
   ];
+
+  /// Estimates the L1 fee in wei (if applicable)
+  final Future<BigInt> Function(ETHTransaction transaction)? _onEstimateL1Fee;
+
+  /// We increase the fee with a buffer/multiplier to improve the chance of
+  /// inclusion if conditions change while the tx is pending in the mempool
+  ///
+  /// The syntax is correct, this is exactly how BigInt calculations should be
+  /// done
+  @visibleForTesting
+  BigInt applyBufferMultiplier(BigInt value) => switch (appBlockchain) {
+    AppBlockchain.bsc => value * BigInt.from(6) ~/ BigInt.from(5),
+    AppBlockchain.arbitrum => value * BigInt.two,
+    AppBlockchain.polygon => value * BigInt.two,
+    _ => value * BigInt.from(3) ~/ BigInt.from(2),
+  };
 
   /// Create signed transaction for Ethereum or compatible token
   @override
@@ -158,12 +176,9 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.fast => eip1559Fee.high,
       };
       // Arbitrum uses a sequencer, so we add a safety buffer
-      final maxFeePerGas =
-          selectedFee +
-          eip1559Fee.baseFee *
-              (appBlockchain.isArbitrum || appBlockchain.isPolygon
-                  ? BigInt.two
-                  : BigInt.one);
+      final maxFeePerGas = applyBufferMultiplier(
+        selectedFee + eip1559Fee.baseFee,
+      );
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
@@ -241,13 +256,10 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
       };
-      // Arbitrum uses a sequencer, so we add a safety buffer
-      final maxFeePerGas =
-          selectedFee +
-          eip1559Fee.baseFee *
-              (appBlockchain.isArbitrum || appBlockchain.isPolygon
-                  ? BigInt.two
-                  : BigInt.one);
+
+      final maxFeePerGas = applyBufferMultiplier(
+        selectedFee + eip1559Fee.baseFee,
+      );
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(asset.address),
@@ -343,14 +355,17 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       eip1559Fee: eip1559Fee,
       forceUpdateNonce: false,
     );
-    final feeInWei = switch (tx.transactionType) {
-      ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
-      _ => tx.gasPrice! * tx.gasLimit,
-    };
+    final l1fee = await _onEstimateL1Fee?.call(tx) ?? BigInt.zero;
+    final feeInWei =
+        switch (tx.transactionType) {
+          ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
+          _ => tx.gasPrice! * tx.gasLimit,
+        } +
+        l1fee;
     _logger.logInfoMessage(
       _name,
       'tryEstimateFee: $feeInWei (maxFeePerGas: ${tx.maxFeePerGas}, '
-      'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit})',
+      'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}, l1fee: $l1fee)',
     );
     return ETHHelper.fromWei(feeInWei);
   }
