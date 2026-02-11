@@ -16,11 +16,12 @@ final tonRpc = TonProvider(
 );
 
 Future<void> main() async {
-  final logger = InAppLogger();
+  final logger = InAppLogger()..usePrint = true;
   final tonService = TransactionsServiceTonImpl(
     currentAccountWallet: () => null,
     isTestnet: true,
     tonProvider: tonRpc,
+    logger: logger,
     getSigningKey: (_) async => 'mnemonic',
   );
 

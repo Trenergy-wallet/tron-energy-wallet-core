@@ -12,9 +12,9 @@ AppAsset arbAssetExample({
   childWalletAddress: '',
   token: const AppToken(
     id: 235,
-    name: 'Arbitrum',
-    shortName: 'ARB',
-    icon: '',
+    name: 'Ethereum',
+    shortName: 'ETH',
+    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png',
     usdPrice: 0.2003,
     prevPriceDiffPercent: 0.13,
     contractAddress: '',

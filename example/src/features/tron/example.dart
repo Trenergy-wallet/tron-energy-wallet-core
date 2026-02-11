@@ -24,10 +24,11 @@ Future<void> main() async {
   ).generateForTron();
 
   final tronAddress = privateKey.publicKey().toAddress().toString();
-  final logger = InAppLogger();
+  final logger = InAppLogger()..usePrint = true;
   // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
   final tronService = TransactionsServiceTronImpl(
     tronProvider: tronRpc,
+    logger: logger,
     getSigningKey: (_) async => privateKey,
   );
 

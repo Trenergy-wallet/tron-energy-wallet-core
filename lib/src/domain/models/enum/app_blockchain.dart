@@ -59,7 +59,7 @@ enum AppBlockchain {
     slug: 'arb',
     isSupported: true,
     allCoinsSupported: true,
-    mainTokenName: 'ARB',
+    mainTokenName: 'ETH',
     supportsMemoMessage: false,
   ),
 
@@ -69,6 +69,15 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'POL',
+    supportsMemoMessage: false,
+  ),
+
+  /// Optimism Chain (EVM L2 Eth)
+  optimism(
+    slug: 'optimism',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'ETH',
     supportsMemoMessage: false,
   )
   ;
@@ -104,7 +113,12 @@ enum AppBlockchain {
   final bool supportsMemoMessage;
 
   /// Arbitrum
+  ///
+  /// L1 fee is included in eth_estimateGas
   bool get isArbitrum => this == arbitrum;
+
+  /// Optimism
+  bool get isOptimism => this == optimism;
 
   /// Polygon
   bool get isPolygon => this == polygon;
