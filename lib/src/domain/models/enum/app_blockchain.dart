@@ -56,7 +56,7 @@ enum AppBlockchain {
 
   /// Arbitrum Chain (EVM L2 Eth)
   arbitrum(
-    slug: 'arb',
+    slug: 'arbitrum',
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ETH',

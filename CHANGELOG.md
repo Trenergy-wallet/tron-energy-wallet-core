@@ -1,3 +1,7 @@
+## 1.6.1
+
+- Arbitrum slug fix
+
 ## 1.6.0
 
 ### Added
