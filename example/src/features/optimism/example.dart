@@ -68,17 +68,17 @@ Future<void> main() async {
   );
   logger.logInfoMessage(name, 'TokenBalance: $tokenBalance');
 
-  final feeEstimate = await opService.tryEstimateFee(
-    addressToSend: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-    asset: assetERC20,
-    amount: '0.01',
-    // message: 'hi',
-  );
-  logger.logInfoMessage(name, 'Est fee: $feeEstimate');
+  // final feeEstimate = await opService.tryEstimateFee(
+  //   addressToSend: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+  //   asset: assetERC20,
+  //   amount: '0.01',
+  //   // message: 'hi',
+  // );
+  // logger.logInfoMessage(name, 'Est fee: $feeEstimate');
 
   final tx = await opService.createTransaction(
     toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-    amount: BigRational.parseDecimal('0.01'),
+    amount: BigRational.parseDecimal('0.001'),
     asset: assetERC20,
     masterKey: '',
     // message: 'hi',

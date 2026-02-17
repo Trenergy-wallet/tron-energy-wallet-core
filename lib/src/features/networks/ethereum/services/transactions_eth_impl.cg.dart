@@ -92,12 +92,26 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   /// The syntax is correct, this is exactly how BigInt calculations should be
   /// done
   @visibleForTesting
-  BigInt applyBufferMultiplier(BigInt value) => switch (appBlockchain) {
-    AppBlockchain.bsc => value * BigInt.from(6) ~/ BigInt.from(5),
-    AppBlockchain.arbitrum => value * BigInt.two,
-    AppBlockchain.polygon => value * BigInt.two,
-    _ => value * BigInt.from(3) ~/ BigInt.from(2),
-  };
+  BigInt applyEIP1559FeeBufferMultiplier(BigInt value) =>
+      switch (appBlockchain) {
+        .bsc => value * BigInt.from(6) ~/ BigInt.from(5),
+        .arbitrum || .polygon => value * BigInt.two,
+        _ => value * BigInt.from(3) ~/ BigInt.from(2),
+      };
+
+  /// We increase the fee with a buffer/multiplier to improve the chance of
+  /// inclusion if conditions change while the tx is pending in the mempool
+  ///
+  /// The syntax is correct, this is exactly how BigInt calculations should be
+  /// done
+  @visibleForTesting
+  BigInt applyLegacyFeeBufferMultiplier(BigInt value) =>
+      switch (appBlockchain) {
+        .ethereum => value * BigInt.from(11) ~/ BigInt.from(10),
+        .bsc => value * BigInt.from(6) ~/ BigInt.from(5),
+        .arbitrum => value * BigInt.two,
+        _ => value * BigInt.from(3) ~/ BigInt.from(2),
+      };
 
   /// Create signed transaction for Ethereum or compatible token
   @override
@@ -176,7 +190,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.fast => eip1559Fee.high,
       };
       // Arbitrum uses a sequencer, so we add a safety buffer
-      final maxFeePerGas = applyBufferMultiplier(
+      final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
         selectedFee + eip1559Fee.baseFee,
       );
       tx = ETHTransaction(
@@ -206,6 +220,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
           code: ExceptionCode.unableToCreateTransaction,
         );
       }
+      gasPrice = applyLegacyFeeBufferMultiplier(gasPrice);
       tx = ETHTransaction(
         type: ETHTransactionType.legacy,
         from: ETHAddress(asset.address),
@@ -257,7 +272,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
         FeeType.fast => eip1559Fee.high,
       };
 
-      final maxFeePerGas = applyBufferMultiplier(
+      final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
         selectedFee + eip1559Fee.baseFee,
       );
       tx = ETHTransaction(
@@ -291,6 +306,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
           code: ExceptionCode.unableToCreateTransaction,
         );
       }
+      gasPrice = applyLegacyFeeBufferMultiplier(gasPrice);
       tx = ETHTransaction(
         type: ETHTransactionType.legacy,
         from: ETHAddress(asset.address),
