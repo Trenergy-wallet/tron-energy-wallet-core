@@ -14,7 +14,11 @@ class TransactionsServiceOptimismImpl extends TransactionsServiceEthereumImpl {
   }) : super(appBlockchain: AppBlockchain.optimism);
 
   @override
-  BigInt applyBufferMultiplier(BigInt value) =>
+  BigInt applyEIP1559FeeBufferMultiplier(BigInt value) =>
+      value * BigInt.from(3) ~/ BigInt.from(2);
+
+  @override
+  BigInt applyLegacyFeeBufferMultiplier(BigInt value) =>
       value * BigInt.from(3) ~/ BigInt.from(2);
 
   @override
