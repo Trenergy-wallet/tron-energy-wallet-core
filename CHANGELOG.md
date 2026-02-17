@@ -1,3 +1,7 @@
+## 1.6.2
+
+- added fee buffer for EVM legacy transactions
+
 ## 1.6.1
 
 - Arbitrum slug fix
