@@ -32,5 +32,6 @@ AppAsset tronAssetExample(String address) => AppAsset(
     tokenWalletType: TokenWalletType.master,
     description: 'Official Token of TRON Protocol',
     precision: 2,
+    isExchangeable: false,
   ),
 );

@@ -848,7 +848,7 @@ $AppTokenCopyWith<$Res> get token {
 /// @nodoc
 mixin _$AppToken {
 
- int get id; String get name; String get shortName; String get icon; double get usdPrice; double get prevPriceDiffPercent; String get contractAddress; int get decimal; BlockchainInfo get blockchain; TokenWalletType get tokenWalletType; String get description; int get precision; bool get isAddedToAssets;
+ int get id; String get name; String get shortName; String get icon; double get usdPrice; double get prevPriceDiffPercent; String get contractAddress; int get decimal; BlockchainInfo get blockchain; TokenWalletType get tokenWalletType; String get description; int get precision; bool get isExchangeable; bool get isAddedToAssets;
 /// Create a copy of AppToken
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -859,16 +859,16 @@ $AppTokenCopyWith<AppToken> get copyWith => _$AppTokenCopyWithImpl<AppToken>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppToken&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.usdPrice, usdPrice) || other.usdPrice == usdPrice)&&(identical(other.prevPriceDiffPercent, prevPriceDiffPercent) || other.prevPriceDiffPercent == prevPriceDiffPercent)&&(identical(other.contractAddress, contractAddress) || other.contractAddress == contractAddress)&&(identical(other.decimal, decimal) || other.decimal == decimal)&&(identical(other.blockchain, blockchain) || other.blockchain == blockchain)&&(identical(other.tokenWalletType, tokenWalletType) || other.tokenWalletType == tokenWalletType)&&(identical(other.description, description) || other.description == description)&&(identical(other.precision, precision) || other.precision == precision)&&(identical(other.isAddedToAssets, isAddedToAssets) || other.isAddedToAssets == isAddedToAssets));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppToken&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.usdPrice, usdPrice) || other.usdPrice == usdPrice)&&(identical(other.prevPriceDiffPercent, prevPriceDiffPercent) || other.prevPriceDiffPercent == prevPriceDiffPercent)&&(identical(other.contractAddress, contractAddress) || other.contractAddress == contractAddress)&&(identical(other.decimal, decimal) || other.decimal == decimal)&&(identical(other.blockchain, blockchain) || other.blockchain == blockchain)&&(identical(other.tokenWalletType, tokenWalletType) || other.tokenWalletType == tokenWalletType)&&(identical(other.description, description) || other.description == description)&&(identical(other.precision, precision) || other.precision == precision)&&(identical(other.isExchangeable, isExchangeable) || other.isExchangeable == isExchangeable)&&(identical(other.isAddedToAssets, isAddedToAssets) || other.isAddedToAssets == isAddedToAssets));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,usdPrice,prevPriceDiffPercent,contractAddress,decimal,blockchain,tokenWalletType,description,precision,isAddedToAssets);
+int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,usdPrice,prevPriceDiffPercent,contractAddress,decimal,blockchain,tokenWalletType,description,precision,isExchangeable,isAddedToAssets);
 
 @override
 String toString() {
-  return 'AppToken(id: $id, name: $name, shortName: $shortName, icon: $icon, usdPrice: $usdPrice, prevPriceDiffPercent: $prevPriceDiffPercent, contractAddress: $contractAddress, decimal: $decimal, blockchain: $blockchain, tokenWalletType: $tokenWalletType, description: $description, precision: $precision, isAddedToAssets: $isAddedToAssets)';
+  return 'AppToken(id: $id, name: $name, shortName: $shortName, icon: $icon, usdPrice: $usdPrice, prevPriceDiffPercent: $prevPriceDiffPercent, contractAddress: $contractAddress, decimal: $decimal, blockchain: $blockchain, tokenWalletType: $tokenWalletType, description: $description, precision: $precision, isExchangeable: $isExchangeable, isAddedToAssets: $isAddedToAssets)';
 }
 
 
@@ -879,7 +879,7 @@ abstract mixin class $AppTokenCopyWith<$Res>  {
   factory $AppTokenCopyWith(AppToken value, $Res Function(AppToken) _then) = _$AppTokenCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, String shortName, String icon, double usdPrice, double prevPriceDiffPercent, String contractAddress, int decimal, BlockchainInfo blockchain, TokenWalletType tokenWalletType, String description, int precision, bool isAddedToAssets
+ int id, String name, String shortName, String icon, double usdPrice, double prevPriceDiffPercent, String contractAddress, int decimal, BlockchainInfo blockchain, TokenWalletType tokenWalletType, String description, int precision, bool isExchangeable, bool isAddedToAssets
 });
 
 
@@ -896,7 +896,7 @@ class _$AppTokenCopyWithImpl<$Res>
 
 /// Create a copy of AppToken
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? usdPrice = null,Object? prevPriceDiffPercent = null,Object? contractAddress = null,Object? decimal = null,Object? blockchain = null,Object? tokenWalletType = null,Object? description = null,Object? precision = null,Object? isAddedToAssets = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? usdPrice = null,Object? prevPriceDiffPercent = null,Object? contractAddress = null,Object? decimal = null,Object? blockchain = null,Object? tokenWalletType = null,Object? description = null,Object? precision = null,Object? isExchangeable = null,Object? isAddedToAssets = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -910,7 +910,8 @@ as int,blockchain: null == blockchain ? _self.blockchain : blockchain // ignore:
 as BlockchainInfo,tokenWalletType: null == tokenWalletType ? _self.tokenWalletType : tokenWalletType // ignore: cast_nullable_to_non_nullable
 as TokenWalletType,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,precision: null == precision ? _self.precision : precision // ignore: cast_nullable_to_non_nullable
-as int,isAddedToAssets: null == isAddedToAssets ? _self.isAddedToAssets : isAddedToAssets // ignore: cast_nullable_to_non_nullable
+as int,isExchangeable: null == isExchangeable ? _self.isExchangeable : isExchangeable // ignore: cast_nullable_to_non_nullable
+as bool,isAddedToAssets: null == isAddedToAssets ? _self.isAddedToAssets : isAddedToAssets // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -1002,10 +1003,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isAddedToAssets)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isExchangeable,  bool isAddedToAssets)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppToken() when $default != null:
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isAddedToAssets);case _:
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isExchangeable,_that.isAddedToAssets);case _:
   return orElse();
 
 }
@@ -1023,10 +1024,10 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isAddedToAssets)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isExchangeable,  bool isAddedToAssets)  $default,) {final _that = this;
 switch (_that) {
 case _AppToken():
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isAddedToAssets);}
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isExchangeable,_that.isAddedToAssets);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -1040,10 +1041,10 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isAddedToAssets)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  String shortName,  String icon,  double usdPrice,  double prevPriceDiffPercent,  String contractAddress,  int decimal,  BlockchainInfo blockchain,  TokenWalletType tokenWalletType,  String description,  int precision,  bool isExchangeable,  bool isAddedToAssets)?  $default,) {final _that = this;
 switch (_that) {
 case _AppToken() when $default != null:
-return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isAddedToAssets);case _:
+return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_that.prevPriceDiffPercent,_that.contractAddress,_that.decimal,_that.blockchain,_that.tokenWalletType,_that.description,_that.precision,_that.isExchangeable,_that.isAddedToAssets);case _:
   return null;
 
 }
@@ -1055,7 +1056,7 @@ return $default(_that.id,_that.name,_that.shortName,_that.icon,_that.usdPrice,_t
 
 
 class _AppToken extends AppToken {
-  const _AppToken({required this.id, required this.name, required this.shortName, required this.icon, required this.usdPrice, required this.prevPriceDiffPercent, required this.contractAddress, required this.decimal, required this.blockchain, required this.tokenWalletType, required this.description, required this.precision, this.isAddedToAssets = false}): super._();
+  const _AppToken({required this.id, required this.name, required this.shortName, required this.icon, required this.usdPrice, required this.prevPriceDiffPercent, required this.contractAddress, required this.decimal, required this.blockchain, required this.tokenWalletType, required this.description, required this.precision, required this.isExchangeable, this.isAddedToAssets = false}): super._();
   
 
 @override final  int id;
@@ -1070,6 +1071,7 @@ class _AppToken extends AppToken {
 @override final  TokenWalletType tokenWalletType;
 @override final  String description;
 @override final  int precision;
+@override final  bool isExchangeable;
 @override@JsonKey() final  bool isAddedToAssets;
 
 /// Create a copy of AppToken
@@ -1082,16 +1084,16 @@ _$AppTokenCopyWith<_AppToken> get copyWith => __$AppTokenCopyWithImpl<_AppToken>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppToken&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.usdPrice, usdPrice) || other.usdPrice == usdPrice)&&(identical(other.prevPriceDiffPercent, prevPriceDiffPercent) || other.prevPriceDiffPercent == prevPriceDiffPercent)&&(identical(other.contractAddress, contractAddress) || other.contractAddress == contractAddress)&&(identical(other.decimal, decimal) || other.decimal == decimal)&&(identical(other.blockchain, blockchain) || other.blockchain == blockchain)&&(identical(other.tokenWalletType, tokenWalletType) || other.tokenWalletType == tokenWalletType)&&(identical(other.description, description) || other.description == description)&&(identical(other.precision, precision) || other.precision == precision)&&(identical(other.isAddedToAssets, isAddedToAssets) || other.isAddedToAssets == isAddedToAssets));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppToken&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.shortName, shortName) || other.shortName == shortName)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.usdPrice, usdPrice) || other.usdPrice == usdPrice)&&(identical(other.prevPriceDiffPercent, prevPriceDiffPercent) || other.prevPriceDiffPercent == prevPriceDiffPercent)&&(identical(other.contractAddress, contractAddress) || other.contractAddress == contractAddress)&&(identical(other.decimal, decimal) || other.decimal == decimal)&&(identical(other.blockchain, blockchain) || other.blockchain == blockchain)&&(identical(other.tokenWalletType, tokenWalletType) || other.tokenWalletType == tokenWalletType)&&(identical(other.description, description) || other.description == description)&&(identical(other.precision, precision) || other.precision == precision)&&(identical(other.isExchangeable, isExchangeable) || other.isExchangeable == isExchangeable)&&(identical(other.isAddedToAssets, isAddedToAssets) || other.isAddedToAssets == isAddedToAssets));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,usdPrice,prevPriceDiffPercent,contractAddress,decimal,blockchain,tokenWalletType,description,precision,isAddedToAssets);
+int get hashCode => Object.hash(runtimeType,id,name,shortName,icon,usdPrice,prevPriceDiffPercent,contractAddress,decimal,blockchain,tokenWalletType,description,precision,isExchangeable,isAddedToAssets);
 
 @override
 String toString() {
-  return 'AppToken(id: $id, name: $name, shortName: $shortName, icon: $icon, usdPrice: $usdPrice, prevPriceDiffPercent: $prevPriceDiffPercent, contractAddress: $contractAddress, decimal: $decimal, blockchain: $blockchain, tokenWalletType: $tokenWalletType, description: $description, precision: $precision, isAddedToAssets: $isAddedToAssets)';
+  return 'AppToken(id: $id, name: $name, shortName: $shortName, icon: $icon, usdPrice: $usdPrice, prevPriceDiffPercent: $prevPriceDiffPercent, contractAddress: $contractAddress, decimal: $decimal, blockchain: $blockchain, tokenWalletType: $tokenWalletType, description: $description, precision: $precision, isExchangeable: $isExchangeable, isAddedToAssets: $isAddedToAssets)';
 }
 
 
@@ -1102,7 +1104,7 @@ abstract mixin class _$AppTokenCopyWith<$Res> implements $AppTokenCopyWith<$Res>
   factory _$AppTokenCopyWith(_AppToken value, $Res Function(_AppToken) _then) = __$AppTokenCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, String shortName, String icon, double usdPrice, double prevPriceDiffPercent, String contractAddress, int decimal, BlockchainInfo blockchain, TokenWalletType tokenWalletType, String description, int precision, bool isAddedToAssets
+ int id, String name, String shortName, String icon, double usdPrice, double prevPriceDiffPercent, String contractAddress, int decimal, BlockchainInfo blockchain, TokenWalletType tokenWalletType, String description, int precision, bool isExchangeable, bool isAddedToAssets
 });
 
 
@@ -1119,7 +1121,7 @@ class __$AppTokenCopyWithImpl<$Res>
 
 /// Create a copy of AppToken
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? usdPrice = null,Object? prevPriceDiffPercent = null,Object? contractAddress = null,Object? decimal = null,Object? blockchain = null,Object? tokenWalletType = null,Object? description = null,Object? precision = null,Object? isAddedToAssets = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? shortName = null,Object? icon = null,Object? usdPrice = null,Object? prevPriceDiffPercent = null,Object? contractAddress = null,Object? decimal = null,Object? blockchain = null,Object? tokenWalletType = null,Object? description = null,Object? precision = null,Object? isExchangeable = null,Object? isAddedToAssets = null,}) {
   return _then(_AppToken(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1133,7 +1135,8 @@ as int,blockchain: null == blockchain ? _self.blockchain : blockchain // ignore:
 as BlockchainInfo,tokenWalletType: null == tokenWalletType ? _self.tokenWalletType : tokenWalletType // ignore: cast_nullable_to_non_nullable
 as TokenWalletType,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,precision: null == precision ? _self.precision : precision // ignore: cast_nullable_to_non_nullable
-as int,isAddedToAssets: null == isAddedToAssets ? _self.isAddedToAssets : isAddedToAssets // ignore: cast_nullable_to_non_nullable
+as int,isExchangeable: null == isExchangeable ? _self.isExchangeable : isExchangeable // ignore: cast_nullable_to_non_nullable
+as bool,isAddedToAssets: null == isAddedToAssets ? _self.isAddedToAssets : isAddedToAssets // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

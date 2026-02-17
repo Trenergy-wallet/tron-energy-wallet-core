@@ -130,6 +130,7 @@ sealed class AppToken with _$AppToken {
     required TokenWalletType tokenWalletType,
     required String description,
     required int precision,
+    required bool isExchangeable,
     @Default(false) bool isAddedToAssets,
   }) = _AppToken;
 
@@ -175,5 +176,6 @@ sealed class AppToken with _$AppToken {
     tokenWalletType: TokenWalletType.unknown,
     description: '',
     precision: 0,
+    isExchangeable: false,
   );
 }
