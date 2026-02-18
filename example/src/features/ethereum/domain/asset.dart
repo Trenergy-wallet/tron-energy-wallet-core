@@ -39,6 +39,7 @@ AppAsset ethAssetExample({
         'features its own cryptocurrency, Ether. ETH works as a platform '
         'for numerous other cryptocurrencies, as well as for the execution '
         'of decentralized smart contracts.',
+    isExchangeable: false,
   ),
 );
 
@@ -76,5 +77,6 @@ AppAsset ethERC20AssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC',
+    isExchangeable: false,
   ),
 );

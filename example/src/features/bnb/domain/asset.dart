@@ -34,6 +34,7 @@ AppAsset bnbAssetExample({
     ),
     tokenWalletType: TokenWalletType.master,
     description: 'BNB Smart Chain',
+    isExchangeable: false,
   ),
 );
 
@@ -70,5 +71,6 @@ AppAsset bscBEP20AssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDT',
+    isExchangeable: false,
   ),
 );

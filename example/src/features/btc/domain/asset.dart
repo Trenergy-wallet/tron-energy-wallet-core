@@ -35,5 +35,6 @@ AppAsset btcAssetExample(String address) => AppAsset(
         '2008 whitepaper by a person, or group of people, using the alias '
         'Satoshi Nakamoto. It was launched soon after, in January 2009.',
     precision: 8,
+    isExchangeable: false,
   ),
 );

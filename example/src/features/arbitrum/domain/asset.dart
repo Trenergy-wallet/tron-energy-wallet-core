@@ -34,6 +34,7 @@ AppAsset arbAssetExample({
     ),
     tokenWalletType: TokenWalletType.master,
     description: 'Arbitrum Sepolia',
+  isExchangeable: false,
   ),
 );
 
@@ -70,5 +71,6 @@ AppAsset arbERC20AssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC',
+  isExchangeable: false,
   ),
 );

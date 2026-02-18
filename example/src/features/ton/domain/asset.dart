@@ -34,5 +34,6 @@ AppAsset tonAssetExample(String address) => AppAsset(
     tokenWalletType: TokenWalletType.master,
     description: '',
     precision: 2,
+    isExchangeable: false,
   ),
 );
