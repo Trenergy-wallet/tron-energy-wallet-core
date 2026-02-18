@@ -34,6 +34,7 @@ AppAsset polTestnetAmoyAssetExample({
     ),
     tokenWalletType: TokenWalletType.master,
     description: 'Polygon',
+    isExchangeable: false,
   ),
 );
 
@@ -70,6 +71,7 @@ AppAsset polUSDCCircleTestnetAmoyAssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC',
+    isExchangeable: false,
   ),
 );
 
@@ -106,6 +108,7 @@ AppAsset polUSDCMockTestnetAmoyAssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC mock',
+    isExchangeable: false,
   ),
 );
 
@@ -142,5 +145,6 @@ AppAsset polUSDCAssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC',
+    isExchangeable: false,
   ),
 );
