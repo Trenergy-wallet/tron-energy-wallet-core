@@ -37,6 +37,7 @@ AppAsset opEthAssetExample({
     ),
     tokenWalletType: TokenWalletType.master,
     description: 'Ethereum on optimism',
+    isExchangeable: false,
   ),
 );
 
@@ -74,5 +75,6 @@ AppAsset opUSDCTestnetAssetExample({
     ),
     tokenWalletType: TokenWalletType.child,
     description: 'USDC',
+    isExchangeable: false,
   ),
 );
