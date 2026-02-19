@@ -79,6 +79,15 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: false,
+  ),
+
+  /// BASE Chain (EVM L2 Eth)
+  base(
+    slug: 'base',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'ETH',
+    supportsMemoMessage: false,
   )
   ;
 
@@ -122,6 +131,9 @@ enum AppBlockchain {
 
   /// Polygon
   bool get isPolygon => this == polygon;
+
+  /// Polygon
+  bool get isBase => this == base;
 
   /// toJson
   String toJson() => slug;

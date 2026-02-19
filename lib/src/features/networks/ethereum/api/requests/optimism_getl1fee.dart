@@ -7,13 +7,17 @@ import 'package:tron_energy_wallet_core/src/features/networks/ethereum/abi/abi_o
 /// Eth rpc request to get the balance of the token
 class RPCOpGetL1Fee extends EthereumRequest<BigInt, String> {
   /// Eth rpc request to get the balance of the token
-  RPCOpGetL1Fee(this.rawTxBytes) : super(blockNumber: BlockTagOrNumber.latest);
+  RPCOpGetL1Fee(this.rawTxBytes, this.gasOracleContractAddress)
+    : super(blockNumber: BlockTagOrNumber.latest);
 
   @override
   String get method => EthereumMethods.call.value;
 
   /// Token contract address
   final List<int> rawTxBytes;
+
+  /// System contract address for GasPriceOracle
+  final String gasOracleContractAddress;
 
   @override
   BigInt onResonse(String result) {
@@ -24,8 +28,7 @@ class RPCOpGetL1Fee extends EthereumRequest<BigInt, String> {
   List<dynamic> toJson() {
     return [
       {
-        // Optimism system contract address for GasPriceOracle
-        'to': '0x420000000000000000000000000000000000000F',
+        'to': gasOracleContractAddress,
         'data': BytesUtils.toHexString(
           optimismL1FeeAbiFragment.encode([rawTxBytes]),
           prefix: '0x',

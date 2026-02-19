@@ -23,6 +23,9 @@ sealed class BlockchainInfo with _$BlockchainInfo {
 
   const BlockchainInfo._();
 
+  /// Has valid blockchain (not AppBlockchain.unknown)
+  bool get isValid => appBlockchain != AppBlockchain.unknown;
+
   /// Error/empty state
   static const BlockchainInfo empty = BlockchainInfo(
     id: 0,
@@ -146,8 +149,8 @@ sealed class AppToken with _$AppToken {
   bool get isUSDT =>
       blockchain.appBlockchain == AppBlockchain.tron &&
       [
-        CoreConsts.contractUSDTonMainnet,
-        CoreConsts.contractUSDTonNile,
+        CoreConsts.contractUSDTronMainnet,
+        CoreConsts.contractUSDTronNile,
       ].contains(contractAddress);
 
   /// Active token is BTC

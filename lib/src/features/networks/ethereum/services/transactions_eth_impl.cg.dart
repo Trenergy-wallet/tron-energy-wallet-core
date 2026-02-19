@@ -8,6 +8,7 @@ import 'package:tron_energy_wallet_core/src/features/networks/ethereum/abi/abi.d
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/optimism_getl1fee.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
+part 'transactions_base_impl.dart';
 part 'transactions_optimism_impl.dart';
 
 /// Transactions Service
@@ -36,10 +37,10 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
          '$appBlockchain is not supported',
        ) {
     _logger = logger ?? InAppLogger();
-    if (appBlockchain.isOptimism) {
+    if (appBlockchain.isOptimism || appBlockchain.isBase) {
       assert(
         _onEstimateL1Fee != null,
-        'onEstimateL1Fee is required for Optimism. Consider using '
+        'onEstimateL1Fee is required. Consider using local implementation like '
         'TransactionsServiceOptimismImpl',
       );
     }
@@ -81,6 +82,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
     AppBlockchain.arbitrum,
     AppBlockchain.polygon,
     AppBlockchain.optimism,
+    AppBlockchain.base,
   ];
 
   /// Estimates the L1 fee in wei (if applicable)
