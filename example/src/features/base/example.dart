@@ -1,0 +1,101 @@
+// example purposes
+// ignore_for_file: unused_local_variable
+
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
+import 'package:on_chain/ethereum/ethereum.dart';
+import 'package:on_chain/solidity/address/core.dart';
+import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
+
+import 'domain/asset.dart';
+
+// https://docs.base.org/base-chain/quickstart/connecting-to-base
+
+// Explorer
+// https://base.blockscout.com/
+// https://base-sepolia.blockscout.com/
+
+// Faucet
+// https://learnweb3.io/faucets/base_sepolia/
+// https://faucet.circle.com/
+
+final _rpc = EthereumProvider(
+  EthereumHTTPProvider(
+    // 'https://mainnet.base.org/',
+    'https://sepolia.base.org/',
+    '',
+  ),
+);
+
+Future<void> main() async {
+  const name = 'BaseExample';
+  final logger = InAppLogger()..usePrint = true;
+  final service = TransactionsServiceBaseImpl(
+    rpc: _rpc,
+    getSigningKey: (_) async => 'your-mnemonic',
+    logger: logger,
+  );
+
+  final walletInfo = await service.initializeWalletAndGetInfo(
+    masterKey: '',
+  );
+
+  logger.logInfoMessage(name, 'Main address: ${walletInfo.address}');
+
+  final asset = baseEthAssetExample(
+    address: walletInfo.address,
+    supportsEIP1559: false,
+    isMainnet: false,
+  );
+
+  final bal = await _rpc.request(
+    EthereumRequestGetBalance(address: walletInfo.address),
+  );
+  logger.logInfoMessage(name, 'Balance: $bal');
+
+  // Example asset for ERC20 token transfer
+  final assetERC20 = baseUSDCTestnetAssetExample(
+    address: walletInfo.address,
+    supportsEIP1559: true,
+  );
+
+  final tokenBalance = await _rpc.request(
+    RPCERC20TokenBalance(
+      assetERC20.token.contractAddress,
+      SolidityAddress(walletInfo.address),
+    ),
+  );
+  logger.logInfoMessage(name, 'TokenBalance: $tokenBalance');
+
+  // final feeEstimate = await service.tryEstimateFee(
+  //   addressToSend: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+  //   asset: assetERC20,
+  //   amount: '0.01',
+  //   // message: 'hi',
+  // );
+  // logger.logInfoMessage(name, 'Est fee: $feeEstimate');
+
+  final tx = await service.createTransaction(
+    toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+    amount: BigRational.parseDecimal('0.0001'),
+    asset: asset,
+    masterKey: '',
+    // message: 'hi',
+  );
+  logger.logInfoMessage(name, 'TX: $tx');
+  final sentTx = await _postTransactionOp(tx: tx);
+  logger.logInfoMessage(name, 'SENT: $sentTx');
+}
+
+Future<TransactionInfoData> _postTransactionOp({
+  required String tx,
+}) async {
+  final res = await _rpc.request(
+    EthereumRequestSendRawTransaction(transaction: tx),
+  );
+  return TransactionInfoData(
+    txId: res,
+    linkToBlockchain: 'https://base-sepolia.blockscout.com/tx/$res',
+  );
+}

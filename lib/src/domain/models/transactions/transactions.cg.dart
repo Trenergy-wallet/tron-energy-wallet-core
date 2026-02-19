@@ -7,11 +7,12 @@ part 'gen/transactions.cg.f.dart';
 @freezed
 sealed class TransactionInfoData with _$TransactionInfoData {
   /// 6.2 Transaction Info
-  const factory TransactionInfoData(
-      {required String txId,
-      required String linkToBlockchain}) = _TransactionInfoData;
+  const factory TransactionInfoData({
+    required String txId,
+    required String linkToBlockchain,
+  }) = _TransactionInfoData;
 }
 
 /// Either ExtendedErrors, TransactionInfoData
-typedef ErrOrTransactionInfo
-    = Either<AppExceptionWithCode, TransactionInfoData>;
+typedef ErrOrTransactionInfo =
+    Either<AppExceptionWithCode, TransactionInfoData>;
