@@ -10,8 +10,7 @@ final tonRpc = TonProvider(
   TonHTTPProvider(
     tonApiUrl: 'https://testnet.tonapi.io',
     tonCenterUrl: 'https://testnet.toncenter.com',
-    tonApiKey:
-        '6ac81ac0a00a2b21a8b38550cd072dbf4ed055100d9d4ae33a99266b4b7c2058',
+    tonApiKey: 'your api key',
   ),
 );
 
