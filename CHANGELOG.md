@@ -1,3 +1,9 @@
+## 1.7.0
+
+### Added
+
+- Base network support
+
 ## 1.6.2
 
 - added fee buffer for EVM legacy transactions
