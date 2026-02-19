@@ -11,6 +11,8 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'domain/asset.dart';
 
+// Explorer: https://nile.tronscan.org
+
 final tronRpc = TronProvider(
   TronHTTPProvider(
     url: 'https://nile.trongrid.io',
@@ -42,21 +44,10 @@ Future<void> main() async {
     message: 'hello example',
   );
   logger.logInfoMessage('tronExample', 'TX: $tx');
-  final sentTx = await _postTransactionTron(tx: tx);
-  logger.logInfoMessage('tronExample', 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionTron({
-  required String tx,
-}) async {
   final decoded = json.decode(tx) as Map<String, dynamic>;
   final transaction = Transaction.fromJson(decoded);
-  final res = await tronRpc.request(
+  final sentTx = await tronRpc.request(
     TronRequestBroadcastHex(transaction: transaction.toHex),
   );
-
-  return TransactionInfoData(
-    txId: res.txid,
-    linkToBlockchain: 'https://nile.tronscan.org/#/transaction/${res.txid}',
-  );
+  logger.logInfoMessage('tronExample', 'SENT: $sentTx');
 }

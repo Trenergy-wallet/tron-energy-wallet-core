@@ -71,19 +71,8 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage('polExample', 'TX: $tx');
-  final sentTx = await _postTransactionPol(tx: tx);
-
-  logger.logInfoMessage('polExample', 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionPol({
-  required String tx,
-}) async {
-  final res = await _rpc.request(
+  final sentTx = await _rpc.request(
     EthereumRequestSendRawTransaction(transaction: tx),
   );
-  return TransactionInfoData(
-    txId: res,
-    linkToBlockchain: 'https://amoy.polygonscan.com/tx/$res',
-  );
+  logger.logInfoMessage('polExample', 'SENT: $sentTx');
 }

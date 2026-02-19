@@ -62,18 +62,8 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage('bnbExample', 'TX: $tx');
-  final sentTx = await _postTransactionBSC(tx: tx);
-  logger.logInfoMessage('bnbExample', 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionBSC({
-  required String tx,
-}) async {
-  final res = await _rpc.request(
+  final sentTx = await _rpc.request(
     EthereumRequestSendRawTransaction(transaction: tx),
   );
-  return TransactionInfoData(
-    txId: res,
-    linkToBlockchain: 'https://testnet.bsctrace.com/tx/$res',
-  );
+  logger.logInfoMessage('bnbExample', 'SENT: $sentTx');
 }

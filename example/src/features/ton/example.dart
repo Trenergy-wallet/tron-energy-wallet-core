@@ -6,6 +6,8 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'domain/asset.dart';
 
+// Explorer: https://testnet.tonscan.org
+
 final tonRpc = TonProvider(
   TonHTTPProvider(
     tonApiUrl: 'https://testnet.tonapi.io',
@@ -37,21 +39,11 @@ Future<void> main() async {
     masterKey: '',
   );
   logger.logInfoMessage('tonExample', 'TX: $tx');
-  final sentTx = await _postTransactionTon(tx: tx);
-  logger.logInfoMessage('tonExample', 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionTon({
-  required String tx,
-}) async {
   final res = await tonRpc.request(TonCenterSendBocReturnHash(tx));
   // Also:
   // final res = await tonProvider.request(
   //   TonApiSendBlockchainMessage(batch: [], boc: tx),
   // );
-  final hash = res['hash'].toString();
-  return TransactionInfoData(
-    txId: hash,
-    linkToBlockchain: 'https://testnet.tonscan.org/tx/$hash',
-  );
+  final sentTx = res['hash'].toString();
+  logger.logInfoMessage('tonExample', 'SENT: $sentTx');
 }

@@ -1,6 +1,3 @@
-// example purposes
-// ignore_for_file: unused_local_variable
-
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:on_chain/solidity/address/core.dart';
@@ -84,18 +81,8 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage(name, 'TX: $tx');
-  final sentTx = await _postTransactionOp(tx: tx);
-  logger.logInfoMessage(name, 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionOp({
-  required String tx,
-}) async {
-  final res = await _rpc.request(
+  final sentTx = await _rpc.request(
     EthereumRequestSendRawTransaction(transaction: tx),
   );
-  return TransactionInfoData(
-    txId: res,
-    linkToBlockchain: 'https://base-sepolia.blockscout.com/tx/$res',
-  );
+  logger.logInfoMessage(name, 'SENT: $sentTx');
 }

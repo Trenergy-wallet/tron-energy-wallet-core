@@ -84,18 +84,8 @@ Future<void> main() async {
     // message: 'hi',
   );
   logger.logInfoMessage(name, 'TX: $tx');
-  // final sentTx = await _postTransactionOp(tx: tx);
+  // final sentTx = await _rpc.request(
+  //   EthereumRequestSendRawTransaction(transaction: tx),
+  // );
   // logger.logInfoMessage(name, 'SENT: $sentTx');
-}
-
-Future<TransactionInfoData> _postTransactionOp({
-  required String tx,
-}) async {
-  final res = await _rpc.request(
-    EthereumRequestSendRawTransaction(transaction: tx),
-  );
-  return TransactionInfoData(
-    txId: res,
-    linkToBlockchain: 'https://testnet-explorer.optimism.io/tx/$res',
-  );
 }
