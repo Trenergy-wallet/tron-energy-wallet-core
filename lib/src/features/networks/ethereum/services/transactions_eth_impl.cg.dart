@@ -120,19 +120,12 @@ class TransactionsServiceEthereumImpl
   @override
   Future<String> createTransaction({
     required TransferParamsETH params,
-    // required String toAddress,
-    // required BigRational amount,
-    // required AppAsset asset,
     required String masterKey,
-    // String? message,
-    // FeeType? feeType,
-    // EstimateFeeModel? userApprovedFee,
-    // String? txIdToPumpFeeBTC,
   }) async {
-    if (params.appBlockchain != appBlockchain) {
-      throw AppIncorrectBlockchainException(
-        appBlockchain.toString(),
-        params.appBlockchain.toString(),
+    if (!supportedBlockchains.contains(params.appBlockchain)) {
+      throw AppException(
+        message: 'Blockchain is not supported: ${params.appBlockchain}',
+        code: ExceptionCode.blockchainIsNotSupported,
       );
     }
     if (params.amount <= BigRational.zero) {
@@ -145,17 +138,6 @@ class TransactionsServiceEthereumImpl
     }
     final tx = await _tryCreateTransaction(
       params: params,
-      // to: ETHAddress(params.to),
-      // from: ETHAddress(params.from),
-      // supportsEIP1559: params.supportsEIP1559,
-      // tokenWalletType: params.tokenWalletType,
-      // chainId: params.chainId,
-      // amount: params.amount,
-      // message: params.message,
-      // feeType: params.feeType,
-      // tokenDecimal: params.tokenDecimal,
-      // tokenContract: params.tokenContractAddress,
-      // tokenName: params.tokenName,
     );
     if (params.userApprovedFee != null) {
       final userApproved = ETHHelper.toWei(
@@ -189,15 +171,7 @@ class TransactionsServiceEthereumImpl
   Future<ETHTransaction> buildTransaction({
     required EthereumProvider rpc,
     required TransferParamsETH params,
-    // required ETHAddress to,
-    // required ETHAddress from,
-    // required bool supportsEIP1559,
-    // required TokenWalletType tokenWalletType,
-    // required int chainId,
     required int nonce,
-    // required FeeType feeType,
-    // required BigRational amount,
-    // String? memo,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
@@ -277,19 +251,9 @@ class TransactionsServiceEthereumImpl
   Future<ETHTransaction> buildERC20Transaction({
     required EthereumProvider rpc,
     required TransferParamsETH params,
-    // required ETHAddress to,
-    // required ETHAddress from,
-    // required bool supportsEIP1559,
-    // required TokenWalletType tokenWalletType,
-    // required int chainId,
     required int nonce,
-    // required FeeType feeType,
-    // required BigRational amount,
-    // required int tokenDecimal,
-    // required String? tokenContract,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
-    // String? tokenName,
   }) async {
     ETHTransaction? tx;
     if (params.tokenContractAddress == null) {
@@ -385,37 +349,14 @@ class TransactionsServiceEthereumImpl
   /// [CoreConsts.defaultEthFeeType] = default for ETH
   Future<String> tryEstimateFee({
     required TransferParamsETH params,
-    // required String to,
-    // required String from,
-    // required TokenWalletType tokenWalletType,
-    // required bool supportsEIP1559,
-    // required int chainId,
-    // required BigRational amount,
-    // required int tokenDecimal,
-    // required String tokenContract,
-    // String? tokenName,
-    // FeeType? feeType,
-    // // ERC20 token transfer fee depends on amount
-    // String? message,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
     final tx = await _tryCreateTransaction(
       params: params,
-      // from: ETHAddress(from),
-      // to: ETHAddress(to),
-      // supportsEIP1559: supportsEIP1559,
-      // tokenWalletType: tokenWalletType,
-      // chainId: chainId,
-      // amount: amount,
-      // message: message,
-      // feeType: feeType,
       gasPrice: gasPrice,
       eip1559Fee: eip1559Fee,
       forceUpdateNonce: false,
-      // tokenDecimal: tokenDecimal,
-      // tokenContract: tokenContract,
-      // tokenName: tokenName,
     );
     final l1fee = await _onEstimateL1Fee?.call(tx) ?? BigInt.zero;
     final feeInWei =
@@ -477,17 +418,6 @@ class TransactionsServiceEthereumImpl
   /// [forceUpdateNonce] - do not use cached nonce
   Future<ETHTransaction> _tryCreateTransaction({
     required TransferParamsETH params,
-    // required ETHAddress from,
-    // required ETHAddress to,
-    // required BigRational amount,
-    // required bool supportsEIP1559,
-    // required TokenWalletType tokenWalletType,
-    // required int chainId,
-    // required int tokenDecimal,
-    // required String? tokenContract,
-    // String? message,
-    // String? tokenName,
-    // FeeType? feeType,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
     bool forceUpdateNonce = true,
@@ -514,35 +444,17 @@ class TransactionsServiceEthereumImpl
         ? await buildTransaction(
             rpc: _ethereumProvider,
             params: params,
-            // from: from,
-            // to: to,
             nonce: nonce,
-            // feeType: feeType ?? CoreConsts.defaultEthFeeType,
-            // amount: amount,
-            // memo: message,
             gasPrice: gasPrice,
             eip1559Fee: eip1559Fee,
-            // supportsEIP1559: supportsEIP1559,
-            // tokenWalletType: tokenWalletType,
-            // chainId: chainId,
           )
         // Memo is not supported for standard ERC20 contracts
         : await buildERC20Transaction(
             rpc: _ethereumProvider,
             params: params,
-            // from: from,
-            // to: to,
             nonce: nonce,
-            // feeType: feeType ?? CoreConsts.defaultEthFeeType,
-            // amount: amount,
-            // tokenContract: tokenContract,
-            // tokenDecimal: tokenDecimal,
-            // tokenName: tokenName,
             gasPrice: gasPrice,
             eip1559Fee: eip1559Fee,
-            // supportsEIP1559: supportsEIP1559,
-            // tokenWalletType: tokenWalletType,
-            // chainId: chainId,
           );
   }
 

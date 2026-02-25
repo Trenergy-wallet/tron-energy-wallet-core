@@ -149,8 +149,8 @@ sealed class AppToken with _$AppToken {
   bool get isUSDT =>
       blockchain.appBlockchain == AppBlockchain.tron &&
       [
-        CoreConsts.contractUSDTronMainnet,
-        CoreConsts.contractUSDTronNile,
+        CoreConsts.contractUSDTTronMainnet,
+        CoreConsts.contractUSDTTronNile,
       ].contains(contractAddress);
 
   /// Active token is BTC
