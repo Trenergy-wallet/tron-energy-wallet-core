@@ -281,7 +281,7 @@ class TransactionsServiceEthereumImpl
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
         from: ETHAddress(params.from),
-        to: ETHAddress(params.to),
+        to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
         gasLimit: BigInt.zero,
         maxFeePerGas: maxFeePerGas,

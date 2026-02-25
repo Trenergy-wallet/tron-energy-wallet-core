@@ -47,7 +47,7 @@ Future<void> main() async {
 
   final tokenBalance = await _rpc.request(
     RPCERC20TokenBalance(
-      '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+      _usdcContractAddress,
       SolidityAddress(walletInfo.address),
     ),
   );
@@ -56,12 +56,14 @@ Future<void> main() async {
   // USDC Transfer
   // final tx = await ethService.createTransaction(
   //   params: TransferParamsETH(
-  //     to: '0x077B122c047a58174f1e8B011C8A6F768C0AC190',
+  //     to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
   //     from: walletInfo.address,
-  //     amount: BigRational.parseDecimal('0.001'),
+  //     amount: BigRational.parseDecimal('0.01'),
   //     chainId: _chainId,
-  //     supportsEIP1559: true, // true | false
-  //     tokenDecimal: 6, // USDC
+  //     supportsEIP1559: true,
+  //     // true | false
+  //     tokenDecimal: 6,
+  //     // USDC
   //     tokenContractAddress: _usdcContractAddress,
   //     tokenWalletType: TokenWalletType.child,
   //     tokenName: 'USDC',
@@ -72,7 +74,7 @@ Future<void> main() async {
   // ETH transfer
   final tx = await ethService.createTransaction(
     params: TransferParamsETH(
-      to: '0x077B122c047a58174f1e8B011C8A6F768C0AC190',
+      to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
       from: walletInfo.address,
       amount: BigRational.parseDecimal('0.001'),
       chainId: _chainId,
