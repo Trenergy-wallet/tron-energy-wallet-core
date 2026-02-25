@@ -51,5 +51,5 @@ Future<void> main() async {
   final sentTx = await tronRpc.request(
     TronRequestBroadcastHex(transaction: transaction.toHex),
   );
-  logger.logInfoMessage('tronExample', 'SENT: $sentTx');
+  logger.logInfoMessage('tronExample', 'SENT: ${sentTx.txid}');
 }
