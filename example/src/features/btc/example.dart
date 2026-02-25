@@ -4,7 +4,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 import 'data/repo/btc_node_repo_impl.dart';
-import 'domain/asset.dart';
 
 Future<void> main() async {
   final btcNodeRepo = BTCNodeRepoImpl(
@@ -26,13 +25,16 @@ Future<void> main() async {
     masterKey: '',
   );
   logger.logInfoMessage('btcExample', 'Address: ${walletInfo.address}');
-  final btcAsset = btcAssetExample(walletInfo.address);
   final tx = await btcService.createTransaction(
-    toAddress: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
-    amount: BigRational.parseDecimal('0.0001'),
-    asset: btcAsset,
+    params: TransferParamsBTC(
+      to: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.0001'),
+      tokenWalletType: TokenWalletType.master,
+      feeType: FeeType.optimal,
+      // message: '',
+    ),
     masterKey: '',
-    feeType: FeeType.optimal,
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
   final sentTx = await btcNodeRepo.postTransaction(tx: tx);
