@@ -227,7 +227,7 @@ class TransactionsServiceTonImpl
 
   @override
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async {
     try {
@@ -235,7 +235,7 @@ class TransactionsServiceTonImpl
           _walletService ??
           TonWalletService.fromWalletAddress(
             tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
-            address: asset.address,
+            address: assetAddress,
             rpc: _rpc,
             logger: _logger,
           );

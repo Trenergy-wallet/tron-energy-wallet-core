@@ -78,7 +78,8 @@ class TransactionsServiceTronImpl
     if (!params.amount.isPositive) {
       throw AppException(
         message:
-            'unable to create transaction: amount is not valid: ${params.amount}',
+            'unable to create transaction: amount is not '
+            'valid: ${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
@@ -221,7 +222,7 @@ class TransactionsServiceTronImpl
 
   @override
   Future<bool> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 }

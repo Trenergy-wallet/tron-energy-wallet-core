@@ -84,24 +84,6 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
   /// For example purposes only.
   ///
   /// Not a part of core base interface [BTCNodeRepo]
-  Future<TransactionInfoData> postTransaction({
-    required String tx,
-  }) async {
-    final service = BitcoinApiService();
-    final api = ApiProvider.fromMempool(
-      isTestnet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
-      service,
-    );
-    final txId = await api.sendRawTransaction(tx);
-    return TransactionInfoData(
-      txId: txId,
-      linkToBlockchain: 'https://mempool.space/signet/tx/$txId',
-    );
-  }
-
-  /// For example purposes only.
-  ///
-  /// Not a part of core base interface [BTCNodeRepo]
   Future<Either<AppExceptionWithCode, EstimateFeeModel>> getEstimateFee({
     required double amount,
     required AppBlockchain appBlockchain,

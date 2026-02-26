@@ -340,7 +340,7 @@ class TransactionsServiceEthereumImpl
 
   @override
   Future<bool> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 

@@ -29,7 +29,7 @@ class TransferParamsBTC extends TransferParams {
   final EstimateFeeModel? userApprovedFee;
 
   /// Unconfirmed transaction for which the
-  /// fee needs to be bumped. In this case, [toAddress], [amount], and [message]
+  /// fee needs to be bumped. In this case, [to], [amount], and [message]
   /// will be ignored since data will be taken from this transaction
   final String? txIdToPumpFeeBTC;
 }

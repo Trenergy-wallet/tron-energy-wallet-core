@@ -3,6 +3,7 @@ import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
+import 'data/api/btc_explorer_service.dart';
 import 'data/repo/btc_node_repo_impl.dart';
 
 Future<void> main() async {
@@ -37,6 +38,11 @@ Future<void> main() async {
     masterKey: '',
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
-  final sentTx = await btcNodeRepo.postTransaction(tx: tx);
-  logger.logInfoMessage('btcExample', 'SENT: $sentTx');
+  final service = BitcoinApiService();
+  final api = ApiProvider.fromMempool(
+    BitcoinNetwork.signet, // BitcoinNetwork.mainnet,
+    service,
+  );
+  final txId = await api.sendRawTransaction(tx);
+  logger.logInfoMessage('btcExample', 'SENT ID: $txId');
 }

@@ -103,14 +103,6 @@ class TransactionsServiceBTCImpl
     ) = await prepareTransactionAndCalculateSize(
       params: params,
       masterKey: masterKey,
-      // toAddress: params.toAddress,
-      // amount: params.amount,
-      // masterKey: params.masterKey,
-      // message: params.message,
-      // txIdToPumpFeeBTC: params.txIdToPumpFeeBTC,
-      // appBlockchain: params.appBlockchain,
-      // tokenWalletType: params.tokenWalletType,
-      // fromAddress: params.fromAddress,
     );
     // 4.2 Get fee rates per byte from the backend
     final networkEstimate = (await _estimateFee(
@@ -281,7 +273,7 @@ class TransactionsServiceBTCImpl
 
   @override
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 }
@@ -342,14 +334,6 @@ mixin SingingKeyCreatorBTC {
   prepareTransactionAndCalculateSize({
     required TransferParamsBTC params,
     required String masterKey,
-    // required String toAddress,
-    // required BigRational amount,
-    // required AppBlockchain appBlockchain,
-    // required TokenWalletType tokenWalletType,
-    // required String fromAddress,
-    // required String masterKey,
-    // String? message,
-    // String? txIdToPumpFeeBTC,
   }) async {
     if (params.appBlockchain != appBlockchain) {
       throw AppIncorrectBlockchainException(

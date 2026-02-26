@@ -1,6 +1,3 @@
-// example purposes
-// ignore_for_file: unused_local_variable
-
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:on_chain/solidity/address/core.dart';

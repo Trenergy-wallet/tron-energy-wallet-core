@@ -1,4 +1,4 @@
-part of 'transactions_eth_impl.cg.dart';
+part of 'transactions_eth_impl.dart';
 
 /// Transactions Service
 ///

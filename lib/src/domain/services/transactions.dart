@@ -15,14 +15,6 @@ interface class TransactionsService<T extends TransferParams> {
   Future<String> createTransaction({
     required T params,
     required String masterKey,
-    // required String toAddress,
-    // required BigRational amount,
-    // required AppAsset asset,
-    // required String masterKey,
-    // String? message,
-    // FeeType? feeType,
-    // EstimateFeeModel? userApprovedFee,
-    // String? txIdToPumpFeeBTC,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
@@ -44,7 +36,7 @@ interface class TransactionsService<T extends TransferParams> {
   ///
   /// null if the status could not be verified
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
