@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
@@ -9,7 +8,8 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 /// Transactions Service
 ///
 /// Provides services for creating and signing transactions
-class TransactionsServiceTonImpl implements TransactionsService {
+class TransactionsServiceTonImpl
+    implements TransactionsService<TransferParamsTON> {
   /// Transactions Service
   ///
   /// Provides services for creating and signing transactions
@@ -90,25 +90,15 @@ class TransactionsServiceTonImpl implements TransactionsService {
 
   @override
   Future<String> createTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required TransferParamsTON params,
     required String masterKey,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
-    String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
-    if (asset.token.blockchain.appBlockchain != appBlockchain) {
-      throw AppIncorrectBlockchainException(
-        appBlockchain.toString(),
-        asset.token.blockchain.appBlockchain.toString(),
-      );
-    }
-    if (!amount.isPositive) {
+    if (!params.amount.isPositive) {
       throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
+        message:
+            'unable to create transaction: amount is not valid:'
+            ' ${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
@@ -118,9 +108,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
     // Failed to initialize the service, exiting
     if (_walletService == null) {
       throw AppException(
-        message:
-            'Initialisation error for walletService: asset: '
-            '${asset.token.name}',
+        message: 'Initialisation error for walletService',
         code: ExceptionCode.unableToInitializeWalletService,
       );
     }
@@ -128,55 +116,55 @@ class TransactionsServiceTonImpl implements TransactionsService {
     final key = walletInfo.pkAsBytes.isEmpty
         ? await _createSigningKey(masterKey: masterKey)
         : TonPrivateKey.fromBytes(walletInfo.pkAsBytes);
-    switch (asset.token.tokenWalletType) {
+    switch (params.tokenWalletType) {
       case TokenWalletType.master:
         signedTransaction = await _walletService?.createTransfer(
           accessKey: key,
-          addressTo: toAddress,
-          amount: amount.toString(),
-          message: message,
+          addressTo: params.to,
+          amount: params.amount.toString(),
+          message: params.message,
           sendToBlockchain: false,
         );
       case TokenWalletType.child:
-        var jettonWalletService = _jettonWallets[asset.token.id];
-        if (asset.childWalletAddress.isEmpty) {
+        var jettonWalletService = _jettonWallets[params.coinInfo.id];
+        if (params.coinInfo.childWalletAddress.isEmpty) {
           throw AppException(
             message:
                 'No jettonWalletAddress provided for master '
-                'wallet ${asset.address}',
+                'wallet ${params.from}',
             code: ExceptionCode.noJettonWallet,
           );
         }
         jettonWalletService ??= await _walletService?.openJettonWallet(
-          jettonContractAddress: asset.token.contractAddress,
-          jettonWalletAddress: asset.childWalletAddress,
+          jettonContractAddress: params.coinInfo.contractAddress,
+          jettonWalletAddress: params.coinInfo.childWalletAddress,
           jettonOnChainMetadata: JettonOnChainMetadata.snakeFormat(
-            name: asset.token.name,
-            image: asset.token.icon,
-            symbol: asset.token.shortName,
-            decimals: asset.token.decimal,
+            name: params.coinInfo.name,
+            image: params.coinInfo.icon,
+            symbol: params.coinInfo.shortName,
+            decimals: params.coinInfo.decimal,
           ),
         );
         if (jettonWalletService == null) {
           throw AppException(
             message:
                 'Unable to initialise jetton service for '
-                'token ${asset.token.name}',
+                'token ${params.coinInfo.name}',
             code: ExceptionCode.unableToInitializeWalletService,
           );
         }
-        _jettonWallets[asset.token.id] = jettonWalletService;
+        _jettonWallets[params.coinInfo.id] = jettonWalletService;
         signedTransaction = await jettonWalletService.sendJettons(
           key: key,
-          amount: amount.toString(),
-          recipient: TonAddress(toAddress),
+          amount: params.amount.toString(),
+          recipient: TonAddress(params.to),
           sendToBlockchain: false,
-          message: message,
+          message: params.message,
         );
       case TokenWalletType.stable:
       case TokenWalletType.unknown:
         throw AppException(
-          message: '${asset.token.tokenWalletType} is not supported',
+          message: '${params.tokenWalletType} is not supported',
           code: ExceptionCode.tokenIsNotSupported,
         );
     }
@@ -239,7 +227,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
 
   @override
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async {
     try {
@@ -247,7 +235,7 @@ class TransactionsServiceTonImpl implements TransactionsService {
           _walletService ??
           TonWalletService.fromWalletAddress(
             tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
-            address: asset.address,
+            address: assetAddress,
             rpc: _rpc,
             logger: _logger,
           );

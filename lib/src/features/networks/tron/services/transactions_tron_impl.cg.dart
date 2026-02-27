@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -10,7 +9,8 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 /// Transactions Service
 ///
 /// Provides services for creating and signing TRON transactions
-class TransactionsServiceTronImpl implements TransactionsService {
+class TransactionsServiceTronImpl
+    implements TransactionsService<TransferParamsTRON> {
   /// Transactions Service
   ///
   /// Provides services for creating and signing TRON transactions
@@ -61,40 +61,37 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
   /// Send TRX
   ///
-  /// [message] = memo field. If you include a memo, keep at least 1 TRX in
+  /// params.message = memo field. If you include a memo, keep at least 1 TRX in
   /// your account to safely cover the additional cost
   @override
   Future<String> createTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required TransferParamsTRON params,
+    // required String toAddress,
+    // required BigRational amount,
+    // required AppAsset asset,
     required String masterKey,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
-    String? txIdToPumpFeeBTC,
+    // String? message,
+    // FeeType? feeType,
+    // EstimateFeeModel? userApprovedFee,
+    // String? txIdToPumpFeeBTC,
   }) async {
-    if (asset.token.blockchain.appBlockchain != appBlockchain) {
-      throw AppIncorrectBlockchainException(
-        appBlockchain.toString(),
-        asset.token.blockchain.appBlockchain.toString(),
-      );
-    }
-    if (!amount.isPositive) {
+    if (!params.amount.isPositive) {
       throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
+        message:
+            'unable to create transaction: amount is not '
+            'valid: ${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
     // Sending a transaction in TRX
-    if (asset.isTrx) {
+    if (params.tokenWalletType.isMaster) {
       _logger.logInfoMessage(_name, 'creating TRX transaction');
 
       // Create transfer contract (TRX Transfer)
       final transferContract = TransferContract(
-        amount: TronHelper.toSun(amount.toString()),
-        ownerAddress: TronAddress(asset.address),
-        toAddress: TronAddress(toAddress),
+        amount: TronHelper.toSun(params.amount.toString()),
+        ownerAddress: TronAddress(params.from),
+        toAddress: TronAddress(params.to),
       );
 
       _logger.logInfoMessage(_name, 'transferContract: $transferContract');
@@ -107,10 +104,10 @@ class TransactionsServiceTronImpl implements TransactionsService {
       // Another way of creating transaction with memo included
       // final transaction = await _tronProvider.request(
       //   TronRequestCreateTransaction(
-      //     ownerAddress: TronAddress(asset.address),
-      //     toAddress: TronAddress(toAddress),
-      //     amount: TronHelper.toSun(amount.toString()),
-      //     extraData: message,
+      //     ownerAddress: TronAddress(params.from),
+      //     toAddress: TronAddress(params.to),
+      //     amount: TronHelper.toSun(params.amount.toString()),
+      //     extraData: params.message,
       //   ),
       // );
 
@@ -125,30 +122,37 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
       final rawTr = transaction.rawData.copyWith(
         expiration: transactionTTL,
-        data: message == null ? null : utf8.encode(message),
+        data: params.message == null ? null : utf8.encode(params.message!),
       );
 
       // - feeLimit is not set here. See chat trenergy on 02.06.25
       return _signTransaction(rawTr: rawTr, masterKey: masterKey);
     }
     _logger.logInfoMessage(_name, 'creating non-TRX transaction');
+    if (params.tokenContractAddress == null) {
+      throw AppException(
+        message: 'no tokenContractAddress for non-TRX transaction',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
+    }
+
     final contract = ContractABI.fromJson(trc20Abi);
     final function = contract.functionFromName('transfer');
 
     // address, amount
     final transferParams = [
-      TronAddress(toAddress),
+      TronAddress(params.to),
       DecimalConverter.toBigInt(
-        amount: amount.toString(),
-        decimals: asset.token.decimal,
+        amount: params.amount.toString(),
+        decimals: params.tokenDecimal,
       ),
     ];
 
-    final _contractAddress = TronAddress(asset.token.contractAddress);
+    final _contractAddress = TronAddress(params.tokenContractAddress!);
 
     final transaction = await _tronProvider.request(
       TronRequestTriggerConstantContract(
-        ownerAddress: TronAddress(asset.address),
+        ownerAddress: TronAddress(params.from),
         contractAddress: _contractAddress,
         data: function.encodeHex(transferParams),
       ),
@@ -181,7 +185,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
     final rawTr = transaction.transaction!.rawData.copyWith(
       feeLimit: TronHelper.toSun('100'),
       expiration: transactionTTL,
-      data: message == null ? null : utf8.encode(message),
+      data: params.message == null ? null : utf8.encode(params.message!),
     );
 
     return _signTransaction(rawTr: rawTr, masterKey: masterKey);
@@ -218,7 +222,7 @@ class TransactionsServiceTronImpl implements TransactionsService {
 
   @override
   Future<bool> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 }

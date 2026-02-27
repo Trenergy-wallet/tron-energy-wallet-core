@@ -14,7 +14,8 @@ part 'transactions_optimism_impl.dart';
 /// Transactions Service
 ///
 /// Provides services for creating and signing ETHEREUM transactions
-class TransactionsServiceEthereumImpl implements TransactionsService {
+class TransactionsServiceEthereumImpl
+    implements TransactionsService<TransferParamsETH> {
   /// Transactions Service
   ///
   /// Provides services for creating and signing ETHEREUM transactions
@@ -118,45 +119,50 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   /// Create signed transaction for Ethereum or compatible token
   @override
   Future<String> createTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required TransferParamsETH params,
     required String masterKey,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
-    String? txIdToPumpFeeBTC,
   }) async {
-    if (amount <= BigRational.zero) {
+    if (!supportedBlockchains.contains(params.appBlockchain)) {
       throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
+        message: 'Blockchain is not supported: ${params.appBlockchain}',
+        code: ExceptionCode.blockchainIsNotSupported,
+      );
+    }
+    if (params.amount <= BigRational.zero) {
+      throw AppException(
+        message:
+            'unable to create transaction: amount is not valid: '
+            '${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
     final tx = await _tryCreateTransaction(
-      toAddress: toAddress,
-      amount: amount,
-      asset: asset,
-      message: message,
-      feeType: feeType,
-      userApprovedFee: userApprovedFee,
+      params: params,
     );
-    if (userApprovedFee != null) {
-      final userApproved = ETHHelper.toWei(userApprovedFee.fee.toString());
+    if (params.userApprovedFee != null) {
+      final userApproved = ETHHelper.toWei(
+        params.userApprovedFee!.fee.toString(),
+      );
       final feeInWei = switch (tx.transactionType) {
         ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
         _ => tx.gasPrice! * tx.gasLimit,
       };
+      final parsedFeeBuffer = BigRational.parseDecimal(
+        '${params.approvedFeeBuffer}',
+      );
       _logger.logInfoMessage(
         _name,
         'createTransactionOrThrow: feeInWei: $feeInWei '
         '(maxFeePerGas: ${tx.maxFeePerGas}, '
         'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}), '
-        'user approved: $userApproved',
+        'user approved: $userApproved, parsedFeeBuffer: $parsedFeeBuffer',
       );
-      if (userApproved < feeInWei) {
+      if (feeInWei >
+          (userApproved *
+              parsedFeeBuffer.numerator ~/
+              parsedFeeBuffer.denominator)) {
         throw AppFeeChangedException(
-          userApprovedFee,
+          params.userApprovedFee!,
           EstimateFeeModel.empty.copyWith(
             fee: double.parse(ETHHelper.fromWei(feeInWei)),
           ),
@@ -170,23 +176,19 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   @visibleForTesting
   Future<ETHTransaction> buildTransaction({
     required EthereumProvider rpc,
-    required AppAsset asset,
-    required ETHAddress toAddress,
+    required TransferParamsETH params,
     required int nonce,
-    required FeeType feeType,
-    required BigRational amount,
-    String? memo,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
     ETHTransaction? tx;
-    if (asset.token.blockchain.supportsEIP1559 && eip1559Fee != null) {
+    if (params.supportsEIP1559 && eip1559Fee != null) {
       _logger.logInfoMessage(
         _name,
-        'Creating eip1559Fee transaction to ${toAddress.address}, '
-        'amount: $amount',
+        'Creating eip1559Fee transaction to ${params.to}, '
+        'amount: ${params.amount}',
       );
-      final selectedFee = switch (feeType) {
+      final selectedFee = switch (params.feeType) {
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
@@ -197,20 +199,21 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       );
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
-        from: ETHAddress(asset.address),
-        to: toAddress,
+        from: ETHAddress(params.from),
+        to: ETHAddress(params.to),
         nonce: nonce,
         gasLimit: BigInt.zero,
         maxFeePerGas: maxFeePerGas,
         maxPriorityFeePerGas: selectedFee,
         data: [
-          if (memo != null && memo.isNotEmpty) ...StringUtils.toBytes(memo),
+          if (params.message != null && params.message!.isNotEmpty)
+            ...StringUtils.toBytes(params.message!),
         ],
-        value: ETHHelper.toWei(amount.toString()),
-        chainId: BigInt.from(asset.token.blockchain.chainId),
+        value: ETHHelper.toWei(params.amount.toString()),
+        chainId: BigInt.from(params.chainId),
       );
     } else {
-      if (asset.token.blockchain.supportsEIP1559) {
+      if (params.supportsEIP1559) {
         _logger.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
@@ -225,17 +228,18 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       gasPrice = applyLegacyFeeBufferMultiplier(gasPrice);
       tx = ETHTransaction(
         type: ETHTransactionType.legacy,
-        from: ETHAddress(asset.address),
-        to: toAddress,
+        from: ETHAddress(params.from),
+        to: ETHAddress(params.to),
         nonce: nonce,
         gasLimit: BigInt.zero,
         // Only for legacy and eip2930 transactions
         gasPrice: gasPrice,
         data: [
-          if (memo != null && memo.isNotEmpty) ...StringUtils.toBytes(memo),
+          if (params.message != null && params.message!.isNotEmpty)
+            ...StringUtils.toBytes(params.message!),
         ],
-        value: ETHHelper.toWei(amount.toString()),
-        chainId: BigInt.from(asset.token.blockchain.chainId),
+        value: ETHHelper.toWei(params.amount.toString()),
+        chainId: BigInt.from(params.chainId),
       );
     }
     var gasLimit = await rpc.request(
@@ -252,23 +256,26 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   @visibleForTesting
   Future<ETHTransaction> buildERC20Transaction({
     required EthereumProvider rpc,
-    required AppAsset asset,
-    required ETHAddress toAddress,
+    required TransferParamsETH params,
     required int nonce,
-    required FeeType feeType,
-    required BigRational amount,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
     ETHTransaction? tx;
-
-    if (asset.token.blockchain.supportsEIP1559 && eip1559Fee != null) {
+    if (params.tokenContractAddress == null) {
+      throw AppException(
+        message: 'Token contract is null',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
+    }
+    if (params.supportsEIP1559 && eip1559Fee != null) {
       _logger.logInfoMessage(
         _name,
-        'Creating eip1559Fee ERC20 transaction to ${toAddress.address}, '
-        'amount: $amount, token: ${asset.token.name}',
+        'Creating eip1559Fee ERC20 transaction to ${params.to}, '
+        'amount: ${params.amount}${params.tokenName != null ? ', '
+                  'token: ${params.tokenName}' : ''}',
       );
-      final selectedFee = switch (feeType) {
+      final selectedFee = switch (params.feeType) {
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
@@ -279,24 +286,24 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       );
       tx = ETHTransaction(
         type: ETHTransactionType.eip1559,
-        from: ETHAddress(asset.address),
-        to: ETHAddress(asset.token.contractAddress),
+        from: ETHAddress(params.from),
+        to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
         gasLimit: BigInt.zero,
         maxFeePerGas: maxFeePerGas,
         maxPriorityFeePerGas: selectedFee,
         data: ethTransferAbiFragment.encode([
-          toAddress,
+          ETHAddress(params.to),
           DecimalConverter.toBigInt(
-            amount: amount.toString(),
-            decimals: asset.token.decimal,
+            amount: params.amount.toString(),
+            decimals: params.tokenDecimal,
           ),
         ]),
         value: BigInt.zero,
-        chainId: BigInt.from(asset.token.blockchain.chainId),
+        chainId: BigInt.from(params.chainId),
       );
     } else {
-      if (asset.token.blockchain.supportsEIP1559) {
+      if (params.supportsEIP1559) {
         _logger.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
@@ -311,20 +318,20 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
       gasPrice = applyLegacyFeeBufferMultiplier(gasPrice);
       tx = ETHTransaction(
         type: ETHTransactionType.legacy,
-        from: ETHAddress(asset.address),
-        to: ETHAddress(asset.token.contractAddress),
+        from: ETHAddress(params.from),
+        to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
         gasLimit: BigInt.zero,
         gasPrice: gasPrice,
         data: ethTransferAbiFragment.encode([
-          toAddress,
+          ETHAddress(params.to),
           DecimalConverter.toBigInt(
-            amount: amount.toString(),
-            decimals: asset.token.decimal,
+            amount: params.amount.toString(),
+            decimals: params.tokenDecimal,
           ),
         ]),
         value: BigInt.zero,
-        chainId: BigInt.from(asset.token.blockchain.chainId),
+        chainId: BigInt.from(params.chainId),
       );
     }
     var gasLimit = await rpc.request(
@@ -339,7 +346,7 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
 
   @override
   Future<bool> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 
@@ -347,28 +354,12 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   ///
   /// [CoreConsts.defaultEthFeeType] = default for ETH
   Future<String> tryEstimateFee({
-    required String addressToSend,
-    required AppAsset asset,
-    FeeType? feeType,
-    // ERC20 token transfer fee depends on amount
-    String amount = '0',
-    String? message,
+    required TransferParamsETH params,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
   }) async {
-    final parsedAmount = BigRational.tryParseDecimaal(amount);
-    if (parsedAmount == null || parsedAmount <= BigRational.zero) {
-      throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
-        code: ExceptionCode.amountIsNotPositive,
-      );
-    }
     final tx = await _tryCreateTransaction(
-      toAddress: addressToSend,
-      amount: parsedAmount,
-      asset: asset,
-      message: message,
-      feeType: feeType,
+      params: params,
       gasPrice: gasPrice,
       eip1559Fee: eip1559Fee,
       forceUpdateNonce: false,
@@ -432,62 +423,42 @@ class TransactionsServiceEthereumImpl implements TransactionsService {
   ///
   /// [forceUpdateNonce] - do not use cached nonce
   Future<ETHTransaction> _tryCreateTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
+    required TransferParamsETH params,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
     bool forceUpdateNonce = true,
   }) async {
-    if (asset.token.blockchain.appBlockchain != appBlockchain) {
-      throw AppIncorrectBlockchainException(
-        appBlockchain.toString(),
-        asset.token.blockchain.appBlockchain.toString(),
-      );
-    }
-
-    if (amount < BigRational.zero) {
+    if (params.amount < BigRational.zero) {
       throw AppException(
         message:
-            'unable to create transaction: amount is not positive: $amount',
+            'unable to create transaction: amount is not positive: '
+            '${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
     final nonce = await _ethereumProvider.request(
-      EthereumRequestGetTransactionCount(address: asset.address),
+      EthereumRequestGetTransactionCount(address: params.from),
     );
 
-    final to = ETHAddress(toAddress);
-
-    if (asset.token.blockchain.supportsEIP1559) {
+    if (params.supportsEIP1559) {
       eip1559Fee ??= await tryGetEip1559Fee();
     } else {
       gasPrice ??= await tryGetGasPrice();
     }
 
-    return asset.token.tokenWalletType.isMaster
+    return params.tokenWalletType.isMaster
         ? await buildTransaction(
             rpc: _ethereumProvider,
-            asset: asset,
-            toAddress: to,
+            params: params,
             nonce: nonce,
-            feeType: feeType ?? CoreConsts.defaultEthFeeType,
-            amount: amount,
-            memo: message,
             gasPrice: gasPrice,
             eip1559Fee: eip1559Fee,
           )
         // Memo is not supported for standard ERC20 contracts
         : await buildERC20Transaction(
             rpc: _ethereumProvider,
-            asset: asset,
-            toAddress: to,
+            params: params,
             nonce: nonce,
-            feeType: feeType ?? CoreConsts.defaultEthFeeType,
-            amount: amount,
             gasPrice: gasPrice,
             eip1559Fee: eip1559Fee,
           );

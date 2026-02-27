@@ -30,10 +30,10 @@ class CoreConsts {
   );
 
   /// Contract address for USDT on TRON Mainnet
-  static const contractUSDTronMainnet = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+  static const contractUSDTTronMainnet = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
   /// Contract address for USDT on TRON Nile testnet
-  static const contractUSDTronNile = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
+  static const contractUSDTTronNile = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf';
 
   /// How many blocks are used to calculate the fee
   static const ethBlockCountForFee = 25;
@@ -43,6 +43,10 @@ class CoreConsts {
 
   /// Default ethereum FeeType if it was not selected
   static const FeeType defaultEthFeeType = FeeType.optimal;
+
+  /// The buffer between userApprovedFee and the current fee (multiplier to
+  /// userApprovedFee)
+  static const double defaultEthApprovedFeeBuffer = 3;
 
   /// Еth decimals
   static const ethDecimals = 16;

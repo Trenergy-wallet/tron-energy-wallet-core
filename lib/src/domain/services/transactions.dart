@@ -1,11 +1,10 @@
-import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tron_energy_wallet_core/src/core/core.dart';
 import 'package:tron_energy_wallet_core/src/domain/models/models.dart';
 
 /// Transactions Service
 ///
 /// Provides services for creating and signing transactions
-interface class TransactionsService {
+interface class TransactionsService<T extends TransferParams> {
   /// Service constructor
   TransactionsService();
 
@@ -13,25 +12,9 @@ interface class TransactionsService {
   AppBlockchain get appBlockchain => AppBlockchain.unknown;
 
   /// Returns signed transaction or THROW
-  ///
-  /// [toAddress] - address to send to
-  /// [amount] - number of coins to send
-  /// [asset] - wallet
-  /// [masterKey] - access key to data on the device
-  /// [message] - optional message to add to the transaction
-  /// [feeType] - Bitcoin only. Selected fee type (fast, slow)
-  /// [txIdToPumpFeeBTC] - Bitcoin only. Unconfirmed transaction for which the
-  /// fee needs to be bumped. In this case, [toAddress], [amount], and [message]
-  /// will be ignored since data will be taken from this transaction
   Future<String> createTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required T params,
     required String masterKey,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
-    String? txIdToPumpFeeBTC,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
 
@@ -53,7 +36,7 @@ interface class TransactionsService {
   ///
   /// null if the status could not be verified
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async =>
       throw AppBlockchainIsNotSupportedException(appBlockchain.toString());

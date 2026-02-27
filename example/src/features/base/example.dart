@@ -5,8 +5,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import 'domain/asset.dart';
-
 // https://docs.base.org/base-chain/quickstart/connecting-to-base
 
 // Explorer
@@ -16,6 +14,14 @@ import 'domain/asset.dart';
 // Faucet
 // https://learnweb3.io/faucets/base_sepolia/
 // https://faucet.circle.com/
+
+// Base Sepolia
+const _chainIdTestNet = 84532; // 8453
+const _chainIdMainNet = 8453;
+// ETH decimal: 18
+// USDC decimal: 6
+// USDC contractAddress:
+const _usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
 final _rpc = EthereumProvider(
   EthereumHTTPProvider(
@@ -40,45 +46,65 @@ Future<void> main() async {
 
   logger.logInfoMessage(name, 'Main address: ${walletInfo.address}');
 
-  final asset = baseEthAssetExample(
-    address: walletInfo.address,
-    supportsEIP1559: false,
-    isMainnet: false,
-  );
-
   final bal = await _rpc.request(
     EthereumRequestGetBalance(address: walletInfo.address),
   );
   logger.logInfoMessage(name, 'Balance: $bal');
 
-  // Example asset for ERC20 token transfer
-  final assetERC20 = baseUSDCTestnetAssetExample(
-    address: walletInfo.address,
-    supportsEIP1559: true,
-  );
-
   final tokenBalance = await _rpc.request(
     RPCERC20TokenBalance(
-      assetERC20.token.contractAddress,
+      _usdcContractAddress,
       SolidityAddress(walletInfo.address),
     ),
   );
   logger.logInfoMessage(name, 'TokenBalance: $tokenBalance');
 
   // final feeEstimate = await service.tryEstimateFee(
-  //   addressToSend: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-  //   asset: assetERC20,
-  //   amount: '0.01',
+  //   params: TransferParamsETH(
+  //     to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+  //     from: walletInfo.address,
+  //     amount: BigRational.parseDecimal('0.001'),
+  //     chainId: _chainIdTestNet,
+  //     supportsEIP1559: true, // true | false
+  //     tokenDecimal: 18,
+  //     tokenWalletType: TokenWalletType.master,
+  //   ),
   //   // message: 'hi',
   // );
   // logger.logInfoMessage(name, 'Est fee: $feeEstimate');
 
+  // USDC Transfer
+  // final tx = await service.createTransaction(
+  //   params: TransferParamsETH(
+  //     to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+  //     from: walletInfo.address,
+  //     amount: BigRational.parseDecimal('0.001'),
+  //     chainId: _chainIdTestNet,
+  //     supportsEIP1559: true, // true | false
+  //     tokenDecimal: 6, // USDC
+  //     tokenContractAddress: _usdcContractAddress,
+  //     tokenWalletType: TokenWalletType.child,
+  //     tokenName: 'USDC',
+  //   ),
+  //   masterKey: '',
+  // );
+
+  // ETH transfer
   final tx = await service.createTransaction(
-    toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-    amount: BigRational.parseDecimal('0.0001'),
-    asset: asset,
+    params: TransferParamsETH(
+      to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.001'),
+      chainId: _chainIdTestNet,
+      supportsEIP1559: true,
+      // true | false
+      tokenDecimal: 18,
+      // ETH
+      tokenWalletType: TokenWalletType.master,
+      tokenName: 'ETH',
+      // message: 'hi',
+    ),
     masterKey: '',
-    // message: 'hi',
   );
   logger.logInfoMessage(name, 'TX: $tx');
   final sentTx = await _rpc.request(

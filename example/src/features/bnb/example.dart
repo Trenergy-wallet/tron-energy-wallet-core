@@ -5,8 +5,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import 'domain/asset.dart';
-
 final _rpc = EthereumProvider(
   EthereumHTTPProvider(
     'https://data-seed-prebsc-1-s1.binance.org:8545/',
@@ -14,53 +12,75 @@ final _rpc = EthereumProvider(
   ),
 );
 
+// BNB
+const _chainIdTestNet = 97;
+// ETH decimal: 18
+// USDT decimal: 18
+// USDT contractAddress:
+const _usdtContractAddress = '0x337610d27c682e347c9cd60bd4b3b107c9d34ddd';
+
 Future<void> main() async {
   final logger = InAppLogger()..usePrint = true;
-  final ethService = TransactionsServiceEthereumImpl(
+  final service = TransactionsServiceEthereumImpl(
     appBlockchain: AppBlockchain.bsc,
     rpc: _rpc,
     logger: logger,
     getSigningKey: (_) async => 'your-mnemonic',
   );
 
-  final walletInfo = await ethService.initializeWalletAndGetInfo(
+  final walletInfo = await service.initializeWalletAndGetInfo(
     masterKey: '',
   );
 
   logger.logInfoMessage('bnbExample', 'Main address: ${walletInfo.address}');
-
-  // final asset = bnbAssetExample(
-  //   address: walletInfo.address,
-  // );
 
   final bal = await _rpc.request(
     EthereumRequestGetBalance(address: walletInfo.address),
   );
   logger.logInfoMessage('bnbExample', 'Balance: $bal');
 
-  // Example asset for ERC20 token transfer
-  final assetBEP20 = bscBEP20AssetExample(address: walletInfo.address);
   final tokenBalance = await _rpc.request(
     RPCERC20TokenBalance(
-      assetBEP20.token.contractAddress,
+      _usdtContractAddress,
       SolidityAddress(walletInfo.address),
     ),
   );
   logger.logInfoMessage('bnbExample', 'tokenBalance: $tokenBalance');
 
-  // final feeEstimate = await ethService.tryEstimateFee(
-  //   addressToSend: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-  //   asset: asset,
-  //   message: 'hi',
+  // // USDT Transfer
+  // final tx = await service.createTransaction(
+  //   params: TransferParamsETH(
+  //     to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+  //     from: walletInfo.address,
+  //     amount: BigRational.parseDecimal('0.001'),
+  //     chainId: _chainIdTestNet,
+  //     supportsEIP1559: false, // false only!
+  //     tokenDecimal: 18, // USDT
+  //     tokenContractAddress: _usdtContractAddress,
+  //     tokenWalletType: TokenWalletType.child,
+  //     tokenName: 'USDT',
+  //   ),
+  //   masterKey: '',
   // );
-  //
-  final tx = await ethService.createTransaction(
-    toAddress: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
-    amount: BigRational.parseDecimal('0.01'),
-    asset: assetBEP20,
+
+  // BNB transfer
+  final tx = await service.createTransaction(
+    params: TransferParamsETH(
+      to: '0x4204711Fa7FE0a884Ea057987D4E2AC1753181c0',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.001'),
+      chainId: _chainIdTestNet,
+      supportsEIP1559: false,
+      // false only!
+      tokenDecimal: 18,
+      // ETH
+      tokenWalletType: TokenWalletType.master,
+      tokenName: 'BNB',
+      // message: 'hi',
+    ),
     masterKey: '',
-    // message: 'hi',
   );
+
   logger.logInfoMessage('bnbExample', 'TX: $tx');
   final sentTx = await _rpc.request(
     EthereumRequestSendRawTransaction(transaction: tx),

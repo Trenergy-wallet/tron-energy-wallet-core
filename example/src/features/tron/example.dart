@@ -9,8 +9,6 @@ import 'package:on_chain/tron/src/provider/provider/provider.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import 'domain/asset.dart';
-
 // Explorer: https://nile.tronscan.org
 
 final tronRpc = TronProvider(
@@ -28,20 +26,24 @@ Future<void> main() async {
   final tronAddress = privateKey.publicKey().toAddress().toString();
   final logger = InAppLogger()..usePrint = true;
   // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
-  final tronService = TransactionsServiceTronImpl(
+  final service = TransactionsServiceTronImpl(
     tronProvider: tronRpc,
     logger: logger,
     getSigningKey: (_) async => privateKey,
   );
 
-  final tronAsset = tronAssetExample(tronAddress);
-
-  final tx = await tronService.createTransaction(
-    toAddress: 'TP8KmXDvKVYg5WVTTyqaNT61Htguw2NJBs',
-    amount: BigRational.parseDecimal('1'),
-    asset: tronAsset,
+  final tx = await service.createTransaction(
+    params: TransferParamsTRON(
+      to: 'TP8KmXDvKVYg5WVTTyqaNT61Htguw2NJBs',
+      from: tronAddress,
+      amount: BigRational.parseDecimal('1'),
+      tokenWalletType: TokenWalletType.master,
+      // TRON
+      tokenDecimal: 6,
+      tokenContractAddress: null,
+      // message: 'hello example',
+    ),
     masterKey: '',
-    message: 'hello example',
   );
   logger.logInfoMessage('tronExample', 'TX: $tx');
   final decoded = json.decode(tx) as Map<String, dynamic>;
@@ -49,5 +51,5 @@ Future<void> main() async {
   final sentTx = await tronRpc.request(
     TronRequestBroadcastHex(transaction: transaction.toHex),
   );
-  logger.logInfoMessage('tronExample', 'SENT: $sentTx');
+  logger.logInfoMessage('tronExample', 'SENT: ${sentTx.txid}');
 }

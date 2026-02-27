@@ -4,8 +4,6 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-import 'domain/asset.dart';
-
 // Explorer: https://testnet.tonscan.org
 
 final tonRpc = TonProvider(
@@ -18,7 +16,7 @@ final tonRpc = TonProvider(
 
 Future<void> main() async {
   final logger = InAppLogger()..usePrint = true;
-  final tonService = TransactionsServiceTonImpl(
+  final service = TransactionsServiceTonImpl(
     currentAccountWallet: () => null,
     isTestnet: true,
     tonProvider: tonRpc,
@@ -26,16 +24,19 @@ Future<void> main() async {
     getSigningKey: (_) async => 'mnemonic',
   );
 
-  final walletInfo = await tonService.initializeWalletAndGetInfo(
+  final walletInfo = await service.initializeWalletAndGetInfo(
     masterKey: '',
   );
   logger.logInfoMessage('tonExample', 'Address: ${walletInfo.address}');
 
-  final tonAsset = tonAssetExample(walletInfo.address);
-  final tx = await tonService.createTransaction(
-    toAddress: 'Uf_a4Onq2UrxzOsJWYrKWohBfVsv-cW1Gd6yTQmQF2b84L8C',
-    amount: BigRational.parseDecimal('0.05'),
-    asset: tonAsset,
+  final tx = await service.createTransaction(
+    params: TransferParamsTON(
+      to: 'Uf_a4Onq2UrxzOsJWYrKWohBfVsv-cW1Gd6yTQmQF2b84L8C',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.05'),
+      tokenWalletType: TokenWalletType.master,
+      // message: '',
+    ),
     masterKey: '',
   );
   logger.logInfoMessage('tonExample', 'TX: $tx');

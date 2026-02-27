@@ -15,7 +15,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'TRX',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// TON
@@ -42,7 +42,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ETH',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// BNB Smart Chain (EVM)
@@ -51,7 +51,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'BNB',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// Arbitrum Chain (EVM L2 Eth)
@@ -60,7 +60,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ETH',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// Polygon (EVM)
@@ -69,7 +69,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'POL',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// Optimism Chain (EVM L2 Eth)
@@ -78,7 +78,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ETH',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   ),
 
   /// BASE Chain (EVM L2 Eth)
@@ -87,7 +87,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'ETH',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   )
   ;
 

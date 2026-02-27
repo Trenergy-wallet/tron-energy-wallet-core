@@ -16,7 +16,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 class TransactionsServiceBTCImpl
     with SingingKeyCreatorBTC
-    implements TransactionsService {
+    implements TransactionsService<TransferParamsBTC> {
   /// Transactions Service
   ///
   /// Provides services for creating and signing Bitcoin transactions
@@ -76,25 +76,16 @@ class TransactionsServiceBTCImpl
 
   @override
   Future<String> createTransaction({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required TransferParamsBTC params,
     required String masterKey,
-    String? message,
-    FeeType? feeType,
-    EstimateFeeModel? userApprovedFee,
-    String? txIdToPumpFeeBTC,
   }) async {
     String? signedTransaction;
-    if (feeType == null) {
+
+    if (params.amount <= BigRational.zero) {
       throw AppException(
-        message: 'Not selected btc fee: feeTypeBTC is null',
-        code: ExceptionCode.unableToCreateTransaction,
-      );
-    }
-    if (amount <= BigRational.zero) {
-      throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
+        message:
+            'unable to create transaction: amount is not valid: '
+            '${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
@@ -110,21 +101,16 @@ class TransactionsServiceBTCImpl
       memo: memo,
       maxRbfTransactionFeeRatePer1B: maxRbfTransactionFeeRatePer1vB,
     ) = await prepareTransactionAndCalculateSize(
-      toAddress: toAddress,
-      amount: amount,
-      asset: asset,
+      params: params,
       masterKey: masterKey,
-      message: message,
-      txIdToPumpFeeBTC: txIdToPumpFeeBTC,
     );
     // 4.2 Get fee rates per byte from the backend
     final networkEstimate = (await _estimateFee(
       // Ok to send amount here, bs we operate with rates per vB not
       // calculated fee by backend
-      amount: amount.toDouble(),
+      amount: params.amount.toDouble(),
       appBlockchain: appBlockchain,
-      tokenWalletType: asset.token.tokenWalletType,
-      tokenContractAddress: asset.token.contractAddress,
+      tokenWalletType: params.tokenWalletType,
     )).fold((l) => throw l, (r) => r);
     if (networkEstimate.fees == Fees.invalid) {
       throw AppException(
@@ -137,20 +123,20 @@ class TransactionsServiceBTCImpl
     // the UI
     // If we reached this point, feeTypeBTC is already not null since it was
     // checked earlier
-    final feePer1vBCurrent = networkEstimate.fees.feeForType(feeType);
+    final feePer1vBCurrent = networkEstimate.fees.feeForType(params.feeType);
 
     // 4.3.1 If we got an approved model, check if the fees were changed
-    if (userApprovedFee != null) {
-      final feePer1vUserSelected = userApprovedFee.fees.feeForType(
-        feeType,
+    if (params.userApprovedFee != null) {
+      final feePer1vUserSelected = params.userApprovedFee!.fees.feeForType(
+        params.feeType,
       );
       logger.logInfoMessage(
         name,
-        'FeeType: $feeType, user selected fee: $feePer1vUserSelected,'
+        'FeeType: ${params.feeType}, user selected fee: $feePer1vUserSelected,'
         ' current in blockchain: $feePer1vBCurrent',
       );
       if (feePer1vBCurrent > feePer1vUserSelected) {
-        throw AppFeeChangedException(userApprovedFee, networkEstimate);
+        throw AppFeeChangedException(params.userApprovedFee!, networkEstimate);
       }
     }
     // 4.3.3 Choose which transaction fee cost to use: either the one
@@ -287,7 +273,7 @@ class TransactionsServiceBTCImpl
 
   @override
   Future<bool?> checkWalletIsFrozen({
-    required AppAsset asset,
+    required String assetAddress,
     required String addressToCheck,
   }) async => false;
 }
@@ -346,26 +332,24 @@ mixin SingingKeyCreatorBTC {
     })
   >
   prepareTransactionAndCalculateSize({
-    required String toAddress,
-    required BigRational amount,
-    required AppAsset asset,
+    required TransferParamsBTC params,
     required String masterKey,
-    String? message,
-    String? txIdToPumpFeeBTC,
   }) async {
-    if (asset.token.blockchain.appBlockchain != appBlockchain) {
+    if (params.appBlockchain != appBlockchain) {
       throw AppIncorrectBlockchainException(
         appBlockchain.toString(),
-        asset.token.blockchain.appBlockchain.toString(),
+        params.appBlockchain.toString(),
       );
     }
-    if (!amount.isPositive) {
+    if (!params.amount.isPositive) {
       throw AppException(
-        message: 'unable to create transaction: amount is not valid: $amount',
+        message:
+            'unable to create transaction: amount is not '
+            'valid: ${params.amount}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    if (txIdToPumpFeeBTC != null && txIdToPumpFeeBTC.isEmpty) {
+    if (params.txIdToPumpFeeBTC != null && params.txIdToPumpFeeBTC!.isEmpty) {
       throw AppException(
         message: 'Invalid txId for transaction to bump fee',
         code: ExceptionCode.unableToCreateTransaction,
@@ -374,25 +358,27 @@ mixin SingingKeyCreatorBTC {
     final senderPrivateKey = await createSigningKey(
       masterKey: masterKey,
     );
-    switch (asset.token.tokenWalletType) {
+    switch (params.tokenWalletType) {
       // No wallet types other than master (btc) are supported
       case TokenWalletType.child:
       case TokenWalletType.stable:
       case TokenWalletType.unknown:
         throw AppException(
-          message: '${asset.token.tokenWalletType} is not supported',
+          message: '${params.tokenWalletType} is not supported',
           code: ExceptionCode.tokenIsNotSupported,
         );
       // Bitcoin:
       case TokenWalletType.master:
         logger.logInfoMessage(name, 'Creating btc transaction');
         final addressToSend = BitcoinAddress(
-          toAddress,
+          params.to,
           network: network,
         ).baseAddress;
         // Message that will be recorded in the transaction
         // for txIdToPumpFeeBTC we get it from the node
-        var messageToInclude = txIdToPumpFeeBTC == null ? message : null;
+        var messageToInclude = params.txIdToPumpFeeBTC == null
+            ? params.message
+            : null;
 
         final publicKey = senderPrivateKey.getPublic();
         // 1. Selecting the spender
@@ -400,10 +386,10 @@ mixin SingingKeyCreatorBTC {
         final spender3Taproot = publicKey.toTaprootAddress();
         final spender3TaprootAddres = spender3Taproot.toAddress(network);
         // Check that we are working with the correct wallet
-        if (asset.address != spender3TaprootAddres) {
+        if (params.from != spender3TaprootAddres) {
           throw AppException(
             message:
-                'Address from asset: ${asset.address}, address from '
+                'Address from asset: ${params.from}, address from '
                 'account: ${spender3Taproot.toAddress(network)}',
             code: ExceptionCode.unableToDecodeWallet,
           );
@@ -489,10 +475,10 @@ mixin SingingKeyCreatorBTC {
           // If we are only bumping the fee for txIdToPumpFeeBTC this
           // output is not added - data for this transaction will be taken
           // from the endpoint
-          if (txIdToPumpFeeBTC == null)
+          if (params.txIdToPumpFeeBTC == null)
             BitcoinOutput(
               address: addressToSend,
-              value: BtcUtils.toSatoshi(amount.toString()),
+              value: BtcUtils.toSatoshi(params.amount.toString()),
             ),
         ];
         // 3.2 Add our RBF unconfirmed transactions to the outputs
@@ -520,11 +506,14 @@ mixin SingingKeyCreatorBTC {
 
         // If the requested transaction for fee bump is not in the
         // unconfirmed list, exit
-        if (txIdToPumpFeeBTC != null &&
-            !pendingTransactions.any((e) => e.txId == txIdToPumpFeeBTC)) {
+        if (params.txIdToPumpFeeBTC != null &&
+            !pendingTransactions.any(
+              (e) => e.txId == params.txIdToPumpFeeBTC,
+            )) {
           throw AppException(
             message:
-                'Tx with id $txIdToPumpFeeBTC is not in pending transactions',
+                'Tx with id ${params.txIdToPumpFeeBTC} is not in pending '
+                'transactions',
             code: ExceptionCode.unableToCreateTransaction,
           );
         }
@@ -549,7 +538,7 @@ mixin SingingKeyCreatorBTC {
           final outputsRbfToAdd = pendingTransaction
               .onlyTransfersToOutputsOrThrow(
                 network: network,
-                includeMessage: txIdToPumpFeeBTC != null,
+                includeMessage: params.txIdToPumpFeeBTC != null,
                 senderAddress: spender3TaprootAddres,
                 logger: logger,
               );
@@ -587,7 +576,7 @@ mixin SingingKeyCreatorBTC {
           }
           outPuts.addAll(outputsRbfToAdd.outputs);
           // Take the comment if we are only bumping the fee
-          if (pendingTransaction.txId == txIdToPumpFeeBTC) {
+          if (pendingTransaction.txId == params.txIdToPumpFeeBTC) {
             messageToInclude = outputsRbfToAdd.message;
             if (messageToInclude != null) {
               logger.logInfoMessage(name, 'Use message: $messageToInclude');
