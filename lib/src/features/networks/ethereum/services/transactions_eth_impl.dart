@@ -147,14 +147,20 @@ class TransactionsServiceEthereumImpl
         ETHTransactionType.eip1559 => tx.maxFeePerGas! * tx.gasLimit,
         _ => tx.gasPrice! * tx.gasLimit,
       };
+      final parsedFeeBuffer = BigRational.parseDecimal(
+        '${params.approvedFeeBuffer}',
+      );
       _logger.logInfoMessage(
         _name,
         'createTransactionOrThrow: feeInWei: $feeInWei '
         '(maxFeePerGas: ${tx.maxFeePerGas}, '
         'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}), '
-        'user approved: $userApproved',
+        'user approved: $userApproved, parsedFeeBuffer: $parsedFeeBuffer',
       );
-      if (userApproved < feeInWei) {
+      if (feeInWei >
+          (userApproved *
+              parsedFeeBuffer.numerator ~/
+              parsedFeeBuffer.denominator)) {
         throw AppFeeChangedException(
           params.userApprovedFee!,
           EstimateFeeModel.empty.copyWith(

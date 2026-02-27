@@ -44,6 +44,10 @@ class CoreConsts {
   /// Default ethereum FeeType if it was not selected
   static const FeeType defaultEthFeeType = FeeType.optimal;
 
+  /// The buffer between userApprovedFee and the current fee (multiplier to
+  /// userApprovedFee)
+  static const double defaultEthApprovedFeeBuffer = 3;
+
   /// Еth decimals
   static const ethDecimals = 16;
 }

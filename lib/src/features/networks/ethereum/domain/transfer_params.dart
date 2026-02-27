@@ -17,6 +17,7 @@ class TransferParamsETH extends TransferParams {
     required this.tokenDecimal,
     required super.tokenWalletType,
     this.feeType = CoreConsts.defaultEthFeeType,
+    this.approvedFeeBuffer = CoreConsts.defaultEthApprovedFeeBuffer,
     this.tokenContractAddress,
     this.tokenName,
     super.message,
@@ -37,6 +38,10 @@ class TransferParamsETH extends TransferParams {
 
   /// Token decimal
   final int tokenDecimal;
+
+  /// The buffer between userApprovedFee and the current fee (multiplier to
+  /// userApprovedFee)
+  final double approvedFeeBuffer;
 
   /// Token contract
   final String? tokenContractAddress;
