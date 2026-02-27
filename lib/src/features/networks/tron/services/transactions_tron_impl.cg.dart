@@ -66,14 +66,7 @@ class TransactionsServiceTronImpl
   @override
   Future<String> createTransaction({
     required TransferParamsTRON params,
-    // required String toAddress,
-    // required BigRational amount,
-    // required AppAsset asset,
     required String masterKey,
-    // String? message,
-    // FeeType? feeType,
-    // EstimateFeeModel? userApprovedFee,
-    // String? txIdToPumpFeeBTC,
   }) async {
     if (!params.amount.isPositive) {
       throw AppException(

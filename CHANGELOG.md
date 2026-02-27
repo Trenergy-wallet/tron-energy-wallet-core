@@ -1,3 +1,11 @@
+## 2.0.0
+
+### Breaking changes
+
+- Major refactoring and cleanup of the repository interfaces. The `createTransaction` method now
+  accepts a `TransferParams` object instead of individual parameters
+- Added corresponding `TransferParams` classes for all supported blockchains
+
 ## 1.7.0
 
 ### Added
