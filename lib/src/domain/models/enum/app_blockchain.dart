@@ -88,6 +88,15 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: true,
+  ),
+
+  /// SOLANA
+  solana(
+    slug: 'solana',
+    isSupported: true,
+    allCoinsSupported: true,
+    mainTokenName: 'SOL',
+    supportsMemoMessage: false,
   )
   ;
 
@@ -134,6 +143,9 @@ enum AppBlockchain {
 
   /// Polygon
   bool get isBase => this == base;
+
+  /// Solana
+  bool get isSolana => this == solana;
 
   /// toJson
   String toJson() => slug;
