@@ -1,4 +1,4 @@
-import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/core/core.dart';
@@ -26,8 +26,9 @@ Future<void> main() async {
     SolanaHTTPProvider(url: 'https://api.devnet.solana.com'),
   );
 
-  const user1 = 'mnem1';
-  const user2 = 'mnem2';
+  const user1 = 'mnemonic';
+  const user2 = 'mnemonic';
+
   final generator1 = KeyGenerator(mnemonic: user1);
   final generator2 = KeyGenerator(mnemonic: user2);
 
@@ -62,21 +63,46 @@ Future<void> main() async {
     isTestnet: true,
     rpc: rpc,
   );
-  final tx = service.createTransaction(
-    params: TransferParamsSOL(
+
+  final estimateFeeParams = await service.calculatePriorityFee(
+    TransferParamsSOL(
       to: addressTo.address,
       from: addressFrom.address,
-      amount: BigRational.parseDecimal('1'),
+      amount: BigRational.parseDecimal('100'),
       chainId: 0,
       tokenDecimal: 6,
       tokenWalletType: .child,
+      usePriorityFee: false,
       tokenContractAddress: _usdcContractAddressDevNet,
+      // message: 'hi',
     ),
-    masterKey: '',
   );
 
+  _logger.logInfoMessage(
+    name,
+    'Fee params: fee: ${estimateFeeParams.priorityFee}, '
+    'cu: ${estimateFeeParams.cuLimit}',
+  );
+
+  final tx = await service.createTransaction(
+    params: estimateFeeParams,
+    masterKey: '',
+  );
+  // final tx = service.createTransaction(
+  //   params: TransferParamsSOL(
+  //     to: addressTo.address,
+  //     from: addressFrom.address,
+  //     amount: BigRational.parseDecimal('1'),
+  //     chainId: 0,
+  //     tokenDecimal: 6,
+  //     tokenWalletType: .child,
+  //     tokenContractAddress: _usdcContractAddressDevNet,
+  //   ),
+  //   masterKey: '',
+  // );
+
   // /// Retrieve the latest block hash.
-  // final recentBlock = await service.request(
+  // final recentBlock = await rpc.request(
   //   const SolanaRequestGetLatestBlockhash(),
   // );
   //
@@ -113,7 +139,7 @@ Future<void> main() async {
   //   owner: addressFrom,
   // );
   //
-  // final sendInfo = await service.request(
+  // final sendInfo = await rpc.request(
   //   SolanaRequestGetAccountInfo(account: sourceATA.address),
   // );
   // _logger.logInfoMessage(name, 'sendInfo: ${sendInfo?.toJson()}');
@@ -125,8 +151,11 @@ Future<void> main() async {
   //     );
   //
   // // 2. Проверяем, существует ли ATA у получателя
-  // final destinationInfo = await service.request(
-  //   SolanaRequestGetAccountInfo(account: destinationATA.address),
+  // final destinationInfo = await rpc.request(
+  //   SolanaRequestGetAccountInfo(
+  //     account: destinationATA.address,
+  //     // dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+  //   ),
   // );
   //
   // _logger.logInfoMessage(name, 'destinationInfo: ${destinationInfo?.toJson()}');
@@ -142,7 +171,7 @@ Future<void> main() async {
   //     ),
   //   );
   // }
-  //
+
   // // 4. Добавляем инструкцию перевода токенов (SPL Token Transfer)
   // // Мы используем transferChecked для дополнительной безопасности (нужно знать decimals)
   // // Для простоты используем стандартный transfer
@@ -165,14 +194,14 @@ Future<void> main() async {
   //   payerKey: addressFrom,
   //   instructions: instructions,
   //   recentBlockhash: recentBlock.blockhash,
-  //   type: TransactionType.v0, // Используем современный тип транзакций
+  //   type: TransactionType.v0,
   // );
   //
   // /// Sign the transaction with the owner's private key.
   // final ownerSignature = from.sign(tx.serializeMessage());
   // tx.addSignature(addressFrom, ownerSignature);
   //
-  // final simulatedResult = await service.request(
+  // final simulatedResult = await rpc.request(
   //   SolanaRequestSimulateTransaction(
   //     encodedTransaction: tx.serializeString(),
   //     sigVerify: false,
@@ -185,31 +214,13 @@ Future<void> main() async {
   // );
 
   /// Send the transaction to the Solana network.
-  // final res = await service.request(
+  // final res = await rpc.request(
   //   SolanaRequestSendTransaction(encodedTransaction: tx.serializeString()),
   // );
-  //
-  // _logger.logInfoMessage(name, 'Result: $res');
-}
 
-Future<int> getPriorityFeePrices(
-  SolanaProvider service,
-  List<SolAddress> addresses,
-) async {
-  final feePrices = await service.request(
-    SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
+  final res = await rpc.request(
+    SolanaRequestSendTransaction(encodedTransaction: tx),
   );
-  final medFee =
-      feePrices.map((e) => e.prioritizationFee).reduce((a, b) => a + b) ~/
-      feePrices.length;
-  _logger.logInfoMessage('getPriorityFeePrices', 'medFee: $medFee');
-  return medFee;
-}
 
-Future<int> calculatePriorityFee(
-  int feePrice,
-  int unitsConsumed,
-) async {
-  final unitsWithGap = unitsConsumed * 12 ~/ 10;
-  return unitsWithGap * feePrice ~/ 1000000;
+  _logger.logInfoMessage(name, 'Result: $res');
 }

@@ -23,6 +23,10 @@ enum ExceptionCode {
     code: 'E7',
     description: 'Timeout',
   ),
+  insufficientBalance(
+    code: 'E8',
+    description: 'InsufficientBalance to create transaction',
+  ),
 
   // Service initialization errors
   unableToInitializeWalletService(

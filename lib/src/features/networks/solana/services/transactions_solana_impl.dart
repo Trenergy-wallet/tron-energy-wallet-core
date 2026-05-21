@@ -1,9 +1,13 @@
+// linter bug
+// ignore_for_file: parameter_assignments
+
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/features/networks/solana/domain/token_type.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
@@ -83,30 +87,30 @@ class TransactionsServiceSolanaImpl
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    final tx = await _tryCreateTransaction(params: params);
-    await _trySignTransaction(
-      tx: tx,
-      masterKey: masterKey,
-      owner: params.fromSolAddress,
-    );
-    final simulatedResult = await _nodeProvider.request(
-      SolanaRequestSimulateTransaction(
-        encodedTransaction: tx.serializeString(),
-        sigVerify: false,
-      ),
-    );
-
-    if (simulatedResult.err != null) {
-      throw AppException(
-        code: ExceptionCode.unableToCreateTransaction,
-        message: simulatedResult.err.toString(),
+    if (!params.finalized) {
+      params = await calculatePriorityFee(params);
+    }
+    if (!params.finalized) {
+      _logger.logError(
+        _name,
+        'createTransaction: Cannot finalize priority fee params. Skipping the priority fee',
       );
+      params = params.copyWith(usePriorityFee: false);
     }
     _logger.logInfoMessage(
       _name,
-      'simulatedResult: ${simulatedResult.toJson()}',
+      'Start building the tx with usePriorityFee=${params.usePriorityFee}',
     );
-    return tx.serializeString();
+    final tx = await _tryCreateTransaction(
+      params: params,
+      simulatePriorityFee: false,
+    );
+    final signedTx = await _trySignTransaction(
+      tx: tx.tx,
+      masterKey: masterKey,
+      owner: params.solAddressFrom,
+    );
+    return signedTx.serializeString();
   }
 
   /// Create the transaction for the main coin of the blockchain
@@ -114,24 +118,42 @@ class TransactionsServiceSolanaImpl
   Future<SolanaTransaction> buildTransaction({
     required SolanaProvider rpc,
     required TransferParamsSOL params,
+    required bool simulatePriorityFee,
   }) async {
     /// Retrieve the latest block hash.
-    final recentBlock = await _nodeProvider.request(
-      const SolanaRequestGetLatestBlockhash(),
+    final blockHash = await _getTransactionBlockHash(
+      simulate: simulatePriorityFee,
     );
-    // final amountToSend = bal1 - _baseFeeLamports.toBigInt;
-    // final amountToSend = SolanaUtils.toLamports('0.1);
-    /// Create a transfer instruction to move funds from the owner to the receiver.
+
+    /// Create a transfer instruction to move funds from the owner to
+    /// the receiver
     final transferInstruction = SystemProgram.transfer(
-      from: params.fromSolAddress,
+      from: params.solAddressFrom,
       layout: SystemTransferLayout(lamports: params.amount.toBigInt()),
-      to: params.toSolAddress,
+      to: params.solAddressTo,
     );
 
     final tx = SolanaTransaction(
-      payerKey: params.fromSolAddress,
-      instructions: [transferInstruction],
-      recentBlockhash: recentBlock.blockhash,
+      payerKey: params.solAddressFrom,
+      instructions: [
+        if (simulatePriorityFee)
+          SolanaHelper.createLimitInstruction(1400000)
+        else if (params.usePriorityFee &&
+            params.cuLimit > 0 &&
+            params.priorityFee > 0) ...[
+          SolanaHelper.createLimitInstruction(params.cuLimit),
+          SolanaHelper.createPriceInstruction(
+            DecimalConverter.toBigInt(
+              amount: params.priorityFee.toString(),
+              decimals: SolanaUtils.decimal,
+            ),
+          ),
+        ],
+        transferInstruction,
+        if (params.message != null && params.message!.isNotEmpty)
+          SolanaHelper.createMemoInstruction(params.message!),
+      ],
+      recentBlockhash: blockHash,
       type: TransactionType.v0,
     );
     _logger.logInfoMessage(_name, 'tx ready: ${tx.serializeString()}');
@@ -143,6 +165,7 @@ class TransactionsServiceSolanaImpl
   Future<SolanaTransaction> buildSplTokenTransaction({
     required SolanaProvider rpc,
     required TransferParamsSOL params,
+    required bool simulatePriorityFee,
   }) async {
     final mintAddress = params.tokenContractAddressSolAddress;
     if (mintAddress == null) {
@@ -151,34 +174,66 @@ class TransactionsServiceSolanaImpl
         code: ExceptionCode.unableToCreateTransaction,
       );
     }
+    if (params.tokenType.isUnknown) {
+      final mintInfo = await _nodeProvider.request(
+        SolanaRequestGetAccountInfo(
+          account: mintAddress,
+          dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+        ),
+      );
 
-    /// Retrieve the latest block hash.
-    final recentBlock = await _nodeProvider.request(
-      const SolanaRequestGetLatestBlockhash(),
+      final tokenType = SolTokenType.fromOwner(mintInfo?.owner);
+      params = params.copyWith(tokenType: tokenType);
+      if (params.tokenType.isUnknown) {
+        throw AppException(
+          message: 'buildSplTokenTransaction: unknown token type',
+          code: .wrongToken,
+        );
+      }
+    }
+
+    /// Retrieve the latest block hash
+    final blockHash = await _getTransactionBlockHash(
+      simulate: simulatePriorityFee,
     );
 
-    final instructions = <TransactionInstruction>[];
-    // 1. Вычисляем ATA (Associated Token Account) для отправителя и получателя
-    // Используем утилиту из вашего файла create_associated_token_account.dart
+    final instructions = <TransactionInstruction>[
+      if (simulatePriorityFee)
+        SolanaHelper.createLimitInstruction(1400000)
+      else if (params.usePriorityFee &&
+          params.cuLimit > 0 &&
+          params.priorityFee > 0) ...[
+        SolanaHelper.createLimitInstruction(params.cuLimit),
+        SolanaHelper.createPriceInstruction(
+          DecimalConverter.toBigInt(
+            amount: params.priorityFee.toString(),
+            decimals: SolanaUtils.decimal,
+          ),
+        ),
+      ],
+    ];
+    // 1. Find ATA (Associated Token Account) for the sender
     final sourceATA = AssociatedTokenAccountProgramUtils.associatedTokenAccount(
       mint: mintAddress,
-      owner: params.fromSolAddress,
+      owner: params.solAddressFrom,
+      tokenProgramId: params.tokenType.programId,
     );
 
-    final sendInfo = await _nodeProvider.request(
-      SolanaRequestGetAccountInfo(account: sourceATA.address),
-    );
-    _logger.logInfoMessage(_name, 'sendInfo: ${sendInfo?.toJson()}');
-
+    // 2. Find ATA (Associated Token Account) for the destination
     final destinationATA =
         AssociatedTokenAccountProgramUtils.associatedTokenAccount(
           mint: mintAddress,
-          owner: params.toSolAddress,
+          owner: params.solAddressTo,
+          tokenProgramId: params.tokenType.programId,
         );
 
-    // Destination exists?
+    // 3. Destination ATA account exists?
     final destinationInfo = await _nodeProvider.request(
-      SolanaRequestGetAccountInfo(account: destinationATA.address),
+      SolanaRequestGetAccountInfo(
+        account: destinationATA.address,
+        // Lightweight account existence check
+        dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+      ),
     );
 
     _logger.logInfoMessage(
@@ -186,37 +241,65 @@ class TransactionsServiceSolanaImpl
       'destinationInfo: ${destinationInfo?.toJson()}',
     );
 
-    // If the account doesn't exist, add the creation instruction
+    // 4. If the account doesn't exist, add the creation instruction
     if (destinationInfo == null) {
       instructions.add(
         AssociatedTokenAccountProgram.associatedTokenAccount(
-          payer: params.fromSolAddress,
+          payer: params.solAddressFrom,
           associatedToken: destinationATA.address,
-          owner: params.toSolAddress,
+          owner: params.solAddressTo,
           mint: mintAddress,
+          tokenProgramId: params.tokenType.programId,
         ),
       );
     }
 
-    // 4. Add the SPL Token transfer instruction
-    instructions.add(
-      SPLTokenProgram.transfer(
-        source: sourceATA.address,
-        destination: destinationATA.address,
-        owner: params.fromSolAddress,
-        layout: SPLTokenTransferLayout(
-          amount: DecimalConverter.toBigInt(
-            amount: params.amount.toString(),
-            decimals: params.tokenDecimal,
+    // 5. Add the SPL Token transfer instruction depending on the tokenType
+    switch (params.tokenType) {
+      case .splToken:
+        instructions.add(
+          SPLTokenProgram.transfer(
+            source: sourceATA.address,
+            destination: destinationATA.address,
+            owner: params.solAddressFrom,
+            programId: params.tokenType.programId,
+            layout: SPLTokenTransferLayout(
+              amount: DecimalConverter.toBigInt(
+                amount: params.amount.toString(),
+                decimals: params.tokenDecimal,
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        );
+      case .splToken2022:
+        instructions.add(
+          SPLTokenProgram.transferChecked(
+            layout: SPLTokenTransferCheckedLayout(
+              amount: DecimalConverter.toBigInt(
+                amount: params.amount.toString(),
+                decimals: params.tokenDecimal,
+              ),
+              decimals: params.tokenDecimal,
+            ),
+            owner: params.solAddressFrom,
+            source: sourceATA.address,
+            mint: mintAddress,
+            destination: destinationATA.address,
+            programId: params.tokenType.programId,
+          ),
+        );
+      case .unknown:
+        throw AppException(message: 'Unknown token type', code: .wrongToken);
+    }
+
+    if (params.message != null && params.message!.isNotEmpty) {
+      instructions.add(SolanaHelper.createMemoInstruction(params.message!));
+    }
 
     final tx = SolanaTransaction(
-      payerKey: params.fromSolAddress,
+      payerKey: params.solAddressFrom,
       instructions: instructions,
-      recentBlockhash: recentBlock.blockhash,
+      recentBlockhash: blockHash,
       type: TransactionType.v0,
     );
 
@@ -241,6 +324,115 @@ class TransactionsServiceSolanaImpl
     );
   }
 
+  /// Calculate PriorityFee and add it to the params
+  Future<TransferParamsSOL> calculatePriorityFee(
+    TransferParamsSOL params,
+  ) async {
+    final addresses = <SolAddress>[];
+    switch (params.tokenWalletType) {
+      case .master:
+        addresses.addAll([
+          params.solAddressTo,
+          params.solAddressFrom,
+        ]);
+      case .child:
+      case .stable:
+        final mintAddress = params.tokenContractAddressSolAddress;
+        if (mintAddress == null) {
+          throw AppException(
+            code: .unableToCreateTransaction,
+            message: 'calculatePriorityFee: Mint address is null',
+          );
+        }
+        if (params.tokenType.isUnknown) {
+          final mintInfo = await _nodeProvider.request(
+            SolanaRequestGetAccountInfo(
+              account: mintAddress,
+              dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+            ),
+          );
+          final tokenType = SolTokenType.fromOwner(mintInfo?.owner);
+          _logger.logInfoMessage(
+            _name,
+            'calculatePriorityFee: token type detected: $tokenType',
+          );
+          params = params.copyWith(tokenType: tokenType);
+          if (params.tokenType.isUnknown) {
+            throw AppException(
+              message: 'buildSplTokenTransaction: unknown token type',
+              code: .wrongToken,
+            );
+          }
+        }
+        final sourceATA =
+            AssociatedTokenAccountProgramUtils.associatedTokenAccount(
+              mint: mintAddress,
+              owner: params.solAddressFrom,
+              programId: params.tokenType.programId,
+            );
+        final destinationATA =
+            AssociatedTokenAccountProgramUtils.associatedTokenAccount(
+              mint: mintAddress,
+              owner: params.solAddressTo,
+              programId: params.tokenType.programId,
+            );
+        final destinationInfo = await _nodeProvider.request(
+          SolanaRequestGetAccountInfo(
+            account: destinationATA.address,
+            dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+          ),
+        );
+        addresses.addAll([
+          sourceATA.address,
+          destinationATA.address,
+          if (destinationInfo == null) params.solAddressFrom,
+        ]);
+      case .unknown:
+        throw AppException(
+          code: .unableToCreateTransaction,
+          message: 'tokenWalletType is unknown',
+        );
+    }
+    final priorityFeePricePerUnit = await _getPriorityFeePricePerUnit(
+      addresses,
+    );
+    final unitsConsumed = await _tryCreateTransaction(
+      params: params,
+      simulatePriorityFee: true,
+      addresses: addresses,
+    );
+    final unitsWithGap =
+        (unitsConsumed.simulated.unitsConsumed?.toInt() ?? 0) * 12 ~/ 10;
+    return params.copyWith(
+      priorityFee: priorityFeePricePerUnit,
+      cuLimit: unitsWithGap,
+    );
+  }
+
+  Future<int> _getPriorityFeePricePerUnit(List<SolAddress> addresses) async {
+    final feePrices = await _nodeProvider.request(
+      SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
+    );
+    final medFee =
+        feePrices.map((e) => e.prioritizationFee).reduce((a, b) => a + b) ~/
+        feePrices.length;
+    _logger.logInfoMessage(
+      _name,
+      '_getPriorityFeePricePerUnit: medFee: $medFee',
+    );
+    return medFee;
+  }
+
+  /// MinimumBalance for the account
+  Future<BigInt> getMinimumBalanceForRentExemption(
+    TokenWalletType type,
+  ) async => _nodeProvider.request(
+    SolanaRequestGetMinimumBalanceForRentExemption(
+      // 165 is the solana blockchain constant size for the ATA SPL-token
+      size: type.isMaster ? 0 : 165,
+    ),
+  );
+
   /// Create a signing key for Solana
   ///
   /// THROWS
@@ -257,8 +449,11 @@ class TransactionsServiceSolanaImpl
   }
 
   /// Create transaction for Solana or compatible SPL token
-  Future<SolanaTransaction> _tryCreateTransaction({
+  Future<({SimulateTranasctionResponse simulated, SolanaTransaction tx})>
+  _tryCreateTransaction({
     required TransferParamsSOL params,
+    required bool simulatePriorityFee,
+    List<SolAddress> addresses = const [],
   }) async {
     if (params.amount < BigRational.zero) {
       throw AppException(
@@ -268,19 +463,45 @@ class TransactionsServiceSolanaImpl
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    // TODO(ivn): Program check?
-    return params.tokenWalletType.isMaster
+    final tx = params.tokenWalletType.isMaster
         ? await buildTransaction(
             rpc: _nodeProvider,
             params: params,
+            simulatePriorityFee: simulatePriorityFee,
           )
         : await buildSplTokenTransaction(
             rpc: _nodeProvider,
             params: params,
+            simulatePriorityFee: simulatePriorityFee,
           );
+    final simulatedResult = await _nodeProvider.request(
+      SolanaRequestSimulateTransaction(
+        encodedTransaction: tx.serializeString(),
+        replaceRecentBlockhash: simulatePriorityFee,
+        sigVerify: false,
+        accounts: addresses.isNotEmpty
+            ? RPCAccountConfig(
+                addresses: addresses,
+                encoding: SolanaRequestEncoding.base64,
+              )
+            : null,
+      ),
+    );
+
+    if (simulatedResult.err != null) {
+      throw AppException(
+        code: ExceptionCode.unableToCreateTransaction,
+        message: simulatedResult.toJson().toString(),
+      );
+    }
+    _logger.logInfoMessage(
+      _name,
+      'simulatedResult: ${simulatedResult.toJson()}',
+    );
+    return (tx: tx, simulated: simulatedResult);
   }
 
-  Future<void> _trySignTransaction({
+  Future<SolanaTransaction> _trySignTransaction({
     required SolanaTransaction tx,
     required SolAddress owner,
     required String masterKey,
@@ -288,6 +509,14 @@ class TransactionsServiceSolanaImpl
     final pk = await _createSigningKey(masterKey: masterKey);
     final ownerSignature = pk.sign(tx.serializeMessage());
     tx.addSignature(owner, ownerSignature);
-    return;
+    return tx;
+  }
+
+  Future<SolAddress> _getTransactionBlockHash({bool simulate = false}) async {
+    if (simulate) return SolAddress.defaultPubKey;
+    final blockHash = await _nodeProvider.request(
+      const SolanaRequestGetLatestBlockhash(),
+    );
+    return blockHash.blockhash;
   }
 }
