@@ -10,6 +10,13 @@ import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/solana/domain/token_type.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
+const _priorityFeeOnError = 5000;
+const _minPriorityFee = 2000;
+const _maxPriorityFee = 2000000;
+
+/// https://docs.chainstack.com/docs/solana-compute-budget
+const _buildInInstructionCuLimit = 3000;
+
 /// Transactions Service
 ///
 /// Provides services for creating and signing SOLANA transactions
@@ -93,7 +100,8 @@ class TransactionsServiceSolanaImpl
     if (!params.finalized) {
       _logger.logError(
         _name,
-        'createTransaction: Cannot finalize priority fee params. Skipping the priority fee',
+        'createTransaction: Cannot finalize priority fee params.'
+        ' Skipping the priority fee',
       );
       params = params.copyWith(usePriorityFee: false);
     }
@@ -124,12 +132,22 @@ class TransactionsServiceSolanaImpl
     final blockHash = await _getTransactionBlockHash(
       simulate: simulatePriorityFee,
     );
+    final amountToSend = DecimalConverter.toBigInt(
+      amount: params.amount.toString(),
+      decimals: params.tokenDecimal,
+    );
+
+    _logger.logInfoMessage(
+      _name,
+      'buildTransaction: will send $amountToSend, from '
+      '${params.solAddressFrom}, to: ${params.solAddressTo}',
+    );
 
     /// Create a transfer instruction to move funds from the owner to
     /// the receiver
     final transferInstruction = SystemProgram.transfer(
       from: params.solAddressFrom,
-      layout: SystemTransferLayout(lamports: params.amount.toBigInt()),
+      layout: SystemTransferLayout(lamports: amountToSend),
       to: params.solAddressTo,
     );
 
@@ -140,13 +158,10 @@ class TransactionsServiceSolanaImpl
           SolanaHelper.createLimitInstruction(1400000)
         else if (params.usePriorityFee &&
             params.cuLimit > 0 &&
-            params.priorityFee > 0) ...[
+            params.priorityFeeMicrolamports > 0) ...[
           SolanaHelper.createLimitInstruction(params.cuLimit),
           SolanaHelper.createPriceInstruction(
-            DecimalConverter.toBigInt(
-              amount: params.priorityFee.toString(),
-              decimals: SolanaUtils.decimal,
-            ),
+            params.priorityFeeMicrolamports.toBigInt,
           ),
         ],
         transferInstruction,
@@ -202,13 +217,10 @@ class TransactionsServiceSolanaImpl
         SolanaHelper.createLimitInstruction(1400000)
       else if (params.usePriorityFee &&
           params.cuLimit > 0 &&
-          params.priorityFee > 0) ...[
+          params.priorityFeeMicrolamports > 0) ...[
         SolanaHelper.createLimitInstruction(params.cuLimit),
         SolanaHelper.createPriceInstruction(
-          DecimalConverter.toBigInt(
-            amount: params.priorityFee.toString(),
-            decimals: SolanaUtils.decimal,
-          ),
+          params.priorityFeeMicrolamports.toBigInt,
         ),
       ],
     ];
@@ -402,25 +414,41 @@ class TransactionsServiceSolanaImpl
       addresses: addresses,
     );
     final unitsWithGap =
-        (unitsConsumed.simulated.unitsConsumed?.toInt() ?? 0) * 12 ~/ 10;
+        (unitsConsumed.simulated.unitsConsumed?.toInt() ?? 0) * 12 ~/ 10 +
+        // Add a limit for the createPriceInstruction
+        _buildInInstructionCuLimit;
     return params.copyWith(
-      priorityFee: priorityFeePricePerUnit,
+      priorityFeeMicrolamports: priorityFeePricePerUnit,
       cuLimit: unitsWithGap,
     );
   }
 
   Future<int> _getPriorityFeePricePerUnit(List<SolAddress> addresses) async {
-    final feePrices = await _nodeProvider.request(
-      SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
-    );
-    final medFee =
-        feePrices.map((e) => e.prioritizationFee).reduce((a, b) => a + b) ~/
-        feePrices.length;
-    _logger.logInfoMessage(
-      _name,
-      '_getPriorityFeePricePerUnit: medFee: $medFee',
-    );
-    return medFee;
+    try {
+      var selectedFee = _minPriorityFee;
+      final feePrices = await _nodeProvider.request(
+        SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
+      );
+      if (feePrices.isNotEmpty) {
+        final sortedFees = feePrices.map((e) => e.prioritizationFee).toList()
+          ..sort();
+        final medianFee = sortedFees[sortedFees.length ~/ 2];
+        selectedFee = medianFee.clamp(_minPriorityFee, _maxPriorityFee);
+        _logger.logInfoMessage(
+          _name,
+          'getPriorityFeePricePerUnit: median: $medianFee, '
+          'selected: $selectedFee',
+        );
+      }
+      return selectedFee;
+    } catch (e) {
+      _logger.logError(
+        _name,
+        'getPriorityFeePricePerUnit: using $_priorityFeeOnError got '
+        'ERROR: $e',
+      );
+      return _priorityFeeOnError;
+    }
   }
 
   /// MinimumBalance for the account

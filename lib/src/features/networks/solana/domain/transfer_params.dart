@@ -14,26 +14,26 @@ class TransferParamsSOL extends TransferParams {
     required super.to,
     required super.from,
     required super.amount,
-    required this.chainId,
+    // required this.chainId,
     required this.tokenDecimal,
     required super.tokenWalletType,
     this.tokenType = .unknown,
     this.usePriorityFee = false,
-    this.priorityFee = 0,
+    this.priorityFeeMicrolamports = 0,
     this.cuLimit = 0,
     this.tokenContractAddress,
     this.tokenName,
     super.message,
   }) : super(appBlockchain: AppBlockchain.solana);
 
-  /// Chain ID
-  final int chainId;
+  // /// Chain ID
+  // final int chainId;
 
   /// Token decimal
   final int tokenDecimal;
 
   /// PriorityFee
-  final int priorityFee;
+  final int priorityFeeMicrolamports;
 
   /// Use priority fee
   final bool usePriorityFee;
@@ -62,7 +62,8 @@ class TransferParamsSOL extends TransferParams {
       : null;
 
   /// All fee params for the tx are filled
-  bool get finalized => !usePriorityFee || priorityFee > 0 || cuLimit > 0;
+  bool get finalized =>
+      !usePriorityFee || priorityFeeMicrolamports > 0 || cuLimit > 0;
 
   /// Copy
   TransferParamsSOL copyWith({
@@ -73,7 +74,7 @@ class TransferParamsSOL extends TransferParams {
     int? tokenDecimal,
     TokenWalletType? tokenWalletType,
     bool? usePriorityFee,
-    int? priorityFee,
+    int? priorityFeeMicrolamports,
     int? cuLimit,
     String? tokenContractAddress,
     String? tokenName,
@@ -83,11 +84,12 @@ class TransferParamsSOL extends TransferParams {
     to: to ?? this.to,
     from: from ?? this.from,
     amount: amount ?? this.amount,
-    chainId: chainId ?? this.chainId,
+    // chainId: chainId ?? this.chainId,
     tokenDecimal: tokenDecimal ?? this.tokenDecimal,
     tokenWalletType: tokenWalletType ?? this.tokenWalletType,
     usePriorityFee: usePriorityFee ?? this.usePriorityFee,
-    priorityFee: priorityFee ?? this.priorityFee,
+    priorityFeeMicrolamports:
+        priorityFeeMicrolamports ?? this.priorityFeeMicrolamports,
     cuLimit: cuLimit ?? this.cuLimit,
     tokenContractAddress: tokenContractAddress ?? this.tokenContractAddress,
     tokenName: tokenName ?? this.tokenName,
