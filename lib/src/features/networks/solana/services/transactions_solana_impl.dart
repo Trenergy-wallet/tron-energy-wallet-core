@@ -14,7 +14,7 @@ const _priorityFeeOnError = 5000;
 const _minPriorityFee = 2000;
 const _maxPriorityFee = 2000000;
 
-/// https://docs.chainstack.com/docs/solana-compute-budget
+// https://docs.chainstack.com/docs/solana-compute-budget
 const _buildInInstructionCuLimit = 3000;
 
 /// Transactions Service
@@ -395,6 +395,7 @@ class TransactionsServiceSolanaImpl
           ),
         );
         addresses.addAll([
+          mintAddress,
           sourceATA.address,
           destinationATA.address,
           if (destinationInfo == null) params.solAddressFrom,
@@ -425,21 +426,24 @@ class TransactionsServiceSolanaImpl
 
   Future<int> _getPriorityFeePricePerUnit(List<SolAddress> addresses) async {
     try {
-      var selectedFee = _minPriorityFee;
       final feePrices = await _nodeProvider.request(
         SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
       );
-      if (feePrices.isNotEmpty) {
-        final sortedFees = feePrices.map((e) => e.prioritizationFee).toList()
-          ..sort();
-        final medianFee = sortedFees[sortedFees.length ~/ 2];
-        selectedFee = medianFee.clamp(_minPriorityFee, _maxPriorityFee);
-        _logger.logInfoMessage(
-          _name,
-          'getPriorityFeePricePerUnit: median: $medianFee, '
-          'selected: $selectedFee',
-        );
-      }
+      final nonZeroFees = feePrices
+          .map((e) => e.prioritizationFee)
+          .where((fee) => fee > 0)
+          .toList();
+
+      if (nonZeroFees.isEmpty) return _minPriorityFee;
+      nonZeroFees.sort();
+      var selectedFee = _minPriorityFee;
+      final medianFee = nonZeroFees[nonZeroFees.length ~/ 2];
+      selectedFee = medianFee.clamp(_minPriorityFee, _maxPriorityFee);
+      _logger.logInfoMessage(
+        _name,
+        'getPriorityFeePricePerUnit: median: $medianFee, '
+        'selected: $selectedFee',
+      );
       return selectedFee;
     } catch (e) {
       _logger.logError(
