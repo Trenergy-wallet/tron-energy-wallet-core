@@ -25,10 +25,14 @@ class TransactionsServiceSolanaImpl
   /// Transactions Service
   ///
   /// Provides services for creating and signing SOLANA transactions
+  ///
+  /// [getPriorityFeePricePerUnit] - default is non-zero medium calculation
   TransactionsServiceSolanaImpl({
     required Future<String> Function(String masterKey) getSigningKey,
     required this.isTestnet,
     String Function()? getAuthToken,
+    Future<int> Function(List<SolAddress> addresses)?
+    getPriorityFeePricePerUnit,
     this.rpc,
     this.apiUri,
     TRLogger? logger,
@@ -40,6 +44,8 @@ class TransactionsServiceSolanaImpl
          'Required rpc params are null',
        ) {
     _logger = logger ?? InAppLogger();
+    _getPriorityFeePricePerUnit =
+        getPriorityFeePricePerUnit ?? _getPriorityFeePricePerUnitDefault;
   }
 
   /// Blockchain of the service
@@ -64,6 +70,9 @@ class TransactionsServiceSolanaImpl
 
   /// Testnet params (impact on address generation)
   final bool isTestnet;
+
+  late final Future<int> Function(List<SolAddress> addresses)
+  _getPriorityFeePricePerUnit;
 
   SolanaProvider get _nodeProvider =>
       rpc ??
@@ -388,17 +397,15 @@ class TransactionsServiceSolanaImpl
               owner: params.solAddressTo,
               programId: params.tokenType.programId,
             );
-        final destinationInfo = await _nodeProvider.request(
-          SolanaRequestGetAccountInfo(
-            account: destinationATA.address,
-            dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
-          ),
+        final destinationATAExists = await accountExists(
+          destinationATA.address.address,
         );
+
         addresses.addAll([
           mintAddress,
           sourceATA.address,
           destinationATA.address,
-          if (destinationInfo == null) params.solAddressFrom,
+          if (!destinationATAExists) params.solAddressFrom,
         ]);
       case .unknown:
         throw AppException(
@@ -424,7 +431,9 @@ class TransactionsServiceSolanaImpl
     );
   }
 
-  Future<int> _getPriorityFeePricePerUnit(List<SolAddress> addresses) async {
+  Future<int> _getPriorityFeePricePerUnitDefault(
+    List<SolAddress> addresses,
+  ) async {
     try {
       final feePrices = await _nodeProvider.request(
         SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
@@ -464,6 +473,39 @@ class TransactionsServiceSolanaImpl
       size: type.isMaster ? 0 : 165,
     ),
   );
+
+  /// Check account for the existence
+  Future<bool> accountExists(String address) async {
+    final info = await _nodeProvider.request(
+      SolanaRequestGetAccountInfo(
+        account: SolAddress.unchecked(address),
+        // Lightweight account existence check
+        dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+      ),
+    );
+    return info != null;
+  }
+
+  /// SPL ATA Address for token ontract
+  Future<String> getATAAddressForTokenContract({
+    required String solWalletAddress,
+    required String tokenContractAddress,
+  }) async {
+    final mintAddress = SolAddress(tokenContractAddress);
+    final mintInfo = await _nodeProvider.request(
+      SolanaRequestGetAccountInfo(
+        account: mintAddress,
+        dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
+      ),
+    );
+    final tokenType = SolTokenType.fromOwner(mintInfo?.owner);
+
+    return AssociatedTokenAccountProgramUtils.associatedTokenAccount(
+      mint: mintAddress,
+      owner: SolAddress.unchecked(solWalletAddress),
+      tokenProgramId: tokenType.programId,
+    ).address.address;
+  }
 
   /// Create a signing key for Solana
   ///
