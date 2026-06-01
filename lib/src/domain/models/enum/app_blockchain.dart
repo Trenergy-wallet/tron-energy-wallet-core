@@ -96,7 +96,7 @@ enum AppBlockchain {
     isSupported: true,
     allCoinsSupported: true,
     mainTokenName: 'SOL',
-    supportsMemoMessage: false,
+    supportsMemoMessage: true,
   )
   ;
 

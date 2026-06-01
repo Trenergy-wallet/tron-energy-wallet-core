@@ -19,7 +19,8 @@ enum SolTokenType {
   /// Constructor to initialize the enum element with a string program address
   const SolTokenType(this._program);
 
-  /// Factory method to determine the token standard by its owner program address.
+  /// Factory method to determine the token standard by its owner
+  /// program address.
   ///
   /// Accepts [owner] (the program address retrieved from the RPC
   /// getAccountInfo response).
