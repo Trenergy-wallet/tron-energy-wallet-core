@@ -8,6 +8,7 @@ import 'package:blockchain_utils/bip/bip.dart' as bip;
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:on_chain/ethereum/src/keys/private_key.dart';
+import 'package:on_chain/solana/src/keypair/private_key.dart';
 import 'package:on_chain/tron/src/keys/private_key.dart';
 import 'package:ton_dart/ton_dart.dart';
 
@@ -71,6 +72,20 @@ class KeyGenerator {
       return ETHPrivateKey.fromBytes(defaultPath.privateKey.raw);
     });
   }
+
+  /// Derives and returns the private key for the Solana blockchain from the
+  /// stored mnemonic
+  Future<SolanaPrivateKey> generateForSolana({bool forTestnet = false}) async {
+    return Isolate.run(() {
+      final seed = bip.Bip39SeedGenerator(mnemonic).generate();
+      // Derive a Ethereum private key from the seed
+      final bip44 = bip.Bip44.fromSeed(
+        seed,
+        forTestnet ? bip.Bip44Coins.solanaTestnet : bip.Bip44Coins.solana,
+      );
+      return SolanaPrivateKey.fromSeed(bip44.deriveDefaultPath.privateKey.raw);
+    });
+  }
 }
 
 /// Convert amount for tokens
@@ -92,7 +107,8 @@ enum _BtcBipPath {
   bip84segwit("m/84'/0'/0'/0/0"),
 
   /// Taproot
-  bip86taproot("m/86'/0'/0'/0/0");
+  bip86taproot("m/86'/0'/0'/0/0")
+  ;
 
   const _BtcBipPath(this.path);
 
