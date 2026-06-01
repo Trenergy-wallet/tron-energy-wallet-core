@@ -1,3 +1,9 @@
+## 2.1.0
+
+### Added
+
+- SOLANA network support
+
 ## 2.0.0
 
 ### Breaking changes
