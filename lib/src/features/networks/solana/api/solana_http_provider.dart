@@ -2,6 +2,7 @@ import 'package:blockchain_utils/service/models/params.dart';
 import 'package:http/http.dart' as http;
 import 'package:on_chain/solana/src/rpc/core/core.dart';
 import 'package:on_chain/solana/src/rpc/service/service.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Provider for working with the TRON node
 class SolanaHTTPProvider implements SolanaServiceProvider {
@@ -9,7 +10,7 @@ class SolanaHTTPProvider implements SolanaServiceProvider {
   SolanaHTTPProvider({
     required this.url,
     http.Client? client,
-    this.defaultRequestTimeout = const Duration(seconds: 30),
+    this.defaultRequestTimeout = CoreConsts.defaultRequestTimeout,
     this.authToken,
   }) : client = client ?? http.Client();
 

@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:on_chain/tron/tron.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Provider for working with the TRON node
 class TronHTTPProvider implements TronServiceProvider {
@@ -7,7 +8,7 @@ class TronHTTPProvider implements TronServiceProvider {
   TronHTTPProvider({
     required this.url,
     http.Client? client,
-    this.defaultRequestTimeout = const Duration(seconds: 30),
+    this.defaultRequestTimeout = CoreConsts.defaultRequestTimeout,
     this.authToken,
   }) : client = client ?? http.Client();
 

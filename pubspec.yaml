@@ -28,7 +28,7 @@ dependencies:
   tr_ton_wallet_service:
     git:
       url: https://github.com/Trenergy-wallet/tr_ton_wallet_service.git
-      ref: v1.0.1
+      ref: v1.0.2
 #    path: ../tr_ton_wallet_service
 
 dev_dependencies:
