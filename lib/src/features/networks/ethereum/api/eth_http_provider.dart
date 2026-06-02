@@ -1,6 +1,7 @@
 import 'package:blockchain_utils/service/models/params.dart';
 import 'package:http/http.dart';
 import 'package:on_chain/on_chain.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Http provider for Ethereum
 class EthereumHTTPProvider with EthereumServiceProvider {
@@ -9,7 +10,7 @@ class EthereumHTTPProvider with EthereumServiceProvider {
     this.url,
     this.authToken, {
     Client? client,
-    this.defaultTimeOut = const Duration(seconds: 30),
+    this.defaultTimeOut = CoreConsts.defaultRequestTimeout,
   }) : client = client ?? Client();
 
   /// Api url

@@ -50,4 +50,7 @@ class CoreConsts {
 
   /// Еth decimals
   static const ethDecimals = 16;
+
+  /// Http request timeout
+  static const defaultRequestTimeout = Duration(seconds: 10);
 }
