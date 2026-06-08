@@ -1,6 +1,6 @@
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/get_balance.dart';
-import 'package:on_chain/ethereum/src/rpc/methds/send_raw_transaction.dart';
+import 'package:on_chain/ethereum/src/rpc/methds/ethereum/get_balance.dart';
+import 'package:on_chain/ethereum/src/rpc/methds/ethereum/send_raw_transaction.dart';
 import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
 import 'package:on_chain/solidity/address/core.dart';
 import 'package:tr_logger/tr_logger.dart';
