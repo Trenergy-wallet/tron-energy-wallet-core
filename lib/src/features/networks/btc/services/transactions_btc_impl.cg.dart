@@ -1,3 +1,6 @@
+// Linter bug
+// ignore_for_file: simplify_variable_pattern
+
 import 'dart:async';
 import 'dart:math';
 

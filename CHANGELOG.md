@@ -1,3 +1,7 @@
+## 2.2.0
+
+* Dependencies updated
+
 ## 2.1.1
 
 * Default request timeout updated

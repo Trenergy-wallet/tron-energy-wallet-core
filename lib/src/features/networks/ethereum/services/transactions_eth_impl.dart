@@ -1,3 +1,6 @@
+// More simple flow
+// ignore_for_file: parameter_assignments
+
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';

@@ -13,7 +13,7 @@ abstract class Either<L, R> {
       fold((_) => other(), (_) => this);
 
   Either<L2, R> leftMap<L2>(L2 Function(L l) f) =>
-      fold((L l) => left(f(l)), right);
+      fold((l) => left(f(l)), right);
 
   bool isLeft() => fold((_) => true, (_) => false);
 
@@ -21,7 +21,7 @@ abstract class Either<L, R> {
 
   Either<R, L> swap() => fold(right, left);
 
-  Either<L, R2> map<R2>(R2 Function(R r) f) => fold(left, (R r) => right(f(r)));
+  Either<L, R2> map<R2>(R2 Function(R r) f) => fold(left, (r) => right(f(r)));
 
   Either<L, R2> bind<R2>(Function1<R, Either<L, R2>> f) => fold(left, f);
 
