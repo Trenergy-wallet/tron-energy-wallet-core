@@ -1,3 +1,7 @@
+## 2.2.1
+
+* EVM fixes
+
 ## 2.2.0
 
 * Dependencies updated
