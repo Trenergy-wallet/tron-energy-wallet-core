@@ -303,7 +303,9 @@ class TransactionsServiceEthereumImpl
         from: ETHAddress(params.from),
         to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
-        gasLimit: BigInt.zero,
+        gasLimit: appBlockchain.isOptimism
+            ? CoreConsts.defaultGasLimitOptimism
+            : BigInt.zero,
         maxFeePerGas: maxFeePerGas,
         maxPriorityFeePerGas: selectedFee,
         data: ethTransferAbiFragment.encode([
@@ -335,7 +337,9 @@ class TransactionsServiceEthereumImpl
         from: ETHAddress(params.from),
         to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
-        gasLimit: BigInt.zero,
+        gasLimit: appBlockchain.isOptimism
+            ? CoreConsts.defaultGasLimitOptimism
+            : BigInt.zero,
         gasPrice: gasPrice,
         data: ethTransferAbiFragment.encode([
           ETHAddress(params.to),
