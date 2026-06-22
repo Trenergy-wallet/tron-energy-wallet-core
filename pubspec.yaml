@@ -18,7 +18,13 @@ dependencies:
   json_annotation: ^4.9.0
   logging: ^1.3.0
   meta: ^1.17.0
-  on_chain: ^8.0.0
+#  on_chain: ^8.0.0
+  # fixes are not released to the pub version of on_chain (22/06/26)
+  on_chain:
+    git:
+      url: https://github.com/mrtnetwork/On_chain.git
+#      url: https://github.com/KabaDH/On_chain.git
+      ref: 486242db1887378720cf20f51259677920c7a8c8
   retrofit: ^4.9.2
   ton_dart: ^2.2.0
   tr_logger:

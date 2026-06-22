@@ -105,6 +105,16 @@ class TransactionsServiceEthereumImpl
         _ => value * BigInt.from(3) ~/ BigInt.from(2),
       };
 
+  /// Fee can not be less than the minimum for some networks
+  @visibleForTesting
+  BigInt applyMinPriorityFeePerGas(BigInt value) => switch (appBlockchain) {
+    .polygon =>
+      value > CoreConsts.minPriorityFeePerGasPolygon
+          ? value
+          : CoreConsts.minPriorityFeePerGasPolygon,
+    _ => value,
+  };
+
   /// We increase the fee with a buffer/multiplier to improve the chance of
   /// inclusion if conditions change while the tx is pending in the mempool
   ///
@@ -191,11 +201,12 @@ class TransactionsServiceEthereumImpl
         'Creating eip1559Fee transaction to ${params.to}, '
         'amount: ${params.amount}',
       );
-      final selectedFee = switch (params.feeType) {
+      var selectedFee = switch (params.feeType) {
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
       };
+      selectedFee = applyMinPriorityFeePerGas(selectedFee);
       // Arbitrum uses a sequencer, so we add a safety buffer
       final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
         selectedFee + eip1559Fee.baseFee,
@@ -278,12 +289,12 @@ class TransactionsServiceEthereumImpl
         'amount: ${params.amount}${params.tokenName != null ? ', '
                   'token: ${params.tokenName}' : ''}',
       );
-      final selectedFee = switch (params.feeType) {
+      var selectedFee = switch (params.feeType) {
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
       };
-
+      selectedFee = applyMinPriorityFeePerGas(selectedFee);
       final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
         selectedFee + eip1559Fee.baseFee,
       );
@@ -292,7 +303,9 @@ class TransactionsServiceEthereumImpl
         from: ETHAddress(params.from),
         to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
-        gasLimit: BigInt.zero,
+        gasLimit: appBlockchain.isOptimism
+            ? CoreConsts.defaultGasLimitOptimism
+            : BigInt.zero,
         maxFeePerGas: maxFeePerGas,
         maxPriorityFeePerGas: selectedFee,
         data: ethTransferAbiFragment.encode([
@@ -324,7 +337,9 @@ class TransactionsServiceEthereumImpl
         from: ETHAddress(params.from),
         to: ETHAddress(params.tokenContractAddress!),
         nonce: nonce,
-        gasLimit: BigInt.zero,
+        gasLimit: appBlockchain.isOptimism
+            ? CoreConsts.defaultGasLimitOptimism
+            : BigInt.zero,
         gasPrice: gasPrice,
         data: ethTransferAbiFragment.encode([
           ETHAddress(params.to),

@@ -53,4 +53,10 @@ class CoreConsts {
 
   /// Http request timeout
   static const defaultRequestTimeout = Duration(seconds: 10);
+
+  /// Min EIP1559 fee for Polygon
+  static final minPriorityFeePerGasPolygon = BigInt.from(30000000000);
+
+  /// Max gas limit for Optimism for gas calculation
+  static final defaultGasLimitOptimism = BigInt.from(1000000);
 }

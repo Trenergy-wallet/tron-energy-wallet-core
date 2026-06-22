@@ -34,6 +34,6 @@ class SolanaHelper {
 
   /// Create instruction to add Memo to tx. Limited to 100 symbols
   static TransactionInstruction createMemoInstruction(String message) {
-    return MemoProgram(layout: MemoLayout(memo: message.maxLen(100)));
+    return MemoProgram(layout: MemoLayout.fromString(message.maxLen(100)));
   }
 }
