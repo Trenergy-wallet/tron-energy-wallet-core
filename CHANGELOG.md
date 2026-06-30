@@ -1,3 +1,20 @@
+## 2.3.0
+
+### Added
+
+- EVM dapp signing support (WalletConnect) in `TransactionsServiceEthereumImpl`:
+  - `signPersonalMessageOrThrow` — EIP-191 `personal_sign`.
+  - `signTypedDataOrThrow` — EIP-712 typed data (defaults to v4).
+  - `signTransactionOrThrow` — sign a prepared `ETHTransaction` (publicized,
+    with a defensive `from` vs wallet-address check).
+  - `createDappTransaction` — build an unsigned tx from raw dapp params,
+    resolving missing nonce / fee / gas limit against the node.
+  - `estimateDappTransactionFee` — fee estimate for the confirmation sheet.
+- `DappTransactionParamsETH` — raw EVM transaction params from a dapp.
+- `ExceptionCode`: `walletConnectError`, `dappFromAddressMismatch`,
+  `invalidTypedData`.
+
+
 ## 2.2.1
 
 * EVM fixes

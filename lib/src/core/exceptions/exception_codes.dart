@@ -101,6 +101,14 @@ enum ExceptionCode {
   // Node and blockchain errors
   rpcError(code: 'RPC0', description: 'Blockchain node error'),
 
+  // WalletConnect / dapp signing errors
+  walletConnectError(code: 'WC0', description: 'WalletConnect error'),
+  dappFromAddressMismatch(
+    code: 'WC1',
+    description: 'Dapp transaction "from" does not match the wallet address',
+  ),
+  invalidTypedData(code: 'WC2', description: 'Invalid EIP-712 typed data'),
+
   // Staking exceptions
   stakingException(code: 'STK0', description: 'General staking error'),
 
