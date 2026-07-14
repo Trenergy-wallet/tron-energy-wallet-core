@@ -37,10 +37,16 @@ sealed class Fees with _$Fees {
   const Fees._();
 
   /// Select the corresponding [FeeType] fee
+  ///
+  /// THROWS [ArgumentError] for [FeeType.gasfree] — this selector is for
+  /// Bitcoin fees only, gasfree is never applicable there
   int feeForType(FeeType feeType) => switch (feeType) {
     FeeType.fast => fastestFee,
     FeeType.optimal => halfHourFee,
     FeeType.economy => economyFee,
+    FeeType.gasfree => throw ArgumentError(
+      'gasfree is not applicable to Bitcoin fees',
+    ),
   };
 
   /// Error value / placeholder

@@ -25,6 +25,7 @@ dependencies:
       url: https://github.com/mrtnetwork/On_chain.git
 #      url: https://github.com/KabaDH/On_chain.git
       ref: 486242db1887378720cf20f51259677920c7a8c8
+  permissionless: ^0.4.1
   retrofit: ^4.9.2
   ton_dart: ^2.2.0
   tr_logger:

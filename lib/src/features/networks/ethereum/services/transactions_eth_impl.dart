@@ -205,6 +205,14 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
+        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // must never reach the regular ETH transaction builder
+        FeeType.gasfree => throw AppException(
+          message: 'gasfree is not supported by '
+              'TransactionsServiceEthereumImpl, use '
+              'TransactionsServiceEthereumGasfreeImpl',
+          code: ExceptionCode.unableToCreateTransaction,
+        ),
       };
       selectedFee = applyMinPriorityFeePerGas(selectedFee);
       // Arbitrum uses a sequencer, so we add a safety buffer
@@ -293,6 +301,14 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
+        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // must never reach the regular ETH transaction builder
+        FeeType.gasfree => throw AppException(
+          message: 'gasfree is not supported by '
+              'TransactionsServiceEthereumImpl, use '
+              'TransactionsServiceEthereumGasfreeImpl',
+          code: ExceptionCode.unableToCreateTransaction,
+        ),
       };
       selectedFee = applyMinPriorityFeePerGas(selectedFee);
       final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
