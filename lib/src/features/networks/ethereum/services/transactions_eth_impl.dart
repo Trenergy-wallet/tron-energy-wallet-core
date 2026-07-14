@@ -380,7 +380,6 @@ class TransactionsServiceEthereumImpl
       params: params,
       gasPrice: gasPrice,
       eip1559Fee: eip1559Fee,
-      forceUpdateNonce: false,
     );
     final l1fee = await _onEstimateL1Fee?.call(tx) ?? BigInt.zero;
     final feeInWei =
@@ -438,13 +437,10 @@ class TransactionsServiceEthereumImpl
   }
 
   /// Create transaction for Ethereum or compatible token
-  ///
-  /// [forceUpdateNonce] - do not use cached nonce
   Future<ETHTransaction> _tryCreateTransaction({
     required TransferParamsETH params,
     BigInt? gasPrice,
     FeeHistorical? eip1559Fee,
-    bool forceUpdateNonce = true,
   }) async {
     if (params.amount < BigRational.zero) {
       throw AppException(
