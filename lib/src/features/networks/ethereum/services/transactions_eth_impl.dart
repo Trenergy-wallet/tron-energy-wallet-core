@@ -32,10 +32,7 @@ class TransactionsServiceEthereumImpl
   }) : _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
        _onEstimateL1Fee = null,
-       assert(
-         rpc != null || apiUri != null,
-         'Required rpc params are null',
-       ),
+       assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
          supportedBlockchains.contains(appBlockchain),
          '$appBlockchain is not supported',
@@ -72,12 +69,7 @@ class TransactionsServiceEthereumImpl
 
   EthereumProvider get _ethereumProvider =>
       rpc ??
-      EthereumProvider(
-        EthereumHTTPProvider(
-          apiUri!,
-          _getAuthToken?.call(),
-        ),
-      );
+      EthereumProvider(EthereumHTTPProvider(apiUri!, _getAuthToken?.call()));
 
   /// Supported blockchains by this service
   static const List<AppBlockchain> supportedBlockchains = [
@@ -149,9 +141,7 @@ class TransactionsServiceEthereumImpl
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    final tx = await _tryCreateTransaction(
-      params: params,
-    );
+    final tx = await _tryCreateTransaction(params: params);
     if (params.userApprovedFee != null) {
       final userApproved = ETHHelper.toWei(
         params.userApprovedFee!.fee.toString(),
@@ -207,8 +197,9 @@ class TransactionsServiceEthereumImpl
         FeeType.fast => eip1559Fee.high,
         // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
         // must never reach the regular ETH transaction builder
-        FeeType.gasfree => throw AppException(
-          message: 'gasfree is not supported by '
+        FeeType.gasFree => throw AppException(
+          message:
+              'gasfree is not supported by '
               'TransactionsServiceEthereumImpl, use '
               'TransactionsServiceEthereumGasfreeImpl',
           code: ExceptionCode.unableToCreateTransaction,
@@ -303,8 +294,9 @@ class TransactionsServiceEthereumImpl
         FeeType.fast => eip1559Fee.high,
         // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
         // must never reach the regular ETH transaction builder
-        FeeType.gasfree => throw AppException(
-          message: 'gasfree is not supported by '
+        FeeType.gasFree => throw AppException(
+          message:
+              'gasfree is not supported by '
               'TransactionsServiceEthereumImpl, use '
               'TransactionsServiceEthereumGasfreeImpl',
           code: ExceptionCode.unableToCreateTransaction,
@@ -442,9 +434,7 @@ class TransactionsServiceEthereumImpl
   /// Create a signing key for Ethereum
   ///
   /// THROWS
-  Future<ETHPrivateKey> _createSigningKey({
-    required String masterKey,
-  }) async {
+  Future<ETHPrivateKey> _createSigningKey({required String masterKey}) async {
     final mnemonic = await _getSigningKey(masterKey);
     if (mnemonic.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);

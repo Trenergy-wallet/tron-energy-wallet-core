@@ -28,30 +28,32 @@ void main() {
           supportsEIP1559: true,
           tokenDecimal: 18,
           tokenWalletType: tokenWalletType,
-          feeType: FeeType.gasfree,
+          feeType: FeeType.gasFree,
           tokenContractAddress: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
         );
 
-    test('THROWS unableToCreateTransaction for gasfree in buildTransaction',
-        () async {
-      await expectLater(
-        service.buildTransaction(
-          rpc: EthereumProvider(
-            EthereumHTTPProvider('http://localhost:8545', null),
+    test(
+      'THROWS unableToCreateTransaction for gasfree in buildTransaction',
+      () async {
+        await expectLater(
+          service.buildTransaction(
+            rpc: EthereumProvider(
+              EthereumHTTPProvider('http://localhost:8545', null),
+            ),
+            params: params(tokenWalletType: TokenWalletType.master),
+            nonce: 0,
+            eip1559Fee: eip1559Fee,
           ),
-          params: params(tokenWalletType: TokenWalletType.master),
-          nonce: 0,
-          eip1559Fee: eip1559Fee,
-        ),
-        throwsA(
-          isA<AppException>().having(
-            (e) => e.code,
-            'code',
-            ExceptionCode.unableToCreateTransaction,
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.unableToCreateTransaction,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test(
       'THROWS unableToCreateTransaction for gasfree in buildERC20Transaction',

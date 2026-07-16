@@ -13,19 +13,16 @@ void main() {
     });
 
     test('THROWS ArgumentError for gasfree (not applicable to Bitcoin)', () {
-      expect(
-        () => fees.feeForType(FeeType.gasfree),
-        throwsArgumentError,
-      );
+      expect(() => fees.feeForType(FeeType.gasFree), throwsArgumentError);
     });
   });
 
   group('FeeType', () {
     test('isGasfree is true only for gasfree', () {
-      expect(FeeType.gasfree.isGasfree, isTrue);
-      expect(FeeType.economy.isGasfree, isFalse);
-      expect(FeeType.optimal.isGasfree, isFalse);
-      expect(FeeType.fast.isGasfree, isFalse);
+      expect(FeeType.gasFree.isGasFree, isTrue);
+      expect(FeeType.economy.isGasFree, isFalse);
+      expect(FeeType.optimal.isGasFree, isFalse);
+      expect(FeeType.fast.isGasFree, isFalse);
     });
   });
 }

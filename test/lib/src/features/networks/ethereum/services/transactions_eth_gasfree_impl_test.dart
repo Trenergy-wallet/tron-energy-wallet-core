@@ -144,8 +144,7 @@ TransferParamsGasfreeETH _params({
   tokenDecimal: 6,
   tokenContractAddress: _tokenAddress,
   tokenWalletType: tokenWalletType,
-  serviceFeeAmount:
-      serviceFeeAmount ?? BigRational.parseDecimal('0.1'),
+  serviceFeeAmount: serviceFeeAmount ?? BigRational.parseDecimal('0.1'),
   serviceFeeCollector: serviceFeeCollector,
   tokenName: 'USDC',
 );
@@ -222,7 +221,7 @@ void main() {
         final service = _service(httpClient: _mockRpc(delegated: true));
 
         final payload = await service.createTransaction(
-          // Стейблы приходят от бэка с типом stable - тоже валидны
+          // Stables come from the backend with the stable type - also valid
           params: _params(tokenWalletType: TokenWalletType.stable),
           masterKey: 'mk',
         );
@@ -235,31 +234,33 @@ void main() {
       },
     );
 
-    test('service fee is optional: no collector transfer in calldata',
-        () async {
-      final service = _service(httpClient: _mockRpc());
+    test(
+      'service fee is optional: no collector transfer in calldata',
+      () async {
+        final service = _service(httpClient: _mockRpc());
 
-      final payload = await service.createTransaction(
-        params: _params(
-          serviceFeeAmount: BigRational.zero,
-          serviceFeeCollector: null,
-        ),
-        masterKey: 'mk',
-      );
+        final payload = await service.createTransaction(
+          params: _params(
+            serviceFeeAmount: BigRational.zero,
+            serviceFeeCollector: null,
+          ),
+          masterKey: 'mk',
+        );
 
-      final decoded = jsonDecode(payload) as Map<String, dynamic>;
-      final userOp =
-          (decoded['params'] as List<dynamic>)[0] as Map<String, dynamic>;
-      final callData = (userOp['callData'] as String).toLowerCase();
-      expect(
-        callData,
-        contains(_recipientAddress.substring(2).toLowerCase()),
-      );
-      expect(
-        callData,
-        isNot(contains(_collectorAddress.substring(2).toLowerCase())),
-      );
-    });
+        final decoded = jsonDecode(payload) as Map<String, dynamic>;
+        final userOp =
+            (decoded['params'] as List<dynamic>)[0] as Map<String, dynamic>;
+        final callData = (userOp['callData'] as String).toLowerCase();
+        expect(
+          callData,
+          contains(_recipientAddress.substring(2).toLowerCase()),
+        );
+        expect(
+          callData,
+          isNot(contains(_collectorAddress.substring(2).toLowerCase())),
+        );
+      },
+    );
 
     test('ASSERTS on master token type (native coin is not applicable)', () {
       expect(
@@ -304,8 +305,7 @@ void main() {
       );
     });
 
-    test('THROWS invalidCommissionAmount for a negative service fee',
-        () async {
+    test('THROWS invalidCommissionAmount for a negative service fee', () async {
       final service = _service(httpClient: _mockRpc());
 
       await expectLater(
@@ -347,6 +347,28 @@ void main() {
       },
     );
 
+    test(
+      'THROWS invalidCommissionAmount for a garbage collector address '
+      '(typed error instead of FormatException from fromHex)',
+      () async {
+        final service = _service(httpClient: _mockRpc());
+
+        await expectLater(
+          service.createTransaction(
+            params: _params(serviceFeeCollector: 'not-an-address'),
+            masterKey: 'mk',
+          ),
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.invalidCommissionAmount,
+            ),
+          ),
+        );
+      },
+    );
+
     test('THROWS unableToRetrieveMnemonic for an empty mnemonic', () async {
       final service = _service(
         httpClient: _mockRpc(),
@@ -365,21 +387,23 @@ void main() {
       );
     });
 
-    test('THROWS tokenIsNotSupported when the paymaster has no quote',
-        () async {
-      final service = _service(httpClient: _mockRpc(tokenSupported: false));
+    test(
+      'THROWS tokenIsNotSupported when the paymaster has no quote',
+      () async {
+        final service = _service(httpClient: _mockRpc(tokenSupported: false));
 
-      await expectLater(
-        service.createTransaction(params: _params(), masterKey: 'mk'),
-        throwsA(
-          isA<AppException>().having(
-            (e) => e.code,
-            'code',
-            ExceptionCode.tokenIsNotSupported,
+        await expectLater(
+          service.createTransaction(params: _params(), masterKey: 'mk'),
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.tokenIsNotSupported,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test(
       'THROWS insufficientBalance when the token balance does not cover '
@@ -418,10 +442,206 @@ void main() {
       );
     });
   });
+  group('TransactionsServiceEthereumGasfreeImpl estimate + send flow', () {
+    Future<GasfreeEstimate> estimate({
+      required List<Map<String, dynamic>> log,
+      bool delegated = false,
+    }) =>
+        _service(
+          httpClient: _mockRpc(delegated: delegated, log: log),
+        ).estimateGasFree(
+          chainId: 11155111,
+          senderAddress: _senderAddress,
+          recipientAddress: _recipientAddress,
+          tokenContractAddress: _tokenAddress,
+          tokenDecimal: 6,
+          serviceFeeCollector: _collectorAddress,
+        );
+
+    test(
+      'estimateGasFree: single paid round (quote + prices + stub + '
+      'gas estimate), correct math',
+      () async {
+        final log = <Map<String, dynamic>>[];
+        final result = await estimate(log: log);
+
+        int count(String method) =>
+            log.where((r) => r['method'] == method).length;
+        expect(count('pimlico_getTokenQuotes'), 1);
+        expect(count('pimlico_getUserOperationGasPrice'), 1);
+        expect(count('pm_getPaymasterStubData'), 1);
+        expect(count('eth_estimateUserOperationGas'), 1);
+        // No final paid paymaster data during estimation
+        expect(count('pm_getPaymasterData'), 0);
+
+        expect(result.needsDelegation, isTrue);
+        // (21000 + 100000 + 100000 + 50000 + 20000 + 75000 postOpGas)
+        // x 1 gwei x rate 1e18 / 1e18 = 3.66e14 raw; / 1e6 decimals
+        expect(
+          result.expectedFeeInToken,
+          BigRational.parseDecimal('366000000'),
+        );
+        expect(
+          result.maxCostInToken,
+          BigInt.from(366000) * BigInt.from(10).pow(9),
+        );
+        expect(result.includesServiceFee, isTrue);
+        expect(
+          result.paymasterAddress.toLowerCase(),
+          _paymasterAddress.toLowerCase(),
+        );
+      },
+    );
+
+    test(
+      'createTransactionFromEstimate: exactly ONE paid call '
+      '(pm_getPaymasterData), first-op payload carries eip7702Auth',
+      () async {
+        final estimateLog = <Map<String, dynamic>>[];
+        final cached = await estimate(log: estimateLog);
+
+        final sendLog = <Map<String, dynamic>>[];
+        final payload =
+            await _service(
+              httpClient: _mockRpc(log: sendLog),
+            ).createTransactionFromEstimate(
+              params: _params(),
+              estimate: cached,
+              masterKey: 'mk',
+            );
+
+        int count(String method) =>
+            sendLog.where((r) => r['method'] == method).length;
+        // The only paid call
+        expect(count('pm_getPaymasterData'), 1);
+        expect(count('pm_getPaymasterStubData'), 0);
+        expect(count('eth_estimateUserOperationGas'), 0);
+        expect(count('pimlico_getTokenQuotes'), 0);
+        expect(count('pimlico_getUserOperationGasPrice'), 0);
+
+        final decoded = jsonDecode(payload) as Map<String, dynamic>;
+        expect(decoded['method'], equals('eth_sendUserOperation'));
+        final userOp =
+            (decoded['params'] as List<dynamic>)[0] as Map<String, dynamic>;
+        expect(userOp['eip7702Auth'], isNotNull);
+        expect(userOp['factory'], equals('0x7702'));
+        expect(userOp['signature'], isNot(equals('0x')));
+        // Gas limits are taken from the estimate
+        expect(userOp['callGasLimit'], equals('0x186a0'));
+        // Calldata: both transfers + approve for maxCostInToken
+        final callData = (userOp['callData'] as String).toLowerCase();
+        expect(
+          callData,
+          contains(_recipientAddress.substring(2).toLowerCase()),
+        );
+        expect(
+          callData,
+          contains(_collectorAddress.substring(2).toLowerCase()),
+        );
+        expect(
+          callData,
+          contains(_paymasterAddress.substring(2).toLowerCase()),
+        );
+      },
+    );
+
+    test(
+      'createTransactionFromEstimate: subsequent op - no eip7702Auth',
+      () async {
+        final cached = await estimate(
+          log: <Map<String, dynamic>>[],
+          delegated: true,
+        );
+        expect(cached.needsDelegation, isFalse);
+
+        final payload =
+            await _service(
+              httpClient: _mockRpc(delegated: true),
+            ).createTransactionFromEstimate(
+              params: _params(),
+              estimate: cached,
+              masterKey: 'mk',
+            );
+
+        final decoded = jsonDecode(payload) as Map<String, dynamic>;
+        final userOp =
+            (decoded['params'] as List<dynamic>)[0] as Map<String, dynamic>;
+        expect(userOp.containsKey('eip7702Auth'), isFalse);
+      },
+    );
+
+    test(
+      'createTransactionFromEstimate: THROWS when the estimate does not '
+      'match the transfer params',
+      () async {
+        final cached = await estimate(log: <Map<String, dynamic>>[]);
+
+        await expectLater(
+          _service(httpClient: _mockRpc()).createTransactionFromEstimate(
+            // The estimate included a service fee, the transfer does not
+            params: _params(
+              serviceFeeAmount: BigRational.zero,
+              serviceFeeCollector: null,
+            ),
+            estimate: cached,
+            masterKey: 'mk',
+          ),
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.unableToCreateTransaction,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'estimateGasFree: an empty collector string is equivalent to '
+      'no service fee',
+      () async {
+        final result = await _service(
+          httpClient: _mockRpc(),
+        ).estimateGasFree(
+          chainId: 11155111,
+          senderAddress: _senderAddress,
+          recipientAddress: _recipientAddress,
+          tokenContractAddress: _tokenAddress,
+          tokenDecimal: 6,
+          serviceFeeCollector: '',
+        );
+        expect(result.includesServiceFee, isFalse);
+      },
+    );
+
+    test(
+      'estimateGasFree: THROWS tokenIsNotSupported without a quote',
+      () async {
+        await expectLater(
+          _service(
+            httpClient: _mockRpc(tokenSupported: false),
+          ).estimateGasFree(
+            chainId: 11155111,
+            senderAddress: _senderAddress,
+            recipientAddress: _recipientAddress,
+            tokenContractAddress: _tokenAddress,
+            tokenDecimal: 6,
+          ),
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.tokenIsNotSupported,
+            ),
+          ),
+        );
+      },
+    );
+  });
 
   group('TransactionsServiceEthereumGasfreeImpl helpers', () {
-    test('pimlicoUrlForChain appends the chain id, trailing slash handled',
-        () {
+    test('pimlicoUrlForChain appends the chain id, trailing slash handled', () {
       final service = _service(httpClient: _mockRpc());
       expect(
         service.pimlicoUrlForChain(11155111),
@@ -435,6 +655,36 @@ void main() {
       expect(
         serviceSlash.pimlicoUrlForChain(1),
         equals('http://localhost:3000/pimlico/1'),
+      );
+
+      // Placeholder for a direct Pimlico URL
+      final serviceTemplate = _service(
+        httpClient: _mockRpc(),
+        pimlicoApiUri: 'https://api.pimlico.io/v2/{chainId}/rpc?apikey=x',
+      );
+      expect(
+        serviceTemplate.pimlicoUrlForChain(11155111),
+        equals('https://api.pimlico.io/v2/11155111/rpc?apikey=x'),
+      );
+
+      // Query parameters (apikey) are preserved when appending the segment
+      final serviceQuery = _service(
+        httpClient: _mockRpc(),
+        pimlicoApiUri: 'https://api.pimlico.io/v2?apikey=x',
+      );
+      expect(
+        serviceQuery.pimlicoUrlForChain(1),
+        equals('https://api.pimlico.io/v2/1?apikey=x'),
+      );
+
+      // Full single-chain URL (chain segment already in the path) - as is
+      final serviceFull = _service(
+        httpClient: _mockRpc(),
+        pimlicoApiUri: 'https://api.pimlico.io/v2/11155111/rpc?apikey=x',
+      );
+      expect(
+        serviceFull.pimlicoUrlForChain(11155111),
+        equals('https://api.pimlico.io/v2/11155111/rpc?apikey=x'),
       );
     });
 

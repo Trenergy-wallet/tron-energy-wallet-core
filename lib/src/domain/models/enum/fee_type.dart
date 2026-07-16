@@ -11,7 +11,7 @@ enum FeeType {
 
   /// Gas is paid in the ERC-20 token being sent (EIP-7702 + ERC-20
   /// paymaster), no native coin needed on the sender
-  gasfree('mobile.gasfree');
+  gasFree('mobile.gasfree');
 
   const FeeType(this.trKey);
 
@@ -19,5 +19,5 @@ enum FeeType {
   final String trKey;
 
   /// Gas is paid in the token itself (no native coin involved)
-  bool get isGasfree => this == gasfree;
+  bool get isGasFree => this == gasFree;
 }

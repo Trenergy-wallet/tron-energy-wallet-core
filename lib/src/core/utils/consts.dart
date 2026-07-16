@@ -48,7 +48,7 @@ class CoreConsts {
   /// userApprovedFee)
   static const double defaultEthApprovedFeeBuffer = 3;
 
-  /// Еth decimals
+  /// Eth decimals
   static const ethDecimals = 16;
 
   /// Http request timeout

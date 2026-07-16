@@ -12,9 +12,9 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 class TransferParamsGasfreeETH extends TransferParamsETH {
   /// TransferParamsGasfreeETH
   ///
-  /// [tokenWalletType] - тип токена от бэка ([TokenWalletType.child],
-  /// [TokenWalletType.stable] и тд), но не [TokenWalletType.master]:
-  /// gasfree применим только к токен-контрактам, не к нативной монете
+  /// [tokenWalletType] - token type from the backend ([TokenWalletType.child],
+  /// [TokenWalletType.stable] etc), but never [TokenWalletType.master]:
+  /// gasfree is applicable to token contracts only, not to the native coin
   const TransferParamsGasfreeETH({
     required super.to,
     required super.from,
@@ -33,7 +33,7 @@ class TransferParamsGasfreeETH extends TransferParamsETH {
        super(
          // UserOperations always use EIP-1559 style gas pricing
          supportsEIP1559: true,
-         feeType: FeeType.gasfree,
+         feeType: FeeType.gasFree,
        );
 
   /// Service fee in token units (null or zero - no service fee transfer)
