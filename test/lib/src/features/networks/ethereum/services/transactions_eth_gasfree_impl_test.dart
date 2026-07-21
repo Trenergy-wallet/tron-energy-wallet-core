@@ -118,25 +118,27 @@ String _ethCallResult(Map<String, dynamic> body, {BigInt? balance}) {
   return _uint256(BigInt.zero);
 }
 
-TransactionsServiceEthereumGasfreeImpl _service({
+TransactionsServiceEthereumGasFreeImpl _service({
   required http.Client httpClient,
   Future<String> Function(String masterKey)? getSigningKey,
   String pimlicoApiUri = 'http://localhost:3000/pimlico',
-}) => TransactionsServiceEthereumGasfreeImpl(
+}) => TransactionsServiceEthereumGasFreeImpl(
   appBlockchain: AppBlockchain.ethereum,
   nodeApiUri: 'http://localhost:8545',
   pimlicoApiUri: pimlicoApiUri,
   getSigningKey: getSigningKey ?? (_) async => _testMnemonic,
-  getAuthToken: () => 'test-token',
+  getHeaders: () => {
+    'Authorization': 'test-token',
+  },
   httpClient: httpClient,
 );
 
-TransferParamsGasfreeETH _params({
+TransferParamsGasFreeETH _params({
   BigRational? amount,
   BigRational? serviceFeeAmount,
   String? serviceFeeCollector = _collectorAddress,
   TokenWalletType tokenWalletType = TokenWalletType.child,
-}) => TransferParamsGasfreeETH(
+}) => TransferParamsGasFreeETH(
   to: _recipientAddress,
   from: _senderAddress,
   amount: amount ?? BigRational.parseDecimal('1.5'),
@@ -601,16 +603,17 @@ void main() {
       'estimateGasFree: an empty collector string is equivalent to '
       'no service fee',
       () async {
-        final result = await _service(
-          httpClient: _mockRpc(),
-        ).estimateGasFree(
-          chainId: 11155111,
-          senderAddress: _senderAddress,
-          recipientAddress: _recipientAddress,
-          tokenContractAddress: _tokenAddress,
-          tokenDecimal: 6,
-          serviceFeeCollector: '',
-        );
+        final result =
+            await _service(
+              httpClient: _mockRpc(),
+            ).estimateGasFree(
+              chainId: 11155111,
+              senderAddress: _senderAddress,
+              recipientAddress: _recipientAddress,
+              tokenContractAddress: _tokenAddress,
+              tokenDecimal: 6,
+              serviceFeeCollector: '',
+            );
         expect(result.includesServiceFee, isFalse);
       },
     );

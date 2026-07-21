@@ -9,13 +9,13 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 ///
 /// [serviceFeeAmount] / [serviceFeeCollector] - optional service fee added
 /// to the batch as a separate transfer of the same token
-class TransferParamsGasfreeETH extends TransferParamsETH {
+class TransferParamsGasFreeETH extends TransferParamsETH {
   /// TransferParamsGasfreeETH
   ///
   /// [tokenWalletType] - token type from the backend ([TokenWalletType.child],
   /// [TokenWalletType.stable] etc), but never [TokenWalletType.master]:
   /// gasfree is applicable to token contracts only, not to the native coin
-  const TransferParamsGasfreeETH({
+  const TransferParamsGasFreeETH({
     required super.to,
     required super.from,
     required super.amount,

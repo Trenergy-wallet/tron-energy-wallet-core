@@ -8,9 +8,9 @@ import 'package:permissionless/permissionless.dart' as pl;
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Transactions Service (gasfree)
+/// Transactions Service (gasFree)
 ///
-/// Creates gasfree ERC-20 transfers: an EIP-7702 UserOperation where gas is
+/// Creates gasFree ERC-20 transfers: an EIP-7702 UserOperation where gas is
 /// paid in the transferred token itself via the Pimlico ERC-20 paymaster.
 /// The sender needs NO native coin at all. The first operation additionally
 /// installs the EIP-7702 delegation (the authorization is attached to the
@@ -21,20 +21,19 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 /// forward it VERBATIM to the Pimlico API for the corresponding chain (not to
 /// a regular node) and poll `eth_getUserOperationReceipt` for the resulting
 /// transaction hash.
-class TransactionsServiceEthereumGasfreeImpl
-    implements TransactionsService<TransferParamsGasfreeETH> {
-  /// Transactions Service (gasfree)
-  TransactionsServiceEthereumGasfreeImpl({
+class TransactionsServiceEthereumGasFreeImpl
+    implements TransactionsService<TransferParamsGasFreeETH> {
+  /// Transactions Service (gasFree)
+  TransactionsServiceEthereumGasFreeImpl({
     required this.appBlockchain,
     required this.nodeApiUri,
     required this.pimlicoApiUri,
     required Future<String> Function(String masterKey) getSigningKey,
-    String Function()? getAuthToken,
+    this.getHeaders,
     TRLogger? logger,
     // Custom http client - for tests and diagnostics (call counting)
     http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
-       _getAuthToken = getAuthToken,
        _httpClient = httpClient,
        assert(
          TransactionsServiceEthereumImpl.supportedBlockchains.contains(
@@ -61,8 +60,8 @@ class TransactionsServiceEthereumGasfreeImpl
   /// Get the mnemonic for signing
   final Future<String> Function(String masterKey) _getSigningKey;
 
-  /// Auth token for the backend proxies
-  final String Function()? _getAuthToken;
+  /// Headers for the backend proxies
+  final Map<String, String>? Function()? getHeaders;
 
   /// Injected http client for tests
   final http.Client? _httpClient;
@@ -72,12 +71,7 @@ class TransactionsServiceEthereumGasfreeImpl
   String get _name =>
       'TransactionsServiceEthereumGasfreeImpl-${appBlockchain.slug}';
 
-  Map<String, String> get _authHeaders {
-    final token = _getAuthToken?.call();
-    return {
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
-  }
+  Map<String, String>? get _requestHeaders => getHeaders?.call();
 
   /// Pimlico proxy URL for the chain
   ///
@@ -98,13 +92,13 @@ class TransactionsServiceEthereumGasfreeImpl
     return uri.replace(pathSegments: [...segments, '$chainId']).toString();
   }
 
-  /// Create a gasfree UserOperation and return the `eth_sendUserOperation`
+  /// Create a gasFree UserOperation and return the `eth_sendUserOperation`
   /// JSON-RPC request body for the backend to forward to Pimlico
   ///
   /// THROWS
   @override
   Future<String> createTransaction({
-    required TransferParamsGasfreeETH params,
+    required TransferParamsGasFreeETH params,
     required String masterKey,
   }) async {
     final serviceFee = _validateTransferParams(params);
@@ -119,14 +113,14 @@ class TransactionsServiceEthereumGasfreeImpl
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final client = pl.SmartAccountClient(
@@ -140,7 +134,7 @@ class TransactionsServiceEthereumGasfreeImpl
       paymaster: pl.createPaymasterClient(
         url: pimlicoUrl,
         httpClient: _httpClient,
-        headers: _authHeaders,
+        headers: _requestHeaders,
         timeout: CoreConsts.defaultRequestTimeout,
       ),
     );
@@ -189,7 +183,7 @@ class TransactionsServiceEthereumGasfreeImpl
 
       final gasPrices = await pimlico.getUserOperationGasPrice();
 
-      // TODO(gasfree): compare the max cost against the fee approved by the
+      // TODO(gasFree): compare the max cost against the fee approved by the
       // user (backend estimateFee) once the backend contract for the expected
       // vs max fee is settled - the AppFeeChangedException pattern
       final result = await pl.prepareUserOperationForErc20Paymaster(
@@ -228,7 +222,7 @@ class TransactionsServiceEthereumGasfreeImpl
 
       _logger.logInfoMessage(
         _name,
-        'gasfree op prepared: to: ${params.to}, amount: ${params.amount}'
+        'gasFree op prepared: to: ${params.to}, amount: ${params.amount}'
         '${params.tokenName != null ? ', token: ${params.tokenName}' : ''}, '
         'maxCostInToken: ${result.maxCostInToken}, '
         'serviceFee: $serviceFee, '
@@ -264,7 +258,7 @@ class TransactionsServiceEthereumGasfreeImpl
   static const _mainnetUsdtAddress =
       '0xdac17f958d2ee523a2206206994597c13d831ec7';
 
-  /// Precise gasfree operation estimation WITHOUT the private key
+  /// Precise gasFree operation estimation WITHOUT the private key
   ///
   /// One paid Pimlico round: token quote + gas prices + paymaster stub +
   /// eth_estimateUserOperationGas. The result is cacheable
@@ -297,20 +291,20 @@ class TransactionsServiceEthereumGasfreeImpl
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrl,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     // Account with the well-known dummy key: needed only to encode the
@@ -457,7 +451,7 @@ class TransactionsServiceEthereumGasfreeImpl
 
       _logger.logInfoMessage(
         _name,
-        'gasfree estimated: sender: $senderAddress, gasSum: $gasSum, '
+        'gasFree estimated: sender: $senderAddress, gasSum: $gasSum, '
         'needsDelegation: ${delegation.needsDelegation}, '
         'expectedFee: $expectedFeeInToken, maxCostInToken: $maxCostInToken',
       );
@@ -495,7 +489,7 @@ class TransactionsServiceEthereumGasfreeImpl
     }
   }
 
-  /// Creates a gasfree transaction from a precomputed estimate
+  /// Creates a gasFree transaction from a precomputed estimate
   ///
   /// Exactly ONE paid call (the final pm_getPaymasterData), everything else
   /// is free node calls and local assembly from [estimate].
@@ -504,7 +498,7 @@ class TransactionsServiceEthereumGasfreeImpl
   ///
   /// THROWS
   Future<String> createTransactionFromEstimate({
-    required TransferParamsGasfreeETH params,
+    required TransferParamsGasFreeETH params,
     required GasfreeEstimate estimate,
     required String masterKey,
   }) async {
@@ -521,7 +515,7 @@ class TransactionsServiceEthereumGasfreeImpl
     if (!matchesParams) {
       throw AppException(
         message:
-            'gasfree estimate does not match the transfer params: '
+            'gasFree estimate does not match the transfer params: '
             '$estimate vs from: ${params.from}, chainId: ${params.chainId}, '
             'token: ${params.tokenContractAddress}, serviceFee: $serviceFee',
         code: ExceptionCode.unableToCreateTransaction,
@@ -536,13 +530,12 @@ class TransactionsServiceEthereumGasfreeImpl
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
       httpClient: _httpClient,
-      headers: _authHeaders,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrlForChain(params.chainId),
       httpClient: _httpClient,
-      headers: _authHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final account = pl.createEip7702SimpleSmartAccount(
@@ -611,7 +604,7 @@ class TransactionsServiceEthereumGasfreeImpl
 
       _logger.logInfoMessage(
         _name,
-        'gasfree op finalized from estimate: to: ${params.to}, '
+        'gasFree op finalized from estimate: to: ${params.to}, '
         'amount: ${params.amount}'
         '${params.tokenName != null ? ', token: ${params.tokenName}' : ''}, '
         'maxCostInToken: ${estimate.maxCostInToken}, '
@@ -759,12 +752,12 @@ class TransactionsServiceEthereumGasfreeImpl
     return (userOperation: userOp, authorization: authorization);
   }
 
-  /// Validates the gasfree transfer params
+  /// Validates the gasFree transfer params
   ///
   /// Returns the service fee (zero = disabled)
   ///
   /// THROWS
-  BigRational _validateTransferParams(TransferParamsGasfreeETH params) {
+  BigRational _validateTransferParams(TransferParamsGasFreeETH params) {
     if (params.amount <= BigRational.zero) {
       throw AppException(
         message:
@@ -779,7 +772,7 @@ class TransactionsServiceEthereumGasfreeImpl
         params.tokenWalletType == TokenWalletType.unknown) {
       throw AppException(
         message:
-            'gasfree is not applicable to token type '
+            'gasFree is not applicable to token type '
             '${params.tokenWalletType}',
         code: ExceptionCode.wrongToken,
       );
