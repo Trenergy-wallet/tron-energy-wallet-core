@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -31,13 +32,13 @@ class TransactionsServiceEthereumImpl
     TRLogger? logger,
   }) : _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
+       _logger = logger,
        _onEstimateL1Fee = null,
        assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
          supportedBlockchains.contains(appBlockchain),
          '$appBlockchain is not supported',
        ) {
-    _logger = logger ?? InAppLogger();
     if (appBlockchain.isOptimism || appBlockchain.isBase) {
       assert(
         _onEstimateL1Fee != null,
@@ -65,11 +66,20 @@ class TransactionsServiceEthereumImpl
 
   String get _name => 'TransactionsServiceEthereumImpl-${appBlockchain.slug}';
 
-  late final TRLogger _logger;
+  /// Logger - null when the caller did not provide one (no logging)
+  final TRLogger? _logger;
 
   EthereumProvider get _ethereumProvider =>
       rpc ??
-      EthereumProvider(EthereumHTTPProvider(apiUri!, _getAuthToken?.call()));
+      EthereumProvider(
+        EthereumHTTPProvider(
+          apiUri!,
+          _getAuthToken?.call(),
+          client: _logger == null
+              ? null
+              : LoggingHttpClient(http.Client(), logger: _logger),
+        ),
+      );
 
   /// Supported blockchains by this service
   static const List<AppBlockchain> supportedBlockchains = [
@@ -153,7 +163,7 @@ class TransactionsServiceEthereumImpl
       final parsedFeeBuffer = BigRational.parseDecimal(
         '${params.approvedFeeBuffer}',
       );
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'createTransactionOrThrow: feeInWei: $feeInWei '
         '(maxFeePerGas: ${tx.maxFeePerGas}, '
@@ -186,7 +196,7 @@ class TransactionsServiceEthereumImpl
   }) async {
     ETHTransaction? tx;
     if (params.supportsEIP1559 && eip1559Fee != null) {
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'Creating eip1559Fee transaction to ${params.to}, '
         'amount: ${params.amount}',
@@ -227,7 +237,7 @@ class TransactionsServiceEthereumImpl
       );
     } else {
       if (params.supportsEIP1559) {
-        _logger.logInfoMessage(
+        _logger?.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
         );
@@ -261,7 +271,7 @@ class TransactionsServiceEthereumImpl
     // Adding safety buffer
     gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
   }
 
@@ -282,7 +292,7 @@ class TransactionsServiceEthereumImpl
       );
     }
     if (params.supportsEIP1559 && eip1559Fee != null) {
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'Creating eip1559Fee ERC20 transaction to ${params.to}, '
         'amount: ${params.amount}${params.tokenName != null ? ', '
@@ -328,7 +338,7 @@ class TransactionsServiceEthereumImpl
       );
     } else {
       if (params.supportsEIP1559) {
-        _logger.logInfoMessage(
+        _logger?.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
         );
@@ -366,7 +376,7 @@ class TransactionsServiceEthereumImpl
     // Adding safety buffer
     gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
   }
 
@@ -396,7 +406,7 @@ class TransactionsServiceEthereumImpl
           _ => tx.gasPrice! * tx.gasLimit,
         } +
         l1fee;
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'tryEstimateFee: $feeInWei (maxFeePerGas: ${tx.maxFeePerGas}, '
       'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}, l1fee: $l1fee)',

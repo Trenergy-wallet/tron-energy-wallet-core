@@ -34,15 +34,14 @@ class TransactionsServiceEthereumGasFreeImpl
     // Custom http client - for tests and diagnostics (call counting)
     http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
-       _httpClient = httpClient,
+       _logger = logger,
+       _injectedHttpClient = httpClient,
        assert(
          TransactionsServiceEthereumImpl.supportedBlockchains.contains(
            appBlockchain,
          ),
          '$appBlockchain is not supported',
-       ) {
-    _logger = logger ?? InAppLogger();
-  }
+       );
 
   /// Blockchain of the service
   @override
@@ -63,10 +62,25 @@ class TransactionsServiceEthereumGasFreeImpl
   /// Headers for the backend proxies
   final Map<String, String>? Function()? getHeaders;
 
-  /// Injected http client for tests
-  final http.Client? _httpClient;
+  /// Http client injected via the constructor (tests / call counting), shared
+  /// across all sub-clients. Null in production
+  final http.Client? _injectedHttpClient;
 
-  late final TRLogger _logger;
+  /// A fresh http client for every permissionless sub-client.
+  ///
+  /// permissionless closes the client it is given once an operation completes,
+  /// so a single long-lived shared instance breaks on the next round with
+  /// "Client is already closed". Returns the injected client as is when
+  /// provided (tests manage its lifecycle), a fresh logging wrapper when a
+  /// logger is set, or null so permissionless creates its own plain client
+  http.Client? get _newHttpClient =>
+      _injectedHttpClient ??
+      (_logger == null
+          ? null
+          : LoggingHttpClient(http.Client(), logger: _logger));
+
+  /// Logger - null when the caller did not provide one (no logging)
+  final TRLogger? _logger;
 
   String get _name =>
       'TransactionsServiceEthereumGasfreeImpl-${appBlockchain.slug}';
@@ -112,14 +126,14 @@ class TransactionsServiceEthereumGasFreeImpl
     final pimlicoUrl = pimlicoUrlForChain(params.chainId);
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
@@ -133,7 +147,7 @@ class TransactionsServiceEthereumGasFreeImpl
       publicClient: publicClient,
       paymaster: pl.createPaymasterClient(
         url: pimlicoUrl,
-        httpClient: _httpClient,
+        httpClient: _newHttpClient,
         headers: _requestHeaders,
         timeout: CoreConsts.defaultRequestTimeout,
       ),
@@ -219,8 +233,7 @@ class TransactionsServiceEthereumGasFreeImpl
           code: ExceptionCode.insufficientBalance,
         );
       }
-
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'gasFree op prepared: to: ${params.to}, amount: ${params.amount}'
         '${params.tokenName != null ? ', token: ${params.tokenName}' : ''}, '
@@ -290,20 +303,20 @@ class TransactionsServiceEthereumGasFreeImpl
     final pimlicoUrl = pimlicoUrlForChain(chainId);
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrl,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
@@ -449,7 +462,7 @@ class TransactionsServiceEthereumGasFreeImpl
           BigRational(expectedRaw) /
           BigRational(BigInt.from(10).pow(tokenDecimal));
 
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'gasFree estimated: sender: $senderAddress, gasSum: $gasSum, '
         'needsDelegation: ${delegation.needsDelegation}, '
@@ -529,13 +542,13 @@ class TransactionsServiceEthereumGasFreeImpl
 
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrlForChain(params.chainId),
-      httpClient: _httpClient,
+      httpClient: _newHttpClient,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final account = pl.createEip7702SimpleSmartAccount(
@@ -602,7 +615,7 @@ class TransactionsServiceEthereumGasFreeImpl
         estimate: estimate,
       );
 
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'gasFree op finalized from estimate: to: ${params.to}, '
         'amount: ${params.amount}'

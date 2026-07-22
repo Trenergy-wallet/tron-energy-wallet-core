@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -39,11 +40,11 @@ class TransactionsServiceSolanaImpl
   }) : appBlockchain = AppBlockchain.solana,
        _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
+       _logger = logger,
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
        ) {
-    _logger = logger ?? InAppLogger();
     _getPriorityFeePricePerUnit =
         getPriorityFeePricePerUnit ?? _getPriorityFeePricePerUnitDefault;
   }
@@ -66,7 +67,8 @@ class TransactionsServiceSolanaImpl
 
   String get _name => 'TransactionsServiceSolanaImpl';
 
-  late final TRLogger _logger;
+  /// Logger - null when the caller did not provide one (no logging)
+  final TRLogger? _logger;
 
   /// Testnet params (impact on address generation)
   final bool isTestnet;
@@ -80,6 +82,9 @@ class TransactionsServiceSolanaImpl
         SolanaHTTPProvider(
           url: apiUri!,
           authToken: _getAuthToken?.call(),
+          client: _logger == null
+              ? null
+              : LoggingHttpClient(http.Client(), logger: _logger),
         ),
       );
 
@@ -107,14 +112,14 @@ class TransactionsServiceSolanaImpl
       params = await calculatePriorityFee(params);
     }
     if (!params.finalized) {
-      _logger.logError(
+      _logger?.logError(
         _name,
         'createTransaction: Cannot finalize priority fee params.'
         ' Skipping the priority fee',
       );
       params = params.copyWith(usePriorityFee: false);
     }
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'Start building the tx with usePriorityFee=${params.usePriorityFee}',
     );
@@ -146,7 +151,7 @@ class TransactionsServiceSolanaImpl
       decimals: params.tokenDecimal,
     );
 
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'buildTransaction: will send $amountToSend, from '
       '${params.solAddressFrom}, to: ${params.solAddressTo}',
@@ -180,7 +185,7 @@ class TransactionsServiceSolanaImpl
       recentBlockhash: blockHash,
       type: TransactionType.v0,
     );
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.serializeString()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.serializeString()}');
     return tx;
   }
 
@@ -257,7 +262,7 @@ class TransactionsServiceSolanaImpl
       ),
     );
 
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'destinationInfo: ${destinationInfo?.toJson()}',
     );
@@ -324,7 +329,7 @@ class TransactionsServiceSolanaImpl
       type: TransactionType.v0,
     );
 
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.serializeString()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.serializeString()}');
     return tx;
   }
 
@@ -373,7 +378,7 @@ class TransactionsServiceSolanaImpl
             ),
           );
           final tokenType = SolTokenType.fromOwner(mintInfo?.owner);
-          _logger.logInfoMessage(
+          _logger?.logInfoMessage(
             _name,
             'calculatePriorityFee: token type detected: $tokenType',
           );
@@ -448,14 +453,14 @@ class TransactionsServiceSolanaImpl
       var selectedFee = _minPriorityFee;
       final medianFee = nonZeroFees[nonZeroFees.length ~/ 2];
       selectedFee = medianFee.clamp(_minPriorityFee, _maxPriorityFee);
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'getPriorityFeePricePerUnit: median: $medianFee, '
         'selected: $selectedFee',
       );
       return selectedFee;
     } catch (e) {
-      _logger.logError(
+      _logger?.logError(
         _name,
         'getPriorityFeePricePerUnit: using $_priorityFeeOnError got '
         'ERROR: $e',
@@ -568,7 +573,7 @@ class TransactionsServiceSolanaImpl
         message: simulatedResult.toJson().toString(),
       );
     }
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'simulatedResult: ${simulatedResult.toJson()}',
     );
