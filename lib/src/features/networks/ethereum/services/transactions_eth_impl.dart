@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -31,16 +32,13 @@ class TransactionsServiceEthereumImpl
     TRLogger? logger,
   }) : _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
+       _logger = logger,
        _onEstimateL1Fee = null,
-       assert(
-         rpc != null || apiUri != null,
-         'Required rpc params are null',
-       ),
+       assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
          supportedBlockchains.contains(appBlockchain),
          '$appBlockchain is not supported',
        ) {
-    _logger = logger ?? InAppLogger();
     if (appBlockchain.isOptimism || appBlockchain.isBase) {
       assert(
         _onEstimateL1Fee != null,
@@ -68,7 +66,8 @@ class TransactionsServiceEthereumImpl
 
   String get _name => 'TransactionsServiceEthereumImpl-${appBlockchain.slug}';
 
-  late final TRLogger _logger;
+  /// Logger - null when the caller did not provide one (no logging)
+  final TRLogger? _logger;
 
   EthereumProvider get _ethereumProvider =>
       rpc ??
@@ -76,6 +75,9 @@ class TransactionsServiceEthereumImpl
         EthereumHTTPProvider(
           apiUri!,
           _getAuthToken?.call(),
+          client: _logger == null
+              ? null
+              : LoggingHttpClient(http.Client(), logger: _logger),
         ),
       );
 
@@ -149,9 +151,7 @@ class TransactionsServiceEthereumImpl
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    final tx = await _tryCreateTransaction(
-      params: params,
-    );
+    final tx = await _tryCreateTransaction(params: params);
     if (params.userApprovedFee != null) {
       final userApproved = ETHHelper.toWei(
         params.userApprovedFee!.fee.toString(),
@@ -163,7 +163,7 @@ class TransactionsServiceEthereumImpl
       final parsedFeeBuffer = BigRational.parseDecimal(
         '${params.approvedFeeBuffer}',
       );
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'createTransactionOrThrow: feeInWei: $feeInWei '
         '(maxFeePerGas: ${tx.maxFeePerGas}, '
@@ -196,7 +196,7 @@ class TransactionsServiceEthereumImpl
   }) async {
     ETHTransaction? tx;
     if (params.supportsEIP1559 && eip1559Fee != null) {
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'Creating eip1559Fee transaction to ${params.to}, '
         'amount: ${params.amount}',
@@ -205,6 +205,15 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
+        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // must never reach the regular ETH transaction builder
+        FeeType.gasFree => throw AppException(
+          message:
+              'gasfree is not supported by '
+              'TransactionsServiceEthereumImpl, use '
+              'TransactionsServiceEthereumGasfreeImpl',
+          code: ExceptionCode.unableToCreateTransaction,
+        ),
       };
       selectedFee = applyMinPriorityFeePerGas(selectedFee);
       // Arbitrum uses a sequencer, so we add a safety buffer
@@ -228,7 +237,7 @@ class TransactionsServiceEthereumImpl
       );
     } else {
       if (params.supportsEIP1559) {
-        _logger.logInfoMessage(
+        _logger?.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
         );
@@ -262,7 +271,7 @@ class TransactionsServiceEthereumImpl
     // Adding safety buffer
     gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
   }
 
@@ -283,7 +292,7 @@ class TransactionsServiceEthereumImpl
       );
     }
     if (params.supportsEIP1559 && eip1559Fee != null) {
-      _logger.logInfoMessage(
+      _logger?.logInfoMessage(
         _name,
         'Creating eip1559Fee ERC20 transaction to ${params.to}, '
         'amount: ${params.amount}${params.tokenName != null ? ', '
@@ -293,6 +302,15 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
+        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // must never reach the regular ETH transaction builder
+        FeeType.gasFree => throw AppException(
+          message:
+              'gasfree is not supported by '
+              'TransactionsServiceEthereumImpl, use '
+              'TransactionsServiceEthereumGasfreeImpl',
+          code: ExceptionCode.unableToCreateTransaction,
+        ),
       };
       selectedFee = applyMinPriorityFeePerGas(selectedFee);
       final maxFeePerGas = applyEIP1559FeeBufferMultiplier(
@@ -320,7 +338,7 @@ class TransactionsServiceEthereumImpl
       );
     } else {
       if (params.supportsEIP1559) {
-        _logger.logInfoMessage(
+        _logger?.logInfoMessage(
           _name,
           'No EIP1559 fee provided, switching to legacy mode',
         );
@@ -358,7 +376,7 @@ class TransactionsServiceEthereumImpl
     // Adding safety buffer
     gasLimit = gasLimit * BigInt.from(11) ~/ BigInt.from(10);
     tx = tx.copyWith(gasLimit: gasLimit);
-    _logger.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
+    _logger?.logInfoMessage(_name, 'tx ready: ${tx.toJson()}');
     return tx;
   }
 
@@ -388,7 +406,7 @@ class TransactionsServiceEthereumImpl
           _ => tx.gasPrice! * tx.gasLimit,
         } +
         l1fee;
-    _logger.logInfoMessage(
+    _logger?.logInfoMessage(
       _name,
       'tryEstimateFee: $feeInWei (maxFeePerGas: ${tx.maxFeePerGas}, '
       'gasPrice: ${tx.gasPrice}, gasLimit: ${tx.gasLimit}, l1fee: $l1fee)',
@@ -426,9 +444,7 @@ class TransactionsServiceEthereumImpl
   /// Create a signing key for Ethereum
   ///
   /// THROWS
-  Future<ETHPrivateKey> _createSigningKey({
-    required String masterKey,
-  }) async {
+  Future<ETHPrivateKey> _createSigningKey({required String masterKey}) async {
     final mnemonic = await _getSigningKey(masterKey);
     if (mnemonic.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);

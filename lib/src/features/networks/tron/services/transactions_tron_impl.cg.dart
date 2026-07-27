@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -22,12 +23,11 @@ class TransactionsServiceTronImpl
     TRLogger? logger,
   }) : _getSigningKey = getSigningKey,
        _getAuthToken = getAuthToken,
+       _logger = logger,
        assert(
          tronProvider != null || apiTron != null,
          'Required rpc params are null',
-       ) {
-    _logger = logger ?? InAppLogger();
-  }
+       );
 
   /// Blockchain of the service
   @override
@@ -47,7 +47,8 @@ class TransactionsServiceTronImpl
 
   static const String _name = 'TransactionsServiceTronImpl';
 
-  late final TRLogger _logger;
+  /// Logger - null when the caller did not provide one (no logging)
+  final TRLogger? _logger;
 
   TronProvider get _tronProvider =>
       tronProvider ??
@@ -56,6 +57,9 @@ class TransactionsServiceTronImpl
           url: apiTron!,
           // authToken: _localRepo.getAccount().token,
           authToken: _getAuthToken?.call(),
+          client: _logger == null
+              ? null
+              : LoggingHttpClient(http.Client(), logger: _logger),
         ),
       );
 
@@ -78,7 +82,7 @@ class TransactionsServiceTronImpl
     }
     // Sending a transaction in TRX
     if (params.tokenWalletType.isMaster) {
-      _logger.logInfoMessage(_name, 'creating TRX transaction');
+      _logger?.logInfoMessage(_name, 'creating TRX transaction');
 
       // Create transfer contract (TRX Transfer)
       final transferContract = TransferContract(
@@ -87,7 +91,7 @@ class TransactionsServiceTronImpl
         toAddress: TronAddress(params.to),
       );
 
-      _logger.logInfoMessage(_name, 'transferContract: $transferContract');
+      _logger?.logInfoMessage(_name, 'transferContract: $transferContract');
 
       // Validate transacation and got required data like block hash and ....
       final transaction = await _tronProvider.request(
@@ -121,7 +125,7 @@ class TransactionsServiceTronImpl
       // - feeLimit is not set here. See chat trenergy on 02.06.25
       return _signTransaction(rawTr: rawTr, masterKey: masterKey);
     }
-    _logger.logInfoMessage(_name, 'creating non-TRX transaction');
+    _logger?.logInfoMessage(_name, 'creating non-TRX transaction');
     if (params.tokenContractAddress == null) {
       throw AppException(
         message: 'no tokenContractAddress for non-TRX transaction',
@@ -151,7 +155,7 @@ class TransactionsServiceTronImpl
       ),
     );
 
-    _logger.logInfoMessage(_name, 'transaction: $transaction');
+    _logger?.logInfoMessage(_name, 'transaction: $transaction');
 
     // An error has occurred with the request, and we need to investigate
     // the issue to determine what is happening.
