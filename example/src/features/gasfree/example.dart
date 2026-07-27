@@ -1,5 +1,3 @@
-// Live-check example for the gasfree flow "estimate + send" (task 1333).
-//
 // Verifies the two key points:
 // 1. estimateGasFree works WITHOUT the private key (for the first operation
 //    a dummy authorization goes into the estimation);
@@ -19,14 +17,17 @@
 //
 // Secrets come from environment variables ONLY - never hardcode them here.
 
-// Console example - print output is fine
-// ignore_for_file: avoid_print
+// Console example - print output is fine; long lines / const / dead_code
+// relaxed for local live-testing tweaks of the constants
+// ignore_for_file: avoid_print, lines_longer_than_80_chars
+// ignore_for_file: prefer_const_declarations, dead_code
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:blockchain_utils/utils/utils.dart';
 import 'package:http/http.dart' as http;
+import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Sepolia
@@ -96,25 +97,28 @@ String _masked(String url) =>
     url.replaceAll(RegExp('apikey=[^&]+'), 'apikey=***');
 
 Future<void> main() async {
-  final rpcUrl = Platform.environment['GASFREE_RPC_URL'] ?? '';
-  final pimlicoUrl = Platform.environment['GASFREE_PIMLICO_URL'] ?? '';
-  final mnemonic = Platform.environment['GASFREE_MNEMONIC'] ?? '';
-  final send = Platform.environment['GASFREE_SEND'] == 'true';
+  final rpcUrl = 'GASFREE_RPC_URL';
+  final pimlicoUrl = 'GASFREE_PIMLICO_URL';
+  final mnemonic = 'mnemonic';
+  final send = false;
 
-  if (rpcUrl.isEmpty || pimlicoUrl.isEmpty || mnemonic.isEmpty) {
-    print('Required env variables: GASFREE_RPC_URL, GASFREE_PIMLICO_URL '
-        '(with the {chainId} placeholder or a full single-chain URL), '
-        'GASFREE_MNEMONIC');
-    exit(1);
-  }
-
+  // optional
   final counter = _CountingHttpClient(http.Client());
 
-  final service = TransactionsServiceEthereumGasfreeImpl(
+  final service = TransactionsServiceEthereumGasFreeImpl(
     appBlockchain: AppBlockchain.ethereum,
     nodeApiUri: rpcUrl,
     pimlicoApiUri: pimlicoUrl,
     getSigningKey: (_) async => mnemonic,
+    logger: InAppLogger(),
+    // optional
+    // getHeaders: () {
+    //   return {
+    //     'Authorization': 'your token',
+    //     'Accept': 'application/json',
+    //   };
+    // },
+    // optional
     httpClient: counter,
   );
 
@@ -163,7 +167,7 @@ Future<void> main() async {
   counter.reset();
   print('\n--- 2. createTransactionFromEstimate ---');
   final payload = await service.createTransactionFromEstimate(
-    params: TransferParamsGasfreeETH(
+    params: TransferParamsGasFreeETH(
       to: _recipientAddress,
       from: sender,
       amount: _amount,
@@ -234,8 +238,10 @@ Future<void> main() async {
     final receipt = result as Map<String, dynamic>;
     final txHash =
         (receipt['receipt'] as Map<String, dynamic>)['transactionHash'];
-    print('SUCCESS: success=${receipt['success']}, '
-        'actualGasCost=${receipt['actualGasCost']}');
+    print(
+      'SUCCESS: success=${receipt['success']}, '
+      'actualGasCost=${receipt['actualGasCost']}',
+    );
     print('txHash: $txHash');
     print('https://sepolia.etherscan.io/tx/$txHash');
     exit(0);
