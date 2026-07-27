@@ -205,13 +205,13 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
-        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // Gasfree is handled by TransactionsServiceEthereumGasFreeImpl and
         // must never reach the regular ETH transaction builder
         FeeType.gasFree => throw AppException(
           message:
               'gasfree is not supported by '
               'TransactionsServiceEthereumImpl, use '
-              'TransactionsServiceEthereumGasfreeImpl',
+              'TransactionsServiceEthereumGasFreeImpl',
           code: ExceptionCode.unableToCreateTransaction,
         ),
       };
@@ -302,13 +302,13 @@ class TransactionsServiceEthereumImpl
         FeeType.economy => eip1559Fee.slow,
         FeeType.optimal => eip1559Fee.normal,
         FeeType.fast => eip1559Fee.high,
-        // Gasfree is handled by TransactionsServiceEthereumGasfreeImpl and
+        // Gasfree is handled by TransactionsServiceEthereumGasFreeImpl and
         // must never reach the regular ETH transaction builder
         FeeType.gasFree => throw AppException(
           message:
               'gasfree is not supported by '
               'TransactionsServiceEthereumImpl, use '
-              'TransactionsServiceEthereumGasfreeImpl',
+              'TransactionsServiceEthereumGasFreeImpl',
           code: ExceptionCode.unableToCreateTransaction,
         ),
       };
