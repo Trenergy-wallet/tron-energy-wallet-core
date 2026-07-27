@@ -152,7 +152,7 @@ TransferParamsGasFreeETH _params({
 );
 
 void main() {
-  group('TransactionsServiceEthereumGasfreeImpl.createTransaction', () {
+  group('TransactionsServiceEthereumGasFreeImpl.createTransaction', () {
     test(
       'first op (no delegation): payload carries eip7702Auth, the 0x7702 '
       'factory marker, both transfers and the paymaster approval',
@@ -444,7 +444,7 @@ void main() {
       );
     });
   });
-  group('TransactionsServiceEthereumGasfreeImpl estimate + send flow', () {
+  group('TransactionsServiceEthereumGasFreeImpl estimate + send flow', () {
     Future<GasfreeEstimate> estimate({
       required List<Map<String, dynamic>> log,
       bool delegated = false,
@@ -643,7 +643,7 @@ void main() {
     );
   });
 
-  group('TransactionsServiceEthereumGasfreeImpl helpers', () {
+  group('TransactionsServiceEthereumGasFreeImpl helpers', () {
     test('pimlicoUrlForChain appends the chain id, trailing slash handled', () {
       final service = _service(httpClient: _mockRpc());
       expect(

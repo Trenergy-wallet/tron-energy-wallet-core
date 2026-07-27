@@ -1,3 +1,31 @@
+## 3.0.0
+
+### Added
+
+- Gasfree transfers for EVM networks: `TransactionsServiceEthereumGasFreeImpl` (EIP-7702 +
+  ERC-20 paymaster). Gas is paid in the token being sent, the sender needs no native coin.
+  The service produces a ready `eth_sendUserOperation` JSON-RPC body for the backend to relay
+- `TransferParamsGasFreeETH` and `GasfreeEstimate` — transfer params and a cacheable result of
+  a precise operation estimation (a single paid provider round covers both the displayed fee
+  and the final UserOperation)
+- `LoggingHttpClient` — an http client wrapper that logs RPC requests and responses
+
+### Breaking changes
+
+- `FeeType.gasFree` added — exhaustive switches over `FeeType` have to be updated
+- `Fees.feeForType` throws `ArgumentError` for `FeeType.gasFree`: the selector serves Bitcoin
+  fees only, where gasfree is never applicable
+- `TransactionsServiceEthereumImpl` and its subclasses (`TransactionsServiceBaseImpl`,
+  `TransactionsServiceOptimismImpl`) throw on `FeeType.gasFree`, use
+  `TransactionsServiceEthereumGasFreeImpl` instead
+- The `logger` parameter of the transactions services no longer falls back to `InAppLogger`:
+  when it is omitted, logging (including the RPC one) is disabled
+- The dead `forceUpdateNonce` parameter has been removed
+
+### Dependencies
+
+- `permissionless` added
+
 ## 2.2.1
 
 * EVM fixes

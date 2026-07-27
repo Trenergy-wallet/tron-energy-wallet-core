@@ -83,7 +83,7 @@ class TransactionsServiceEthereumGasFreeImpl
   final TRLogger? _logger;
 
   String get _name =>
-      'TransactionsServiceEthereumGasfreeImpl-${appBlockchain.slug}';
+      'TransactionsServiceEthereumGasFreeImpl-${appBlockchain.slug}';
 
   Map<String, String>? get _requestHeaders => getHeaders?.call();
 
