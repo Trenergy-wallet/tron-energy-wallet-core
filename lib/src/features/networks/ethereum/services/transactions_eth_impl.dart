@@ -36,7 +36,7 @@ class TransactionsServiceEthereumImpl
        _onEstimateL1Fee = null,
        assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
-         supportedBlockchains.contains(appBlockchain),
+         appBlockchain.isEvm,
          '$appBlockchain is not supported',
        ) {
     if (appBlockchain.isOptimism || appBlockchain.isBase) {
@@ -80,16 +80,6 @@ class TransactionsServiceEthereumImpl
               : LoggingHttpClient(http.Client(), logger: _logger),
         ),
       );
-
-  /// Supported blockchains by this service
-  static const List<AppBlockchain> supportedBlockchains = [
-    AppBlockchain.ethereum,
-    AppBlockchain.bsc,
-    AppBlockchain.arbitrum,
-    AppBlockchain.polygon,
-    AppBlockchain.optimism,
-    AppBlockchain.base,
-  ];
 
   /// Estimates the L1 fee in wei (if applicable)
   final Future<BigInt> Function(ETHTransaction transaction)? _onEstimateL1Fee;
@@ -137,7 +127,7 @@ class TransactionsServiceEthereumImpl
     required TransferParamsETH params,
     required String masterKey,
   }) async {
-    if (!supportedBlockchains.contains(params.appBlockchain)) {
+    if (!params.appBlockchain.isEvm) {
       throw AppException(
         message: 'Blockchain is not supported: ${params.appBlockchain}',
         code: ExceptionCode.blockchainIsNotSupported,
