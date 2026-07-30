@@ -6,12 +6,15 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Explorer: https://testnet.tonscan.org
 
-final tonRpc = TonProvider(
-  TonHTTPProvider(
-    tonApiUrl: 'https://testnet.tonapi.io',
-    tonCenterUrl: 'https://testnet.toncenter.com',
-    tonApiKey: 'your api key',
-  ),
+final _tonService = TonHTTPProvider(
+  tonApiUrl: 'https://testnet.tonapi.io',
+  tonCenterUrl: 'https://testnet.toncenter.com',
+  tonApiKey: 'your api key',
+);
+
+final TonProvider<TonHTTPProvider> tonRpc = TonProvider(
+  _tonService,
+  _tonService.api,
 );
 
 Future<void> main() async {
@@ -24,9 +27,7 @@ Future<void> main() async {
     getSigningKey: (_) async => 'mnemonic',
   );
 
-  final walletInfo = await service.initializeWalletAndGetInfo(
-    masterKey: '',
-  );
+  final walletInfo = await service.initializeWalletAndGetInfo(masterKey: '');
   logger.logInfoMessage('tonExample', 'Address: ${walletInfo.address}');
 
   final tx = await service.createTransaction(

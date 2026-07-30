@@ -4,13 +4,13 @@ import 'package:on_chain/solana/src/rpc/core/core.dart';
 import 'package:on_chain/solana/src/rpc/service/service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Provider for working with the TRON node
-class SolanaHTTPProvider implements SolanaServiceProvider {
-  /// Provider for working with the TRON node
+/// Provider for working with the Solana node
+class SolanaHTTPProvider with SolanaServiceProvider {
+  /// Provider for working with the Solana node
   SolanaHTTPProvider({
     required this.url,
     http.Client? client,
-    this.defaultRequestTimeout = CoreConsts.defaultRequestTimeout,
+    this.requestTimeout = CoreConsts.defaultRequestTimeout,
     this.authToken,
   }) : client = client ?? http.Client();
 
@@ -21,27 +21,30 @@ class SolanaHTTPProvider implements SolanaServiceProvider {
   final http.Client client;
 
   /// Timeout for requests
-  final Duration defaultRequestTimeout;
+  final Duration requestTimeout;
 
   /// Authorization token
   final String? authToken;
 
   @override
-  Future<BaseServiceResponse<T>> doRequest<T>(
+  Future<BaseServiceResponse> doRequest(
     SolanaRequestDetails params, {
     Duration? timeout,
   }) async {
     final response = await client
         .post(
-          params.toUri(url),
+          params.encodeUrl(url),
           headers: {
             if (authToken != null && authToken!.isNotEmpty)
               'Authorization': 'Bearer $authToken',
             ...params.headers,
           },
-          body: params.body(),
+          body: params.encodeBody(),
         )
-        .timeout(timeout ?? defaultRequestTimeout);
-    return params.toResponse(response.bodyBytes, response.statusCode);
+        .timeout(timeout ?? requestTimeout);
+    return params.toResponse(
+      response.bodyBytes,
+      statusCode: response.statusCode,
+    );
   }
 }

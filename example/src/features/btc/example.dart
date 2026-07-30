@@ -1,3 +1,6 @@
+// selector ok
+// ignore_for_file: dead_code
+
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -7,9 +10,10 @@ import 'data/api/btc_explorer_service.dart';
 import 'data/repo/btc_node_repo_impl.dart';
 
 Future<void> main() async {
+  const useTestnet = true;
   final btcNodeRepo = BTCNodeRepoImpl(
     apiKey: 'api-key',
-    isTestnet: true,
+    isTestnet: useTestnet,
     baseUrl: 'https://rpc.ankr.com/',
   );
   final logger = InAppLogger()..usePrint = true;
@@ -17,14 +21,12 @@ Future<void> main() async {
   final btcService = TransactionsServiceBTCImpl(
     btcNodeRepo: btcNodeRepo,
     estimateFee: btcNodeRepo.getEstimateFee,
-    network: BitcoinNetwork.signet,
+    network: useTestnet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
     logger: logger,
     getSigningKey: (_) async => 'mnemonic',
   );
 
-  final walletInfo = await btcService.initializeWalletAndGetInfo(
-    masterKey: '',
-  );
+  final walletInfo = await btcService.initializeWalletAndGetInfo(masterKey: '');
   logger.logInfoMessage('btcExample', 'Address: ${walletInfo.address}');
   final tx = await btcService.createTransaction(
     params: TransferParamsBTC(
@@ -38,11 +40,13 @@ Future<void> main() async {
     masterKey: '',
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
-  final service = BitcoinApiService();
-  final api = ApiProvider.fromMempool(
-    BitcoinNetwork.signet, // BitcoinNetwork.mainnet,
-    service,
+  final service = BitcoinApiService(
+    BtcApiConst.getUrl(
+      useTestnet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
+      APIType.mempool,
+    ),
   );
-  final txId = await api.sendRawTransaction(tx);
+  final api = BitcoinProvider(service);
+  final txId = await api.request(MempoolRequestSendRawTransaction(tx));
   logger.logInfoMessage('btcExample', 'SENT ID: $txId');
 }

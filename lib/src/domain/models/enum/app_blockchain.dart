@@ -7,6 +7,7 @@ enum AppBlockchain {
     allCoinsSupported: false,
     mainTokenName: '',
     supportsMemoMessage: false,
+    isEvm: false,
   ),
 
   /// TRON
@@ -16,6 +17,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'TRX',
     supportsMemoMessage: true,
+    isEvm: false,
   ),
 
   /// TON
@@ -25,6 +27,7 @@ enum AppBlockchain {
     allCoinsSupported: false,
     mainTokenName: 'TON',
     supportsMemoMessage: true,
+    isEvm: false,
   ),
 
   /// BTC
@@ -34,6 +37,7 @@ enum AppBlockchain {
     allCoinsSupported: false,
     mainTokenName: 'BTC',
     supportsMemoMessage: true,
+    isEvm: false,
   ),
 
   /// ETH
@@ -43,6 +47,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// BNB Smart Chain (EVM)
@@ -52,6 +57,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'BNB',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// Arbitrum Chain (EVM L2 Eth)
@@ -61,6 +67,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// Polygon (EVM)
@@ -70,6 +77,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'POL',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// Optimism Chain (EVM L2 Eth)
@@ -79,6 +87,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// BASE Chain (EVM L2 Eth)
@@ -88,6 +97,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'ETH',
     supportsMemoMessage: true,
+    isEvm: true,
   ),
 
   /// SOLANA
@@ -97,6 +107,7 @@ enum AppBlockchain {
     allCoinsSupported: true,
     mainTokenName: 'SOL',
     supportsMemoMessage: true,
+    isEvm: false,
   )
   ;
 
@@ -106,6 +117,7 @@ enum AppBlockchain {
     required this.allCoinsSupported,
     required this.mainTokenName,
     required this.supportsMemoMessage,
+    required this.isEvm,
   });
 
   /// fromJson
@@ -146,6 +158,9 @@ enum AppBlockchain {
 
   /// Solana
   bool get isSolana => this == solana;
+
+  /// EVM compatible
+  final bool isEvm;
 
   /// toJson
   String toJson() => slug;

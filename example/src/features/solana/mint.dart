@@ -5,7 +5,7 @@ import 'package:tron_energy_wallet_core/src/features/networks/networks.dart';
 
 final _logger = InAppLogger()..usePrint = true;
 const _name = 'SOLExample-mint';
-final _rpc = SolanaProvider(
+final SolanaProvider<SolanaHTTPProvider> _rpc = SolanaProvider(
   SolanaHTTPProvider(
     url: _useTestnet
         ? 'https://api.devnet.solana.com'

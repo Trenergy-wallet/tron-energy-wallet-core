@@ -37,9 +37,7 @@ class TransactionsServiceEthereumGasFreeImpl
        _logger = logger,
        _injectedHttpClient = httpClient,
        assert(
-         TransactionsServiceEthereumImpl.supportedBlockchains.contains(
-           appBlockchain,
-         ),
+         appBlockchain.isEvm,
          '$appBlockchain is not supported',
        );
 

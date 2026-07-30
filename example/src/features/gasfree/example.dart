@@ -19,7 +19,7 @@
 
 // Console example - print output is fine; long lines / const / dead_code
 // relaxed for local live-testing tweaks of the constants
-// ignore_for_file: avoid_print, lines_longer_than_80_chars
+// ignore_for_file: avoid_print
 // ignore_for_file: prefer_const_declarations, dead_code
 
 import 'dart:convert';
