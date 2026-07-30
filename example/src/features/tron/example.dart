@@ -11,7 +11,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Explorer: https://nile.tronscan.org
 
-final tronRpc = TronProvider(
+final TronProvider<TronHTTPProvider> tronRpc = TronProvider(
   TronHTTPProvider(
     url: 'https://nile.trongrid.io',
     authToken: 'your-api-key',

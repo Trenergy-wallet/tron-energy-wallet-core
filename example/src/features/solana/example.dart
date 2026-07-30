@@ -10,7 +10,7 @@ import 'package:tron_energy_wallet_core/src/features/networks/solana/domain/toke
 
 final _logger = InAppLogger()..usePrint = true;
 const _name = 'SOLExample';
-final _rpc = SolanaProvider(
+final SolanaProvider<SolanaHTTPProvider> _rpc = SolanaProvider(
   SolanaHTTPProvider(
     url: _useTestnet
         ? 'https://api.devnet.solana.com'

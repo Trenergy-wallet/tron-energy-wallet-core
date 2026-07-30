@@ -12,7 +12,10 @@ final _tonService = TonHTTPProvider(
   tonApiKey: 'your api key',
 );
 
-final tonRpc = TonProvider(_tonService, _tonService.api);
+final TonProvider<TonHTTPProvider> tonRpc = TonProvider(
+  _tonService,
+  _tonService.api,
+);
 
 Future<void> main() async {
   final logger = InAppLogger()..usePrint = true;
@@ -24,9 +27,7 @@ Future<void> main() async {
     getSigningKey: (_) async => 'mnemonic',
   );
 
-  final walletInfo = await service.initializeWalletAndGetInfo(
-    masterKey: '',
-  );
+  final walletInfo = await service.initializeWalletAndGetInfo(masterKey: '');
   logger.logInfoMessage('tonExample', 'Address: ${walletInfo.address}');
 
   final tx = await service.createTransaction(

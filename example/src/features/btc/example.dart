@@ -1,3 +1,6 @@
+// selector ok
+// ignore_for_file: dead_code
+
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:tr_logger/tr_logger.dart';
@@ -7,7 +10,7 @@ import 'data/api/btc_explorer_service.dart';
 import 'data/repo/btc_node_repo_impl.dart';
 
 Future<void> main() async {
-  final useTestnet = true;
+  const useTestnet = true;
   final btcNodeRepo = BTCNodeRepoImpl(
     apiKey: 'api-key',
     isTestnet: useTestnet,

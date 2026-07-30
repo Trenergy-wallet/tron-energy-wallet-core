@@ -12,7 +12,7 @@ const _chainId = 421614;
 // USDC contractAddress:
 const _usdcContractAddress = '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d';
 
-final _rpc = EthereumProvider(
+final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://arb1.arbitrum.io/rpc/',
     'https://sepolia-rollup.arbitrum.io/rpc/',

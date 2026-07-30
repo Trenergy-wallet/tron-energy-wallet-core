@@ -15,7 +15,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 // https://ethfaucet.com/networks/optimism/optimism-sepolia
 // https://faucet.circle.com/
 
-final _rpc = EthereumProvider(
+final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://mainnet.optimism.io/',
     'https://sepolia.optimism.io/',

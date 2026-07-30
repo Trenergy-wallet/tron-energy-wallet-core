@@ -23,7 +23,7 @@ const _chainIdMainNet = 8453;
 // USDC contractAddress:
 const _usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
-final _rpc = EthereumProvider(
+final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://mainnet.base.org/',
     'https://sepolia.base.org/',

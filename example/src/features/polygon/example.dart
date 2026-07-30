@@ -14,7 +14,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 // Faucet
 // https://faucet.polygon.technology/
 
-final _rpc = EthereumProvider(
+final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://polygon-rpc.com/',
     'https://rpc-amoy.polygon.technology/',
