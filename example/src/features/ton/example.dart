@@ -6,7 +6,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Explorer: https://testnet.tonscan.org
 
-final tonRpc = TonProvider(
+final TonProvider<TonHTTPProvider> tonRpc = TonProvider(
   TonHTTPProvider(
     tonApiUrl: 'https://testnet.tonapi.io',
     tonCenterUrl: 'https://testnet.toncenter.com',
