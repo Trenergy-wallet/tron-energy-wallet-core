@@ -1,3 +1,45 @@
+## 3.1.0
+
+### Dependencies
+
+- `blockchain_utils` `^6.0.0` -> `^7.1.0`. This forces the whole mrtnetwork stack to move in
+  lockstep: `on_chain` `^8.1.0`, `bitcoin_base` `^7.3.0`, `ton_dart` `^2.3.0`. Intermediate
+  combinations do not resolve
+- `on_chain` switched from the git ref back to the published `^8.1.0` — the memo and
+  `toEstimate` fixes we were carrying are released now
+- `tr_ton_wallet_service` `v1.1.0` -> `v1.2.0`
+
+### Added
+
+- `AppBlockchain.isEvm` — marks EVM-compatible networks
+- `TronHTTPProvider` now serves GET requests as well: `on_chain` 8.1.0 introduced GET endpoints
+  for Tron, and the provider used to POST unconditionally
+
+### Breaking changes
+
+- HTTP providers moved to the new `blockchain_utils` service contract: they are now mixed in
+  (`with EthereumServiceProvider` and so on) instead of implemented, `doRequest` lost its type
+  parameter, `toUri`/`body()` became `encodeUrl`/`encodeBody`, and `toResponse` takes a named
+  `statusCode`. Custom provider implementations have to be updated the same way
+- The request timeout field is now called `requestTimeout` everywhere:
+  `EthereumHTTPProvider.defaultTimeOut`, `SolanaHTTPProvider.defaultRequestTimeout` and
+  `TronHTTPProvider.defaultRequestTimeout` are gone
+- `TransactionsServiceEthereumImpl.supportedBlockchains` removed — use `AppBlockchain.isEvm`
+- **TON testnet wallet addresses have changed.** `ton_dart` 2.3.0 split the old `TonChainId`
+  into `TonWorkChain` and `TonChainId`; up to 2.2.0 `TonChainId.testnet` implied workchain `-1`,
+  so testnet wallets were derived in the masterchain. They are now derived in the basechain on
+  both networks. Mainnet addresses are unchanged. Stored testnet addresses have to be
+  invalidated, and stale records cleaned on the backend
+- **Bitcoin RBF transactions serialize differently, so their txids change.** `bitcoin_base` 7.2.0
+  replaced the RBF nSequence `0x00000001` with the canonical `0xFFFFFFFD` and applies it to every
+  input instead of the first one only. The previous value also imposed an unintended BIP68
+  relative timelock of one block, which would have rejected any spend of an unconfirmed UTXO
+- Address strings reaching the TON service are now validated strictly (`TonAddressParser`):
+  a raw address with a wrong-length account hash used to be accepted since `blockchain_utils`
+  7.1.0 and failed only after signing and broadcasting
+- Anyone constructing `TonProvider` directly now passes the api type as a second positional
+  argument: `TonProvider(service, service.api)`
+
 ## 3.0.0
 
 ### Added
