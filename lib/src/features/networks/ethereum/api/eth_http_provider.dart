@@ -10,7 +10,7 @@ class EthereumHTTPProvider with EthereumServiceProvider {
     this.url,
     this.authToken, {
     Client? client,
-    this.defaultTimeOut = CoreConsts.defaultRequestTimeout,
+    this.requestTimeout = CoreConsts.defaultRequestTimeout,
   }) : client = client ?? Client();
 
   /// Api url
@@ -19,8 +19,8 @@ class EthereumHTTPProvider with EthereumServiceProvider {
   /// Http client
   final Client client;
 
-  /// Timeout
-  final Duration defaultTimeOut;
+  /// Timeout for requests
+  final Duration requestTimeout;
 
   /// Auth token
   final String? authToken;
@@ -40,7 +40,7 @@ class EthereumHTTPProvider with EthereumServiceProvider {
           },
           body: params.encodeBody(),
         )
-        .timeout(timeout ?? defaultTimeOut);
+        .timeout(timeout ?? requestTimeout);
     return params.toResponse(
       response.bodyBytes,
       statusCode: response.statusCode,

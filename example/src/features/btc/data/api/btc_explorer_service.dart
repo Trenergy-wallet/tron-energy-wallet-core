@@ -13,14 +13,14 @@ class BitcoinApiService with BitcoinServiceProvider {
   BitcoinApiService(
     this.url, {
     http.Client? client,
-    this.defaultRequestTimeout = CoreConsts.defaultRequestTimeout,
+    this.requestTimeout = CoreConsts.defaultRequestTimeout,
   }) : _client = client ?? http.Client();
 
   /// Base url of the explorer api, see [BtcApiConst.getUrl].
   final String url;
 
   /// Timeout for requests.
-  final Duration defaultRequestTimeout;
+  final Duration requestTimeout;
 
   final http.Client _client;
 
@@ -32,14 +32,14 @@ class BitcoinApiService with BitcoinServiceProvider {
     final response = params.requestMethod.isGet
         ? await _client
               .get(params.encodeUrl(url), headers: params.headers)
-              .timeout(timeout ?? defaultRequestTimeout)
+              .timeout(timeout ?? requestTimeout)
         : await _client
               .post(
                 params.encodeUrl(url),
                 headers: params.headers,
                 body: params.encodeBody(),
               )
-              .timeout(timeout ?? defaultRequestTimeout);
+              .timeout(timeout ?? requestTimeout);
     return params.toResponse(
       response.bodyBytes,
       statusCode: response.statusCode,

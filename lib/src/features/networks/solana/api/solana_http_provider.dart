@@ -4,13 +4,13 @@ import 'package:on_chain/solana/src/rpc/core/core.dart';
 import 'package:on_chain/solana/src/rpc/service/service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
-/// Provider for working with the TRON node
+/// Provider for working with the Solana node
 class SolanaHTTPProvider with SolanaServiceProvider {
-  /// Provider for working with the TRON node
+  /// Provider for working with the Solana node
   SolanaHTTPProvider({
     required this.url,
     http.Client? client,
-    this.defaultRequestTimeout = CoreConsts.defaultRequestTimeout,
+    this.requestTimeout = CoreConsts.defaultRequestTimeout,
     this.authToken,
   }) : client = client ?? http.Client();
 
@@ -21,7 +21,7 @@ class SolanaHTTPProvider with SolanaServiceProvider {
   final http.Client client;
 
   /// Timeout for requests
-  final Duration defaultRequestTimeout;
+  final Duration requestTimeout;
 
   /// Authorization token
   final String? authToken;
@@ -41,7 +41,7 @@ class SolanaHTTPProvider with SolanaServiceProvider {
           },
           body: params.encodeBody(),
         )
-        .timeout(timeout ?? defaultRequestTimeout);
+        .timeout(timeout ?? requestTimeout);
     return params.toResponse(
       response.bodyBytes,
       statusCode: response.statusCode,
