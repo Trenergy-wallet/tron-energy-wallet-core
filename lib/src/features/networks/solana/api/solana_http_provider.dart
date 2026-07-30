@@ -5,7 +5,7 @@ import 'package:on_chain/solana/src/rpc/service/service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Provider for working with the TRON node
-class SolanaHTTPProvider implements SolanaServiceProvider {
+class SolanaHTTPProvider with SolanaServiceProvider {
   /// Provider for working with the TRON node
   SolanaHTTPProvider({
     required this.url,
@@ -27,21 +27,24 @@ class SolanaHTTPProvider implements SolanaServiceProvider {
   final String? authToken;
 
   @override
-  Future<BaseServiceResponse<T>> doRequest<T>(
+  Future<BaseServiceResponse> doRequest(
     SolanaRequestDetails params, {
     Duration? timeout,
   }) async {
     final response = await client
         .post(
-          params.toUri(url),
+          params.encodeUrl(url),
           headers: {
             if (authToken != null && authToken!.isNotEmpty)
               'Authorization': 'Bearer $authToken',
             ...params.headers,
           },
-          body: params.body(),
+          body: params.encodeBody(),
         )
         .timeout(timeout ?? defaultRequestTimeout);
-    return params.toResponse(response.bodyBytes, response.statusCode);
+    return params.toResponse(
+      response.bodyBytes,
+      statusCode: response.statusCode,
+    );
   }
 }

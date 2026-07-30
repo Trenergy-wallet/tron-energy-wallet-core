@@ -26,21 +26,39 @@ class EthereumHTTPProvider with EthereumServiceProvider {
   final String? authToken;
 
   @override
-  Future<BaseServiceResponse<T>> doRequest<T>(
+  Future<BaseServiceResponse> doRequest(
     EthereumRequestDetails params, {
     Duration? timeout,
   }) async {
     final response = await client
         .post(
-          params.toUri(url),
+          params.encodeUrl(url),
           headers: {
             ...params.headers,
             if (authToken != null && authToken!.isNotEmpty)
               'Authorization': 'Bearer $authToken',
           },
-          body: params.body(),
+          body: params.encodeBody(),
         )
         .timeout(timeout ?? defaultTimeOut);
-    return params.toResponse(response.bodyBytes, response.statusCode);
+    return params.toResponse(
+      response.bodyBytes,
+      statusCode: response.statusCode,
+    );
+  }
+
+  @override
+  Future<BaseServiceSubscribtionResponse> doSubscribtionRequest({
+    required EthereumRequestDetails params,
+    required BaseServiceSubscribtionRequest<
+      dynamic,
+      dynamic,
+      BaseSubscribtionEvent<dynamic>,
+      EthereumRequestDetails
+    >
+    request,
+    Duration? timeout,
+  }) {
+    throw UnsupportedError('Subscriptions are not supported over HTTP.');
   }
 }

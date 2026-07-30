@@ -73,20 +73,22 @@ class TransactionsServiceTonImpl
   /// Jetton wallets
   final Map<int, TonJettonWalletService> _jettonWallets = {};
 
-  TonProvider get _rpc =>
-      tonProvider ??
-      TonProvider(
-        TonHTTPProvider(
-          tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
-          tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
-          tonApiKey: testApiKey,
-          authToken: _getAuthToken?.call(),
-        ),
-        // TonHTTPProvider(
-        //     tonApiUrl: 'https://tonapi.io',
-        //     tonCenterUrl: 'https://toncenter.com',
-        //     authToken: _mainNetApiKey),
-      );
+  TonProvider get _rpc {
+    final provider = tonProvider;
+    if (provider != null) return provider;
+    final service = TonHTTPProvider(
+      tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
+      tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
+      tonApiKey: testApiKey,
+      authToken: _getAuthToken?.call(),
+    );
+    // TonHTTPProvider(
+    //     tonApiUrl: 'https://tonapi.io',
+    //     tonCenterUrl: 'https://toncenter.com',
+    //     authToken: _mainNetApiKey),
+    // ton_dart 2.3.0 moved TonApiType off the service and onto the provider.
+    return TonProvider(service, service.api);
+  }
 
   @override
   Future<String> createTransaction({
@@ -157,7 +159,7 @@ class TransactionsServiceTonImpl
         signedTransaction = await jettonWalletService.sendJettons(
           key: key,
           amount: params.amount.toString(),
-          recipient: TonAddress(params.to),
+          recipient: TonAddressParser.parse(params.to),
           sendToBlockchain: false,
           message: params.message,
         );

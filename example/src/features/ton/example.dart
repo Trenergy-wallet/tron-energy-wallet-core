@@ -6,13 +6,13 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Explorer: https://testnet.tonscan.org
 
-final tonRpc = TonProvider(
-  TonHTTPProvider(
-    tonApiUrl: 'https://testnet.tonapi.io',
-    tonCenterUrl: 'https://testnet.toncenter.com',
-    tonApiKey: 'your api key',
-  ),
+final _tonService = TonHTTPProvider(
+  tonApiUrl: 'https://testnet.tonapi.io',
+  tonCenterUrl: 'https://testnet.toncenter.com',
+  tonApiKey: 'your api key',
 );
+
+final tonRpc = TonProvider(_tonService, _tonService.api);
 
 Future<void> main() async {
   final logger = InAppLogger()..usePrint = true;

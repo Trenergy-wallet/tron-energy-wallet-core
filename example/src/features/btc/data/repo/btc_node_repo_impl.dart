@@ -11,15 +11,19 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
     required this.apiKey,
     required this.isTestnet,
     required this.baseUrl,
-  }) : _api = ApiProvider.fromMempool(
-         BitcoinNetwork.signet,
-         BitcoinApiService(),
+  }) : _api = BitcoinProvider(
+         BitcoinApiService(
+           BtcApiConst.getUrl(
+             isTestnet ? BitcoinNetwork.signet : BitcoinNetwork.mainnet,
+             APIType.mempool,
+           ),
+         ),
        ),
        _client = BtcNodeClient(
          Dio(BaseOptions(baseUrl: baseUrl)),
        );
 
-  final ApiProvider _api;
+  final BitcoinProvider _api;
 
   final BtcNodeClient _client;
 
@@ -93,7 +97,9 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
   }) async {
     try {
       // By now (28/08/25) fees are parsing in wrong way in [bitcoin_base] 6.8.0
-      final fees = await _api.getNetworkFeeRate();
+      final fees = await _api.request(
+        const MempoolRequestGetNetworkFeeRate(),
+      );
       return Right(
         EstimateFeeModel(
           fee: fees.medium.toDouble(),
