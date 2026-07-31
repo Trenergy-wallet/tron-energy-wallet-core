@@ -146,8 +146,8 @@ class TransactionsServiceSolanaImpl
     final blockHash = await _getTransactionBlockHash(
       simulate: simulatePriorityFee,
     );
-    final amountToSend = DecimalConverter.toBigInt(
-      amount: params.amount.toString(),
+    final amountToSend = UnitsConverter.tokenToUnits(
+      amount: params.amount,
       decimals: params.tokenDecimal,
     );
 
@@ -290,8 +290,8 @@ class TransactionsServiceSolanaImpl
             owner: params.solAddressFrom,
             programId: params.tokenType.programId,
             layout: SPLTokenTransferLayout(
-              amount: DecimalConverter.toBigInt(
-                amount: params.amount.toString(),
+              amount: UnitsConverter.tokenToUnits(
+                amount: params.amount,
                 decimals: params.tokenDecimal,
               ),
             ),
@@ -301,8 +301,8 @@ class TransactionsServiceSolanaImpl
         instructions.add(
           SPLTokenProgram.transferChecked(
             layout: SPLTokenTransferCheckedLayout(
-              amount: DecimalConverter.toBigInt(
-                amount: params.amount.toString(),
+              amount: UnitsConverter.tokenToUnits(
+                amount: params.amount,
                 decimals: params.tokenDecimal,
               ),
               decimals: params.tokenDecimal,

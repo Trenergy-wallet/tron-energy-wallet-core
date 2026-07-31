@@ -1,4 +1,5 @@
 import 'package:bitcoin_base/bitcoin_base.dart';
+import 'package:blockchain_utils/blockchain_utils.dart' show BigRational;
 import 'package:dio/dio.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -102,7 +103,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
       );
       return Right(
         EstimateFeeModel(
-          fee: fees.medium.toDouble(),
+          fee: BigRational.parseDecimal(fees.medium.toString()),
           energy: 0,
           fees: Fees(
             fastestFee: fees.high.toInt(),

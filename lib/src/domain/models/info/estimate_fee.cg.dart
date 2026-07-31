@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart' hide Either;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -8,7 +9,7 @@ part 'gen/estimate_fee.cg.f.dart';
 sealed class EstimateFeeModel with _$EstimateFeeModel {
   /// Blockchain fee model
   const factory EstimateFeeModel({
-    required double fee,
+    required BigRational fee,
     required double energy,
     required Fees fees, // <- for btc
     required BigInt txDustThreshold,
@@ -18,7 +19,7 @@ sealed class EstimateFeeModel with _$EstimateFeeModel {
 
   /// Error value / placeholder
   static final empty = EstimateFeeModel(
-    fee: CoreConsts.invalidDoubleValue,
+    fee: CoreConsts.invalidBigRational,
     energy: CoreConsts.invalidDoubleValue,
     fees: Fees.invalid,
     txDustThreshold: BigInt.zero,

@@ -14,8 +14,20 @@
 - `AppBlockchain.isEvm` — marks EVM-compatible networks
 - `TronHTTPProvider` now serves GET requests as well: `on_chain` 8.1.0 introduced GET endpoints
   for Tron, and the provider used to POST unconditionally
+- `UnitsConverter.unitsToTokens` — the reverse conversion, smallest units to tokens. Needed
+  wherever a provider reports amounts in units (the gasfree paymaster quotes the gas cost in
+  token units, and the amount screen subtracts it from the balance)
 
 ### Breaking changes
+
+- `DecimalConverter` is now `UnitsConverter`, and `toBigInt` is `tokenToUnits`. The amount is
+  taken as a `BigRational` instead of a `String`: callers used to stringify a `BigRational` only
+  for the converter to parse it back
+- `EstimateFeeModel.fee` is a `BigRational` instead of a `double`. Fees are money and were the
+  last place where they went through binary floating point; everything that reads the field has
+  to drop its `toBigRationalOrThrow` / `toDouble` conversions. `EstimateFeeModel.empty.fee` is
+  `CoreConsts.invalidBigRational` now, so comparisons against `CoreConsts.invalidDoubleValue`
+  no longer match
 
 - HTTP providers moved to the new `blockchain_utils` service contract: they are now mixed in
   (`with EthereumServiceProvider` and so on) instead of implemented, `doRequest` lost its type
