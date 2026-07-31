@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EstimateFeeModel {
 
- double get fee; double get energy; Fees get fees;// <- for btc
+ BigRational get fee; double get energy; Fees get fees;// <- for btc
  BigInt get txDustThreshold;
 /// Create a copy of EstimateFeeModel
 /// with the given fields replaced by the non-null parameter values.
@@ -46,7 +46,7 @@ abstract mixin class $EstimateFeeModelCopyWith<$Res>  {
   factory $EstimateFeeModelCopyWith(EstimateFeeModel value, $Res Function(EstimateFeeModel) _then) = _$EstimateFeeModelCopyWithImpl;
 @useResult
 $Res call({
- double fee, double energy, Fees fees, BigInt txDustThreshold
+ BigRational fee, double energy, Fees fees, BigInt txDustThreshold
 });
 
 
@@ -66,7 +66,7 @@ class _$EstimateFeeModelCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? fee = null,Object? energy = null,Object? fees = null,Object? txDustThreshold = null,}) {
   return _then(_self.copyWith(
 fee: null == fee ? _self.fee : fee // ignore: cast_nullable_to_non_nullable
-as double,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
+as BigRational,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
 as double,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
 as Fees,txDustThreshold: null == txDustThreshold ? _self.txDustThreshold : txDustThreshold // ignore: cast_nullable_to_non_nullable
 as BigInt,
@@ -160,7 +160,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( BigRational fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel() when $default != null:
 return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);case _:
@@ -181,7 +181,7 @@ return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( BigRational fee,  double energy,  Fees fees,  BigInt txDustThreshold)  $default,) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel():
 return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);}
@@ -198,7 +198,7 @@ return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( BigRational fee,  double energy,  Fees fees,  BigInt txDustThreshold)?  $default,) {final _that = this;
 switch (_that) {
 case _EstimateFeeModel() when $default != null:
 return $default(_that.fee,_that.energy,_that.fees,_that.txDustThreshold);case _:
@@ -216,7 +216,7 @@ class _EstimateFeeModel extends EstimateFeeModel {
   const _EstimateFeeModel({required this.fee, required this.energy, required this.fees, required this.txDustThreshold}): super._();
   
 
-@override final  double fee;
+@override final  BigRational fee;
 @override final  double energy;
 @override final  Fees fees;
 // <- for btc
@@ -252,7 +252,7 @@ abstract mixin class _$EstimateFeeModelCopyWith<$Res> implements $EstimateFeeMod
   factory _$EstimateFeeModelCopyWith(_EstimateFeeModel value, $Res Function(_EstimateFeeModel) _then) = __$EstimateFeeModelCopyWithImpl;
 @override @useResult
 $Res call({
- double fee, double energy, Fees fees, BigInt txDustThreshold
+ BigRational fee, double energy, Fees fees, BigInt txDustThreshold
 });
 
 
@@ -272,7 +272,7 @@ class __$EstimateFeeModelCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? fee = null,Object? energy = null,Object? fees = null,Object? txDustThreshold = null,}) {
   return _then(_EstimateFeeModel(
 fee: null == fee ? _self.fee : fee // ignore: cast_nullable_to_non_nullable
-as double,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
+as BigRational,energy: null == energy ? _self.energy : energy // ignore: cast_nullable_to_non_nullable
 as double,fees: null == fees ? _self.fees : fees // ignore: cast_nullable_to_non_nullable
 as Fees,txDustThreshold: null == txDustThreshold ? _self.txDustThreshold : txDustThreshold // ignore: cast_nullable_to_non_nullable
 as BigInt,

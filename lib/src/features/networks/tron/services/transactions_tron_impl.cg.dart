@@ -139,8 +139,8 @@ class TransactionsServiceTronImpl
     // address, amount
     final transferParams = [
       TronAddress(params.to),
-      DecimalConverter.toBigInt(
-        amount: params.amount.toString(),
+      UnitsConverter.tokenToUnits(
+        amount: params.amount,
         decimals: params.tokenDecimal,
       ),
     ];

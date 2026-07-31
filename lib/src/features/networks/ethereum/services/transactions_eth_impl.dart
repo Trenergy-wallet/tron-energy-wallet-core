@@ -167,7 +167,7 @@ class TransactionsServiceEthereumImpl
         throw AppFeeChangedException(
           params.userApprovedFee!,
           EstimateFeeModel.empty.copyWith(
-            fee: double.parse(ETHHelper.fromWei(feeInWei)),
+            fee: BigRational.parseDecimal(ETHHelper.fromWei(feeInWei)),
           ),
         );
       }
@@ -318,8 +318,8 @@ class TransactionsServiceEthereumImpl
         maxPriorityFeePerGas: selectedFee,
         data: ethTransferAbiFragment.encode([
           ETHAddress(params.to),
-          DecimalConverter.toBigInt(
-            amount: params.amount.toString(),
+          UnitsConverter.tokenToUnits(
+            amount: params.amount,
             decimals: params.tokenDecimal,
           ),
         ]),
@@ -351,8 +351,8 @@ class TransactionsServiceEthereumImpl
         gasPrice: gasPrice,
         data: ethTransferAbiFragment.encode([
           ETHAddress(params.to),
-          DecimalConverter.toBigInt(
-            amount: params.amount.toString(),
+          UnitsConverter.tokenToUnits(
+            amount: params.amount,
             decimals: params.tokenDecimal,
           ),
         ]),

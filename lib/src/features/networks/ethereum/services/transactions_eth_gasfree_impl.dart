@@ -166,13 +166,13 @@ class TransactionsServiceEthereumGasFreeImpl
         );
       }
 
-      final amountRaw = DecimalConverter.toBigInt(
-        amount: params.amount.toString(),
+      final amountRaw = UnitsConverter.tokenToUnits(
+        amount: params.amount,
         decimals: params.tokenDecimal,
       );
       final serviceFeeRaw = serviceFee > BigRational.zero
-          ? DecimalConverter.toBigInt(
-              amount: serviceFee.toString(),
+          ? UnitsConverter.tokenToUnits(
+              amount: serviceFee,
               decimals: params.tokenDecimal,
             )
           : BigInt.zero;
@@ -195,9 +195,6 @@ class TransactionsServiceEthereumGasFreeImpl
 
       final gasPrices = await pimlico.getUserOperationGasPrice();
 
-      // TODO(gasFree): compare the max cost against the fee approved by the
-      // user (backend estimateFee) once the backend contract for the expected
-      // vs max fee is settled - the AppFeeChangedException pattern
       final result = await pl.prepareUserOperationForErc20Paymaster(
         smartAccountClient: client,
         pimlicoClient: pimlico,
@@ -557,13 +554,13 @@ class TransactionsServiceEthereumGasFreeImpl
 
     try {
       final token = pl.EthereumAddress.fromHex(params.tokenContractAddress!);
-      final amountRaw = DecimalConverter.toBigInt(
-        amount: params.amount.toString(),
+      final amountRaw = UnitsConverter.tokenToUnits(
+        amount: params.amount,
         decimals: params.tokenDecimal,
       );
       final serviceFeeRaw = serviceFee > BigRational.zero
-          ? DecimalConverter.toBigInt(
-              amount: serviceFee.toString(),
+          ? UnitsConverter.tokenToUnits(
+              amount: serviceFee,
               decimals: params.tokenDecimal,
             )
           : BigInt.zero;

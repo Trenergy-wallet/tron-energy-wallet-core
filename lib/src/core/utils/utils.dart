@@ -89,12 +89,23 @@ class KeyGenerator {
 }
 
 /// Convert amount for tokens
-class DecimalConverter {
-  /// Convert amount for tokens
-  static BigInt toBigInt({required String amount, required int decimals}) {
-    final bigRationalAmount = BigRational.parseDecimal(amount);
-    final bigRationalDecimal = BigRational(BigInt.from(10).pow(decimals));
-    return (bigRationalAmount * bigRationalDecimal).toBigInt();
+class UnitsConverter {
+  /// Tokens to units
+  static BigInt tokenToUnits({
+    required BigRational amount,
+    required int decimals,
+  }) {
+    final multiplicator = BigRational(BigInt.from(10).pow(decimals));
+    return (amount * multiplicator).toBigInt();
+  }
+
+  /// Units to tokens
+  static BigRational unitsToTokens({
+    required BigInt units,
+    required int decimals,
+  }) {
+    final divider = BigRational(BigInt.from(10).pow(decimals));
+    return BigRational(units) / divider;
   }
 }
 
