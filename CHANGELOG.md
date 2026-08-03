@@ -1,3 +1,21 @@
+## 3.2.0
+
+### Added
+
+- `ExceptionCode.insufficientBalanceToPayFee` (`E9`) — the amount fits, the fee on top of it
+  does not. `insufficientBalance` (`E8`) now means only that the amount itself does not fit
+
+### Changed
+
+- Errors of the gasfree bundler / ERC-20 paymaster are `AppBundlerRpcException` instead of a bare
+  `AppException`: it keeps the original `BundlerRpcError` (re-exported by the package) and exposes
+  `aaCode`, `rpcCode`, `cannotChargeGas`. It extends `AppExceptionWithCode`, not `AppException` —
+  `is AppException` checks on the caller side have to be widened
+- A postOp revert (`AA50`/`AA51`, or the Solady `TransferFromFailed` selector `0x7939f424`) is
+  `insufficientBalanceToPayFee`, not `rpcError`: the paymaster could not charge the gas fee.
+  Deterministic for the current balance and gas price — do not retry it, every attempt costs a
+  paid provider round
+
 ## 3.1.0
 
 ### Dependencies
@@ -14,21 +32,16 @@
 - `AppBlockchain.isEvm` — marks EVM-compatible networks
 - `TronHTTPProvider` now serves GET requests as well: `on_chain` 8.1.0 introduced GET endpoints
   for Tron, and the provider used to POST unconditionally
-- `UnitsConverter.unitsToTokens` — the reverse conversion, smallest units to tokens. Needed
-  wherever a provider reports amounts in units (the gasfree paymaster quotes the gas cost in
-  token units, and the amount screen subtracts it from the balance)
+- `UnitsConverter.unitsToTokens` — smallest units to tokens, the reverse conversion
 
 ### Breaking changes
 
-- `DecimalConverter` is now `UnitsConverter`, and `toBigInt` is `tokenToUnits`. The amount is
-  taken as a `BigRational` instead of a `String`: callers used to stringify a `BigRational` only
-  for the converter to parse it back
-- `EstimateFeeModel.fee` is a `BigRational` instead of a `double`. Fees are money and were the
-  last place where they went through binary floating point; everything that reads the field has
-  to drop its `toBigRationalOrThrow` / `toDouble` conversions. `EstimateFeeModel.empty.fee` is
+- `DecimalConverter` is now `UnitsConverter`, `toBigInt` is `tokenToUnits`, and the amount is
+  taken as a `BigRational` instead of a `String`
+- `EstimateFeeModel.fee` is a `BigRational` instead of a `double`: readers have to drop their
+  `toBigRationalOrThrow` / `toDouble` conversions. `EstimateFeeModel.empty.fee` is
   `CoreConsts.invalidBigRational` now, so comparisons against `CoreConsts.invalidDoubleValue`
   no longer match
-
 - HTTP providers moved to the new `blockchain_utils` service contract: they are now mixed in
   (`with EthereumServiceProvider` and so on) instead of implemented, `doRequest` lost its type
   parameter, `toUri`/`body()` became `encodeUrl`/`encodeBody`, and `toResponse` takes a named
