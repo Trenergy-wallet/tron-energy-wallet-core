@@ -218,14 +218,18 @@ class TransactionsServiceEthereumGasFreeImpl
           ),
         ),
       );
-      final totalNeeded = amountRaw + serviceFeeRaw + result.maxCostInToken;
+      final transfersNeeded = amountRaw + serviceFeeRaw;
+      final totalNeeded = transfersNeeded + result.maxCostInToken;
       if (balanceRaw < totalNeeded) {
         throw AppException(
           message:
               'insufficient token balance: have $balanceRaw, need '
               '$totalNeeded (amount $amountRaw + service fee $serviceFeeRaw '
               '+ max gas cost ${result.maxCostInToken})',
-          code: ExceptionCode.insufficientBalance,
+          // The transfers themselves fit - only the gas does not
+          code: balanceRaw >= transfersNeeded
+              ? ExceptionCode.insufficientBalanceToPayFee
+              : ExceptionCode.insufficientBalance,
         );
       }
       _logger?.logInfoMessage(
@@ -241,10 +245,7 @@ class TransactionsServiceEthereumGasFreeImpl
 
       return _sendUserOperationPayload(signedOp, result.authorization);
     } on pl.BundlerRpcError catch (e) {
-      throw AppException(
-        message: 'bundler/paymaster error: ${e.message}',
-        code: ExceptionCode.rpcError,
-      );
+      throw AppBundlerRpcException(e);
     } finally {
       // client.close() closes both the bundler (pimlico) and the paymaster
       client.close();
@@ -486,10 +487,7 @@ class TransactionsServiceEthereumGasFreeImpl
         createdAt: DateTime.now(),
       );
     } on pl.BundlerRpcError catch (e) {
-      throw AppException(
-        message: 'bundler/paymaster error: ${e.message}',
-        code: ExceptionCode.rpcError,
-      );
+      throw AppBundlerRpcException(e);
     } finally {
       pimlico.close();
       paymaster.close();
@@ -591,14 +589,18 @@ class TransactionsServiceEthereumGasFreeImpl
           ),
         ),
       );
-      final totalNeeded = amountRaw + serviceFeeRaw + estimate.maxCostInToken;
+      final transfersNeeded = amountRaw + serviceFeeRaw;
+      final totalNeeded = transfersNeeded + estimate.maxCostInToken;
       if (balanceRaw < totalNeeded) {
         throw AppException(
           message:
               'insufficient token balance: have $balanceRaw, need '
               '$totalNeeded (amount $amountRaw + service fee $serviceFeeRaw '
               '+ max gas cost ${estimate.maxCostInToken})',
-          code: ExceptionCode.insufficientBalance,
+          // The transfers themselves fit - only the gas does not
+          code: balanceRaw >= transfersNeeded
+              ? ExceptionCode.insufficientBalanceToPayFee
+              : ExceptionCode.insufficientBalance,
         );
       }
 
@@ -625,10 +627,7 @@ class TransactionsServiceEthereumGasFreeImpl
 
       return _sendUserOperationPayload(signedOp, result.authorization);
     } on pl.BundlerRpcError catch (e) {
-      throw AppException(
-        message: 'bundler/paymaster error: ${e.message}',
-        code: ExceptionCode.rpcError,
-      );
+      throw AppBundlerRpcException(e);
     } finally {
       paymaster.close();
       publicClient.close();

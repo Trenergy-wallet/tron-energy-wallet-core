@@ -23,9 +23,19 @@ enum ExceptionCode {
     code: 'E7',
     description: 'Timeout',
   ),
+  /// The amount being sent does not fit into the balance
   insufficientBalance(
     code: 'E8',
     description: 'InsufficientBalance to create transaction',
+  ),
+
+  /// The amount fits, the fee on top of it does not
+  ///
+  /// Split from [insufficientBalance] because the two need different
+  /// wording for the user: here it is enough to send less
+  insufficientBalanceToPayFee(
+    code: 'E9',
+    description: 'InsufficientBalance to pay the fee',
   ),
 
   // Service initialization errors
