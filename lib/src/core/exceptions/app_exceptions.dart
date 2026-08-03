@@ -123,6 +123,59 @@ class AppRpcException extends AppExceptionWithCode implements Exception {
   }
 }
 
+/// Exception for errors from the ERC-4337 bundler / ERC-20 paymaster
+///
+/// [ExceptionCode.insufficientBalanceToPayFee] here means the paymaster
+/// could not charge the account for gas in `postOp`: the transfer itself is
+/// fine, the balance just does not cover the fee on top of it. That outcome
+/// is deterministic for the current balance and gas price, so the caller
+/// must not retry - every attempt costs another paid round.
+/// Everything else stays [ExceptionCode.rpcError] and may be transient
+/// (HTTP 5xx and 429 from the bundler arrive this way)
+class AppBundlerRpcException extends AppExceptionWithCode implements Exception {
+  /// Exception for errors from the ERC-4337 bundler / ERC-20 paymaster
+  AppBundlerRpcException(this.bundlerError, {super.stackTrace})
+    : super(message: bundlerError.message, code: _codeFor(bundlerError));
+
+  /// Solady `SafeTransferLib.TransferFromFailed()` selector
+  ///
+  /// The ERC-20 paymaster pulls the gas fee from the account with
+  /// `transferFrom`, so this selector inside a revert means the balance did
+  /// not cover the fee
+  static const transferFromFailedSelector = '0x7939f424';
+
+  /// Original error of the bundler client
+  final BundlerRpcError bundlerError;
+
+  /// ERC-4337 error code (`AA50` and so on), when the bundler reported one
+  String? get aaCode => bundlerError.aaErrorCode;
+
+  /// JSON-RPC error code, or the HTTP status of a non-200 response
+  int get rpcCode => bundlerError.code;
+
+  /// The paymaster failed to take the gas fee from the account
+  bool get cannotChargeGas =>
+      code == ExceptionCode.insufficientBalanceToPayFee;
+
+  /// `AA50`/`AA51` are postOp reverts - the stage where the ERC-20
+  /// paymaster charges the account
+  static ExceptionCode _codeFor(BundlerRpcError e) {
+    final cannotCharge =
+        e.aaErrorCode == 'AA50' ||
+        e.aaErrorCode == 'AA51' ||
+        e.toString().contains(transferFromFailedSelector);
+    return cannotCharge
+        ? ExceptionCode.insufficientBalanceToPayFee
+        : ExceptionCode.rpcError;
+  }
+
+  @override
+  String toString() {
+    return 'AppBundlerRpcException: code: $code, rpcCode: $rpcCode'
+        '${aaCode == null ? '' : ', $aaCode'}, message: $message';
+  }
+}
+
 /// Exception when attempting to access an unsupported blockchain
 class AppBlockchainIsNotSupportedException extends AppExceptionWithCode
     implements Exception {

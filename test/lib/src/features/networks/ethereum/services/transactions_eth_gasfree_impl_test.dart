@@ -35,6 +35,7 @@ MockClient _mockRpc({
   BigInt? balance,
   bool tokenSupported = true,
   bool failEstimate = false,
+  String estimateErrorMessage = 'estimation failed',
   List<Map<String, dynamic>>? log,
 }) => MockClient((request) async {
   final body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -46,7 +47,7 @@ MockClient _mockRpc({
       jsonEncode({
         'jsonrpc': '2.0',
         'id': body['id'],
-        'error': {'code': -32500, 'message': 'estimation failed'},
+        'error': {'code': -32500, 'message': estimateErrorMessage},
       }),
       200,
     );
@@ -408,12 +409,33 @@ void main() {
     );
 
     test(
-      'THROWS insufficientBalance when the token balance does not cover '
-      'transfers + max gas cost',
+      'THROWS insufficientBalanceToPayFee when the transfers fit but the '
+      'max gas cost does not',
       () async {
-        // Exactly the transfers, nothing left for the gas
+        // Exactly the transfers (1.5 + 0.1), nothing left for the gas
         final service = _service(
           httpClient: _mockRpc(balance: BigInt.from(1600000)),
+        );
+
+        await expectLater(
+          service.createTransaction(params: _params(), masterKey: 'mk'),
+          throwsA(
+            isA<AppException>().having(
+              (e) => e.code,
+              'code',
+              ExceptionCode.insufficientBalanceToPayFee,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'THROWS insufficientBalance when even the transfers do not fit',
+      () async {
+        // Below the transfers themselves: sending less is not the answer
+        final service = _service(
+          httpClient: _mockRpc(balance: BigInt.from(1000000)),
         );
 
         await expectLater(
@@ -435,11 +457,10 @@ void main() {
       await expectLater(
         service.createTransaction(params: _params(), masterKey: 'mk'),
         throwsA(
-          isA<AppException>().having(
-            (e) => e.code,
-            'code',
-            ExceptionCode.rpcError,
-          ),
+          isA<AppBundlerRpcException>()
+              .having((e) => e.code, 'code', ExceptionCode.rpcError)
+              .having((e) => e.rpcCode, 'rpcCode', -32500)
+              .having((e) => e.cannotChargeGas, 'cannotChargeGas', isFalse),
         ),
       );
     });
@@ -637,6 +658,98 @@ void main() {
               'code',
               ExceptionCode.tokenIsNotSupported,
             ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'estimateGasFree: THROWS insufficientBalanceToPayFee when postOp '
+      'cannot charge the gas fee (AA50)',
+      () async {
+        // The paymaster pulls the fee in postOp: a balance that does not
+        // cover the gas reverts the simulation. Deterministic for the
+        // current balance, the caller must not retry it
+        await expectLater(
+          _service(
+            httpClient: _mockRpc(
+              failEstimate: true,
+              estimateErrorMessage:
+                  'UserOperation reverted during simulation with reason: '
+                  'AA50 postOp reverted 0x7939f424',
+            ),
+          ).estimateGasFree(
+            chainId: 11155111,
+            senderAddress: _senderAddress,
+            recipientAddress: _recipientAddress,
+            tokenContractAddress: _tokenAddress,
+            tokenDecimal: 6,
+          ),
+          throwsA(
+            isA<AppBundlerRpcException>()
+                .having(
+                  (e) => e.code,
+                  'code',
+                  ExceptionCode.insufficientBalanceToPayFee,
+                )
+                .having((e) => e.aaCode, 'aaCode', 'AA50')
+                .having((e) => e.cannotChargeGas, 'cannotChargeGas', isTrue),
+          ),
+        );
+      },
+    );
+
+    test(
+      'estimateGasFree: THROWS insufficientBalanceToPayFee on a bare '
+      'TransferFromFailed selector, without an AA code',
+      () async {
+        await expectLater(
+          _service(
+            httpClient: _mockRpc(
+              failEstimate: true,
+              estimateErrorMessage: 'execution reverted: 0x7939f424',
+            ),
+          ).estimateGasFree(
+            chainId: 11155111,
+            senderAddress: _senderAddress,
+            recipientAddress: _recipientAddress,
+            tokenContractAddress: _tokenAddress,
+            tokenDecimal: 6,
+          ),
+          throwsA(
+            isA<AppBundlerRpcException>()
+                .having(
+                  (e) => e.code,
+                  'code',
+                  ExceptionCode.insufficientBalanceToPayFee,
+                )
+                // Бандлер не назвал AA-код, распознали по селектору
+                .having((e) => e.aaCode, 'aaCode', isNull),
+          ),
+        );
+      },
+    );
+
+    test(
+      'estimateGasFree: any other bundler error stays rpcError (retryable)',
+      () async {
+        await expectLater(
+          _service(
+            httpClient: _mockRpc(
+              failEstimate: true,
+              estimateErrorMessage: 'AA33 paymaster reverted',
+            ),
+          ).estimateGasFree(
+            chainId: 11155111,
+            senderAddress: _senderAddress,
+            recipientAddress: _recipientAddress,
+            tokenContractAddress: _tokenAddress,
+            tokenDecimal: 6,
+          ),
+          throwsA(
+            isA<AppBundlerRpcException>()
+                .having((e) => e.code, 'code', ExceptionCode.rpcError)
+                .having((e) => e.aaCode, 'aaCode', 'AA33'),
           ),
         );
       },
