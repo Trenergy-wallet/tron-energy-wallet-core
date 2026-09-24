@@ -523,6 +523,9 @@ mixin SingingKeyCreatorBTC {
 
         var maxRbfTransactionFeeRate = 0;
 
+        // Transactions we actually replace: they spend our inputs, so the new
+        // transaction must outbid them both by fee rate and by absolute fee
+        final replacedRbfTransactions = <TransactionBtcNode>[];
         // 3.4 Process all remaining unconfirmed transactions
         for (final pendingTransaction in pendingTransactions) {
           // If a non-RBF transaction has locked our outputs, then there’s
@@ -547,8 +550,11 @@ mixin SingingKeyCreatorBTC {
               );
           // Here we need to calculate the fee rate with which the previous
           // transaction was sent
-          if (outputsRbfToAdd.outputs.isNotEmpty &&
+          // Outputs may be empty even for our own transaction (a self-send:
+          // every vout goes back to us), but we still replace it
+          if (pendingTransaction.isSentFrom(spender3TaprootAddres) &&
               pendingTransaction.fees != null) {
+            replacedRbfTransactions.add(pendingTransaction);
             // For all comparisons, use vSize
             // https://learnmeabitcoin.com/technical/transaction/size/
             maxRbfTransactionFeeRate = max(
@@ -619,7 +625,7 @@ mixin SingingKeyCreatorBTC {
             );
         return (
           transactionVSize: transactionVSize,
-          pendingTransactions: pendingTransactions,
+          pendingTransactions: replacedRbfTransactions,
           sumOfUtxo: sumOfUtxo,
           sumOfOutputs: sumOfOutputs,
           outPuts: outPuts,
