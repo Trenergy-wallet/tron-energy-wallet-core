@@ -27,6 +27,14 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
   /// What the transaction was built from (UTXO)
   List<String> get inputUtxoIds => vin.map((e) => e.txId).toList();
 
+  /// Whether the transaction was sent from [senderAddress]
+  ///
+  /// Every input with an address must be ours. A single foreign input means
+  /// this is an incoming transaction: we neither take outputs from it nor
+  /// have to outbid its fee
+  bool isSentFrom(String senderAddress) =>
+      !vin.any((v) => v.isAddress && !v.addresses.contains(senderAddress));
+
   /// Select outputs to use for the RBF transaction:
   /// - not change
   /// - not comment
@@ -46,7 +54,7 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
 
     // If the inputs we are spending don’t include our address
     // (incoming transaction) then we take nothing from here
-    if (vin.any((v) => v.isAddress && !v.addresses.contains(senderAddress))) {
+    if (!isSentFrom(senderAddress)) {
       (logger ?? InAppLogger()).logWarning(
         'TransactionBtcNode',
         'onlyTransfersToOutputsOrThrow: Input transaction: $txId, skipping',

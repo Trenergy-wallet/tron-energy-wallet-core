@@ -1,3 +1,9 @@
+## 3.2.1
+
+### Fixed
+
+- BTC RBF: improved fee calculation
+
 ## 3.2.0
 
 ### Added
