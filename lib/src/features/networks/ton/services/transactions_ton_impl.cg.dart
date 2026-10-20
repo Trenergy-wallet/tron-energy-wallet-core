@@ -51,8 +51,9 @@ class TransactionsServiceTonImpl
   /// Auth token for the backend
   final String Function()? _getAuthToken;
 
-  ///  of the HTTP client for the node requests, e.g. `DpopHttpClient`.
-  /// Must return a new instance on every call
+  /// HTTP client for the node requests (backend proxies), e.g. one that adds
+  /// DPoP proofs. Shared by all requests of the service, the service never
+  /// closes it
   final http.Client? _httpClient;
 
   /// Get Tron private key as String

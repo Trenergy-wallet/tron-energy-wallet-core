@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
-/// Device key for DPoP proofs (RFC 9449): ES256, curve P-256
+/// Device key for DPoP proofs
 ///
 /// The implementation owns the private key and signs with it. The core does
 /// not know where the key lives: the app keeps it in the Secure Enclave /
-/// Android Keystore, examples and tests use a software key. This is not a
-/// wallet key - only a technical key of the app installation
+/// Android Keystore.
 abstract interface class DpopSigner {
   /// Public key: uncompressed P-256 point, 0x04 ‖ X ‖ Y (65 bytes)
   Future<Uint8List> publicKey();

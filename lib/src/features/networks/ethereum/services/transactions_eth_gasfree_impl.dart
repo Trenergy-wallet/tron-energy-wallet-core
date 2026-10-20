@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart' show ETHPrivateKey;
 import 'package:permissionless/permissionless.dart' as pl;
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service (gasFree)
@@ -60,22 +61,26 @@ class TransactionsServiceEthereumGasFreeImpl
   /// Headers for the backend proxies
   final Map<String, String>? Function()? getHeaders;
 
-  /// Http client injected via the constructor (tests / call counting), shared
-  /// across all sub-clients. Null in production
+  /// HTTP client for the backend proxies, e.g. one that adds DPoP proofs
+  /// (tests use it to count calls). Shared by all sub-clients and never closed
+  /// by them, see [_newHttpClient]
   final http.Client? _injectedHttpClient;
 
   /// A fresh http client for every permissionless sub-client.
   ///
   /// permissionless closes the client it is given once an operation completes,
   /// so a single long-lived shared instance breaks on the next round with
-  /// "Client is already closed". Returns the injected client as is when
-  /// provided (tests manage its lifecycle), a fresh logging wrapper when a
-  /// logger is set, or null so permissionless creates its own plain client
-  http.Client? get _newHttpClient =>
-      _injectedHttpClient ??
-      (_logger == null
-          ? null
-          : LoggingHttpClient(http.Client(), logger: _logger));
+  /// "Client is already closed". The injected client is wrapped so that
+  /// permissionless can not close it (its owner does). Plus a logging wrapper
+  /// when a logger is set; null - nothing to add, permissionless creates its
+  /// own plain client
+  http.Client? get _newHttpClient {
+    final injected = _injectedHttpClient;
+    return nodeHttpClient(
+      client: injected == null ? null : UnclosableHttpClient(injected),
+      logger: _logger,
+    );
+  }
 
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;

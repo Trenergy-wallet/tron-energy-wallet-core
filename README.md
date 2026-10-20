@@ -170,6 +170,23 @@ Future<void> btcExample() async {
 
 See the `/example` folder for a detailed example.
 
+## Custom HTTP client (DPoP)
+
+The network services take an optional `httpClient` for the requests. The app passes a
+client that adds DPoP proofs (RFC 9449), the device key stays behind `DpopSigner`:
+
+```dart
+final tron = TransactionsServiceTronImpl(
+  apiTron: apiTron,
+  getAuthToken: () => token, // Authorization: Bearer stays as it was
+  getSigningKey: getSigningKey,
+  httpClient: dpopClient, // shared by all requests, the service never closes it
+);
+```
+
+Without `httpClient` the services work as before. With a logger the client is
+wrapped into `LoggingHttpClient`.
+
 ## Issues & Feedback
 
 Found a bug or have a feature request?  

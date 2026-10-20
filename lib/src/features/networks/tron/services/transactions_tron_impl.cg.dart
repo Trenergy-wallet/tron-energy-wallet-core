@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
@@ -52,8 +53,9 @@ class TransactionsServiceTronImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
-  /// HTTP client for the node requests, e.g. `DpopHttpClient`.
-  /// Must return a new instance on every call
+  /// HTTP client for the node requests (backend proxies), e.g. one that adds
+  /// DPoP proofs. Shared by all requests of the service, the service never
+  /// closes it
   final http.Client? _httpClient;
 
   TronProvider get _tronProvider =>
@@ -63,7 +65,7 @@ class TransactionsServiceTronImpl
           url: apiTron!,
           // authToken: _localRepo.getAccount().token,
           authToken: _getAuthToken?.call(),
-          client: _httpClient,
+          client: nodeHttpClient(client: _httpClient, logger: _logger),
         ),
       );
 

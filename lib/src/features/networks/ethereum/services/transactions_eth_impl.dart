@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/abi/abi.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/optimism_getl1fee.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
@@ -71,7 +72,9 @@ class TransactionsServiceEthereumImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
-  /// HTTP client for the node requests
+  /// HTTP client for the node requests (backend proxies), e.g. one that adds
+  /// DPoP proofs. Shared by all requests of the service, the service never
+  /// closes it
   final http.Client? _httpClient;
 
   EthereumProvider get _ethereumProvider =>
@@ -80,7 +83,7 @@ class TransactionsServiceEthereumImpl
         EthereumHTTPProvider(
           apiUri!,
           _getAuthToken?.call(),
-          client: _httpClient,
+          client: nodeHttpClient(client: _httpClient, logger: _logger),
         ),
       );
 

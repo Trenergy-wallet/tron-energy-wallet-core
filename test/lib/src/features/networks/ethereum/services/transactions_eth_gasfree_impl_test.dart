@@ -119,6 +119,24 @@ String _ethCallResult(Map<String, dynamic> body, {BigInt? balance}) {
   return _uint256(BigInt.zero);
 }
 
+/// Behaves like a real client after close: permissionless closes the clients
+/// it is given, a shared injected client must survive that
+class _ClosableClient extends http.BaseClient {
+  _ClosableClient(this._inner);
+
+  final http.Client _inner;
+  bool closed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (closed) throw http.ClientException('Client is already closed');
+    return _inner.send(request);
+  }
+
+  @override
+  void close() => closed = true;
+}
+
 TransactionsServiceEthereumGasFreeImpl _service({
   required http.Client httpClient,
   Future<String> Function(String masterKey)? getSigningKey,
@@ -262,6 +280,20 @@ void main() {
           callData,
           isNot(contains(_collectorAddress.substring(2).toLowerCase())),
         );
+      },
+    );
+
+    test(
+      'injected client survives permissionless closing its sub-clients: '
+      'two operations in a row on one service',
+      () async {
+        final client = _ClosableClient(_mockRpc());
+        final service = _service(httpClient: client);
+
+        await service.createTransaction(params: _params(), masterKey: 'mk');
+        await service.createTransaction(params: _params(), masterKey: 'mk');
+
+        expect(client.closed, isFalse);
       },
     );
 

@@ -11,6 +11,7 @@ class TransactionsServiceBaseImpl extends TransactionsServiceEthereumImpl {
     super.rpc,
     super.apiUri,
     super.logger,
+    super.httpClient,
   }) : super(appBlockchain: AppBlockchain.base);
 
   @override
