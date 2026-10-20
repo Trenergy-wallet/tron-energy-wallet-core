@@ -30,9 +30,11 @@ class TransactionsServiceEthereumImpl
     this.rpc,
     this.apiUri,
     TRLogger? logger,
+    http.Client? httpClient,
   }) : _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
        _logger = logger,
+       _httpClient = httpClient,
        _onEstimateL1Fee = null,
        assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
@@ -69,15 +71,16 @@ class TransactionsServiceEthereumImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
+  /// HTTP client for the node requests
+  final http.Client? _httpClient;
+
   EthereumProvider get _ethereumProvider =>
       rpc ??
       EthereumProvider(
         EthereumHTTPProvider(
           apiUri!,
           _getAuthToken?.call(),
-          client: _logger == null
-              ? null
-              : LoggingHttpClient(http.Client(), logger: _logger),
+          client: _httpClient,
         ),
       );
 

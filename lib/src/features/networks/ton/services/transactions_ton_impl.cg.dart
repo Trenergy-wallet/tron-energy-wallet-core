@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:http/http.dart' as http;
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
@@ -26,8 +27,10 @@ class TransactionsServiceTonImpl
     this.testApiKey,
     String Function()? getAuthToken,
     TRLogger? logger,
+    http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
        _getAuthToken = getAuthToken,
+       _httpClient = httpClient,
        _currentAccountWallet = currentAccountWallet,
        assert(
          tonProvider != null || (apiTon != null && apiTonJrpc != null),
@@ -47,6 +50,10 @@ class TransactionsServiceTonImpl
 
   /// Auth token for the backend
   final String Function()? _getAuthToken;
+
+  ///  of the HTTP client for the node requests, e.g. `DpopHttpClient`.
+  /// Must return a new instance on every call
+  final http.Client? _httpClient;
 
   /// Get Tron private key as String
   final Future<String> Function(String masterKey) _getSigningKey;
@@ -76,11 +83,16 @@ class TransactionsServiceTonImpl
   TonProvider get _rpc {
     final provider = tonProvider;
     if (provider != null) return provider;
+    final authToken = _getAuthToken?.call();
     final service = TonHTTPProvider(
       tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
       tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
       tonApiKey: testApiKey,
-      authToken: _getAuthToken?.call(),
+      // TonHTTPProvider sends `Bearer ` for an empty token, the other
+      // providers skip the header
+      authToken: authToken == null || authToken.isEmpty ? null : authToken,
+      // TonHTTPProvider logs requests itself, no LoggingHttpClient here
+      client: _httpClient,
     );
     // TonHTTPProvider(
     //     tonApiUrl: 'https://tonapi.io',

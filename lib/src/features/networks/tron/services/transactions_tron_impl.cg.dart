@@ -21,9 +21,11 @@ class TransactionsServiceTronImpl
     this.apiTron,
     String Function()? getAuthToken,
     TRLogger? logger,
+    http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
        _getAuthToken = getAuthToken,
        _logger = logger,
+       _httpClient = httpClient,
        assert(
          tronProvider != null || apiTron != null,
          'Required rpc params are null',
@@ -50,6 +52,10 @@ class TransactionsServiceTronImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
+  /// HTTP client for the node requests, e.g. `DpopHttpClient`.
+  /// Must return a new instance on every call
+  final http.Client? _httpClient;
+
   TronProvider get _tronProvider =>
       tronProvider ??
       TronProvider(
@@ -57,9 +63,7 @@ class TransactionsServiceTronImpl
           url: apiTron!,
           // authToken: _localRepo.getAccount().token,
           authToken: _getAuthToken?.call(),
-          client: _logger == null
-              ? null
-              : LoggingHttpClient(http.Client(), logger: _logger),
+          client: _httpClient,
         ),
       );
 

@@ -11,6 +11,7 @@ class TransactionsServiceOptimismImpl extends TransactionsServiceEthereumImpl {
     super.rpc,
     super.apiUri,
     super.logger,
+    super.httpClient,
   }) : super(appBlockchain: AppBlockchain.optimism);
 
   @override

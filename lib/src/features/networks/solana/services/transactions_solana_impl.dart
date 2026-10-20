@@ -37,10 +37,12 @@ class TransactionsServiceSolanaImpl
     this.rpc,
     this.apiUri,
     TRLogger? logger,
+    http.Client? httpClient,
   }) : appBlockchain = AppBlockchain.solana,
        _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
        _logger = logger,
+       _httpClient = httpClient,
        assert(
          rpc != null || apiUri != null,
          'Required rpc params are null',
@@ -70,6 +72,10 @@ class TransactionsServiceSolanaImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
+  ///  of the HTTP client for the node requests, e.g. `DpopHttpClient`.
+  /// Must return a new instance on every call
+  final http.Client? _httpClient;
+
   /// Testnet params (impact on address generation)
   final bool isTestnet;
 
@@ -82,9 +88,7 @@ class TransactionsServiceSolanaImpl
         SolanaHTTPProvider(
           url: apiUri!,
           authToken: _getAuthToken?.call(),
-          client: _logger == null
-              ? null
-              : LoggingHttpClient(http.Client(), logger: _logger),
+          client: _httpClient,
         ),
       );
 
