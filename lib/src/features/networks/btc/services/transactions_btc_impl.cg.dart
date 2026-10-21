@@ -12,7 +12,10 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
 ///
-/// Provides services for creating and signing Bitcoin transactions
+/// Provides services for creating and signing transactions of UTXO
+/// blockchains: Bitcoin (Taproot) and Litecoin (native SegWit). The only
+/// difference between them is the key derivation path, the sender address type
+/// and the network passed to the builder
 ///
 /// SigningKeyCreatorBTC contains shared variables for this service and
 /// the transaction length calculation service
@@ -22,7 +25,11 @@ class TransactionsServiceBTCImpl
     implements TransactionsService<TransferParamsBTC> {
   /// Transactions Service
   ///
-  /// Provides services for creating and signing Bitcoin transactions
+  /// Provides services for creating and signing Bitcoin and Litecoin
+  /// transactions
+  ///
+  /// [network] must match [appBlockchain]: [BitcoinNetwork] for
+  /// [AppBlockchain.bitcoin], [LitecoinNetwork] for [AppBlockchain.litecoin]
   TransactionsServiceBTCImpl({
     required this.network,
     required this.btcNodeRepo,
@@ -36,17 +43,18 @@ class TransactionsServiceBTCImpl
     })
     estimateFee,
     TRLogger? logger,
+    this.appBlockchain = AppBlockchain.bitcoin,
   }) : _estimateFee = estimateFee {
     this.logger = logger ?? InAppLogger();
   }
 
   /// Blockchain of the service
   @override
-  final AppBlockchain appBlockchain = AppBlockchain.bitcoin;
+  final AppBlockchain appBlockchain;
 
-  /// Bitcoin network used by the service
+  /// UTXO network used by the service
   @override
-  final BitcoinNetwork network;
+  final BasedUtxoNetwork network;
 
   @override
   final String name = 'TransactionsServiceBTCImpl';
@@ -98,7 +106,7 @@ class TransactionsServiceBTCImpl
       sumOfUtxo: sumOfUtxo,
       sumOfOutputs: sumOfOutputs,
       outPuts: outPuts,
-      spender3Taproot: spender3Taproot,
+      spender: spender,
       accountsUtxos: accountsUtxos,
       senderPrivateKey: senderPrivateKey,
       memo: memo,
@@ -117,7 +125,7 @@ class TransactionsServiceBTCImpl
     )).fold((l) => throw l, (r) => r);
     if (networkEstimate.fees == Fees.invalid) {
       throw AppException(
-        message: 'BTC fees are invalid: ${networkEstimate.fees}',
+        message: '$appBlockchain fees are invalid: ${networkEstimate.fees}',
         code: ExceptionCode.amountIsNotPositive,
       );
     }
@@ -219,7 +227,7 @@ class TransactionsServiceBTCImpl
     // placeholder
     if (changeValue > BigInt.zero) {
       outPuts.add(
-        BitcoinOutput(address: spender3Taproot, value: changeValue),
+        BitcoinOutput(address: spender, value: changeValue),
       );
     }
     // 6 Assemble the transaction
@@ -267,9 +275,8 @@ class TransactionsServiceBTCImpl
       );
     }
     final pk = await createSigningKey(masterKey: masterKey);
-    final publicKey = pk.getPublic();
     return (
-      address: publicKey.toTaprootAddress().toAddress(network),
+      address: spenderAddress(pk.getPublic()).toAddress(network),
       pkAsBytes: pk.toBytes(),
     );
   }
@@ -281,7 +288,7 @@ class TransactionsServiceBTCImpl
   }) async => false;
 }
 
-/// Class for storing the method of creating a Bitcoin signing key
+/// Class for storing the method of creating a Bitcoin / Litecoin signing key
 mixin SingingKeyCreatorBTC {
   /// Blockchain
   AppBlockchain get appBlockchain;
@@ -303,17 +310,57 @@ mixin SingingKeyCreatorBTC {
   BTCNodeRepo get btcNodeRepo;
 
   /// Which network we are working on
-  BitcoinNetwork get network;
+  BasedUtxoNetwork get network;
 
-  /// Create a signing key for BTC
+  /// Create a signing key for [appBlockchain]
   ///
   /// THROWS
   Future<ECPrivate> createSigningKey({required String masterKey}) async {
+    _checkNetworkOrThrow();
     final mnemonic = await getSigningKey(masterKey);
     if (mnemonic.isEmpty) {
       throw AppException(code: ExceptionCode.unableToRetrieveMnemonic);
     }
-    return KeyGenerator(mnemonic: mnemonic).generateForBitcoin();
+    final keyGenerator = KeyGenerator(mnemonic: mnemonic);
+    return switch (appBlockchain) {
+      AppBlockchain.bitcoin => keyGenerator.generateForBitcoin(),
+      AppBlockchain.litecoin => keyGenerator.generateForLitecoin(),
+      _ => throw AppBlockchainIsNotSupportedException(appBlockchain.toString()),
+    };
+  }
+
+  /// Wallet address of the account: Taproot for Bitcoin, native SegWit for
+  /// Litecoin (bitcoin_base does not support Taproot for Litecoin)
+  ///
+  /// THROWS
+  BitcoinBaseAddress spenderAddress(ECPublic publicKey) =>
+      switch (appBlockchain) {
+        AppBlockchain.bitcoin => publicKey.toTaprootAddress(),
+        AppBlockchain.litecoin => publicKey.toSegwitAddress(),
+        _ => throw AppBlockchainIsNotSupportedException(
+          appBlockchain.toString(),
+        ),
+      };
+
+  /// A wrong network would derive the address and sign for another chain
+  ///
+  /// THROWS
+  void _checkNetworkOrThrow() {
+    if (!appBlockchain.isUtxo) {
+      throw AppBlockchainIsNotSupportedException(appBlockchain.toString());
+    }
+    final isValid = switch (appBlockchain) {
+      AppBlockchain.bitcoin => network is BitcoinNetwork,
+      AppBlockchain.litecoin => network is LitecoinNetwork,
+      // A UTXO chain without a network check yet
+      _ => false,
+    };
+    if (!isValid) {
+      throw AppIncorrectBlockchainException(
+        appBlockchain.toString(),
+        network.identifier,
+      );
+    }
   }
 
   /// All calculations we are forced to perform to determine
@@ -327,7 +374,7 @@ mixin SingingKeyCreatorBTC {
       BigInt sumOfUtxo,
       BigInt sumOfOutputs,
       List<BitcoinOutput> outPuts,
-      P2trAddress spender3Taproot,
+      BitcoinBaseAddress spender,
       List<UtxoWithAddress> accountsUtxos,
       ECPrivate senderPrivateKey,
       int maxRbfTransactionFeeRatePer1B,
@@ -362,7 +409,7 @@ mixin SingingKeyCreatorBTC {
       masterKey: masterKey,
     );
     switch (params.tokenWalletType) {
-      // No wallet types other than master (btc) are supported
+      // No wallet types other than master (btc / ltc) are supported
       case TokenWalletType.child:
       case TokenWalletType.stable:
       case TokenWalletType.unknown:
@@ -370,13 +417,10 @@ mixin SingingKeyCreatorBTC {
           message: '${params.tokenWalletType} is not supported',
           code: ExceptionCode.tokenIsNotSupported,
         );
-      // Bitcoin:
+      // Bitcoin / Litecoin:
       case TokenWalletType.master:
-        logger.logInfoMessage(name, 'Creating btc transaction');
-        final addressToSend = BitcoinAddress(
-          params.to,
-          network: network,
-        ).baseAddress;
+        logger.logInfoMessage(name, 'Creating $appBlockchain transaction');
+        final addressToSend = _parseRecipientOrThrow(params.to);
         // Message that will be recorded in the transaction
         // for txIdToPumpFeeBTC we get it from the node
         var messageToInclude = params.txIdToPumpFeeBTC == null
@@ -385,23 +429,23 @@ mixin SingingKeyCreatorBTC {
 
         final publicKey = senderPrivateKey.getPublic();
         // 1. Selecting the spender
-        // Take ONLY the Taproot spender
-        final spender3Taproot = publicKey.toTaprootAddress();
-        final spender3TaprootAddres = spender3Taproot.toAddress(network);
+        // Take ONLY the single wallet address (see [spenderAddress])
+        final spender = spenderAddress(publicKey);
+        final spenderAddressStr = spender.toAddress(network);
         // Check that we are working with the correct wallet
-        if (params.from != spender3TaprootAddres) {
+        if (params.from != spenderAddressStr) {
           throw AppException(
             message:
                 'Address from asset: ${params.from}, address from '
-                'account: ${spender3Taproot.toAddress(network)}',
+                'account: $spenderAddressStr',
             code: ExceptionCode.unableToDecodeWallet,
           );
         }
         // We can take the balance from any of them or from multiple
-        final spenders = <BitcoinBaseAddress>[spender3Taproot];
+        final spenders = <BitcoinBaseAddress>[spender];
         logger.logInfoMessage(
           name,
-          'Send from address: $spender3TaprootAddres',
+          'Send from address: $spenderAddressStr',
         );
         // 2. Getting unspent outputs (UTXO)
         // Inputs that will be spent (Unspent Transaction Outputs)
@@ -469,7 +513,7 @@ mixin SingingKeyCreatorBTC {
 
         logger.logInfoMessage(
           name,
-          'will send to $spender3TaprootAddres on ${network.identifier}',
+          'will send from $spenderAddressStr on ${network.identifier}',
         );
 
         // 3. Assembling outputs (BitcoinOutput)
@@ -545,14 +589,14 @@ mixin SingingKeyCreatorBTC {
               .onlyTransfersToOutputsOrThrow(
                 network: network,
                 includeMessage: params.txIdToPumpFeeBTC != null,
-                senderAddress: spender3TaprootAddres,
+                senderAddress: spenderAddressStr,
                 logger: logger,
               );
           // Here we need to calculate the fee rate with which the previous
           // transaction was sent
           // Outputs may be empty even for our own transaction (a self-send:
           // every vout goes back to us), but we still replace it
-          if (pendingTransaction.isSentFrom(spender3TaprootAddres) &&
+          if (pendingTransaction.isSentFrom(spenderAddressStr) &&
               pendingTransaction.fees != null) {
             replacedRbfTransactions.add(pendingTransaction);
             // For all comparisons, use vSize
@@ -615,7 +659,7 @@ mixin SingingKeyCreatorBTC {
               outputs: [
                 ...outPuts,
                 // Output for crediting change - currently a placeholder
-                BitcoinOutput(address: spender3Taproot, value: BigInt.zero),
+                BitcoinOutput(address: spender, value: BigInt.zero),
               ],
               network: network,
               // OP_RETURN
@@ -629,12 +673,33 @@ mixin SingingKeyCreatorBTC {
           sumOfUtxo: sumOfUtxo,
           sumOfOutputs: sumOfOutputs,
           outPuts: outPuts,
-          spender3Taproot: spender3Taproot,
+          spender: spender,
           accountsUtxos: accountsUtxos,
           senderPrivateKey: senderPrivateKey,
           memo: memo,
           maxRbfTransactionFeeRatePer1B: maxRbfTransactionFeeRate,
         );
+    }
+  }
+
+  /// Recipient address of [network]
+  ///
+  /// bitcoin_base throws its own exception for an address of another network
+  /// or of an unsupported type (e.g. Litecoin Taproot ltc1p...), so we convert
+  /// it to an exception with a code
+  ///
+  /// THROWS
+  BitcoinBaseAddress _parseRecipientOrThrow(String address) {
+    try {
+      return BitcoinNetworkAddress.parse(
+        address: address,
+        network: network,
+      ).baseAddress;
+    } on Exception catch (e) {
+      throw AppException(
+        message: 'Invalid $appBlockchain recipient address $address: $e',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
     }
   }
 }

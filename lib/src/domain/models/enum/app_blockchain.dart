@@ -108,6 +108,16 @@ enum AppBlockchain {
     mainTokenName: 'SOL',
     supportsMemoMessage: true,
     isEvm: false,
+  ),
+
+  /// LTC
+  litecoin(
+    slug: 'litecoin',
+    isSupported: true,
+    allCoinsSupported: false,
+    mainTokenName: 'LTC',
+    supportsMemoMessage: true,
+    isEvm: false,
   )
   ;
 
@@ -158,6 +168,9 @@ enum AppBlockchain {
 
   /// Solana
   bool get isSolana => this == solana;
+
+  /// UTXO blockchain served by `TransactionsServiceBTCImpl`
+  bool get isUtxo => this == bitcoin || this == litecoin;
 
   /// EVM compatible
   final bool isEvm;

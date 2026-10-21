@@ -4,8 +4,8 @@
 
 ## Features
 
-- create and send transactions on TRON, TON, BITCOIN blockchains
-- BITCOIN RBF transactions
+- create and send transactions on TRON, TON, BITCOIN, LITECOIN, EVM, SOLANA blockchains
+- BITCOIN / LITECOIN RBF transactions
 - limited TON Jetton support
 
 ## Getting started
@@ -83,6 +83,7 @@ Future<void> main() async {
   await tronExample(address);
   await tonExample();
   await btcExample();
+  await ltcExample();
 }
 
 Future<void> tronExample(String tronAddress) async {
@@ -138,33 +139,69 @@ Future<void> tonExample() async {
 }
 
 Future<void> btcExample() async {
-  final localRepo = LocalRepoImpl();
-  final btcNodeRepo = BTCNodeRepoImpl();
+  final btcNodeRepo = BTCNodeRepoImpl(); // your BTCNodeRepo (Blockbook)
   final logger = InAppLogger();
 
   final btcService = TransactionsServiceBTCImpl(
-    localRepo: localRepo,
-    postTransaction: btcNodeRepo.postTransaction,
     btcNodeRepo: btcNodeRepo,
     estimateFee: btcNodeRepo.getEstimateFee,
     network: BitcoinNetwork.signet,
+    logger: logger,
+    getSigningKey: (masterKey) async => 'mnemonic words',
   );
 
-  final walletInfo = await btcService.tryInitializeWalletAndGetInfoOrThrow(
+  final walletInfo = await btcService.initializeWalletAndGetInfo(
     masterKey: '',
   );
   logger.logInfoMessage('btcExample', 'Address: ${walletInfo.address}');
-  final btcAsset = btcAssetExample(walletInfo.address);
-  final tx = await btcService.createTransactionOrThrow(
-    toAddress: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
-    amount: 0.0001,
-    asset: btcAsset,
+  final tx = await btcService.createTransaction(
+    params: TransferParamsBTC(
+      to: 'tb1p8kxn49u3saux772xy33f8295ma30zrzp8egywvxlxu6860u9ekaqx39n2y',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.0001'),
+      tokenWalletType: TokenWalletType.master,
+      feeType: FeeType.optimal,
+    ),
     masterKey: '',
-    feeTypeBTC: FeeTypeBTC.optimal,
   );
   logger.logInfoMessage('btcExample', 'TX: $tx');
-  final sentTx = await btcService.postTransactionOrThrow(tx: tx);
-  logger.logInfoMessage('btcExample', 'SENT: $sentTx');
+}
+
+/// Litecoin uses the same service: only the blockchain and the network differ.
+/// The wallet address is native SegWit (ltc1q...), not Taproot
+Future<void> ltcExample() async {
+  // your BTCNodeRepo, e.g. a Blockbook node
+  final ltcNodeRepo = LTCBlockbookRepoImpl.nowNodes(
+    apiKey: 'api-key',
+    isTestnet: true,
+  );
+  final logger = InAppLogger();
+
+  final ltcService = TransactionsServiceBTCImpl(
+    appBlockchain: AppBlockchain.litecoin,
+    btcNodeRepo: ltcNodeRepo,
+    estimateFee: ltcNodeRepo.getEstimateFee,
+    network: LitecoinNetwork.testnet,
+    logger: logger,
+    getSigningKey: (masterKey) async => 'mnemonic words',
+  );
+
+  final walletInfo = await ltcService.initializeWalletAndGetInfo(
+    masterKey: '',
+  );
+  logger.logInfoMessage('ltcExample', 'Address: ${walletInfo.address}');
+  final tx = await ltcService.createTransaction(
+    params: TransferParamsBTC(
+      appBlockchain: AppBlockchain.litecoin,
+      to: walletInfo.address,
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.0001'),
+      tokenWalletType: TokenWalletType.master,
+      feeType: FeeType.optimal,
+    ),
+    masterKey: '',
+  );
+  logger.logInfoMessage('ltcExample', 'TX: $tx');
 }
 ```
 
