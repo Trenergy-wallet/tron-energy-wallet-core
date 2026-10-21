@@ -1,6 +1,7 @@
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:tr_logger/tr_logger.dart';
+import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 part 'gen/transaction.cg.f.dart';
 
@@ -44,7 +45,7 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
   /// (OP Return) as a message field
   ({List<BitcoinOutput> outputs, String? message})
   onlyTransfersToOutputsOrThrow({
-    required BitcoinNetwork network,
+    required BasedUtxoNetwork network,
     required bool includeMessage,
     required String senderAddress,
     TRLogger? logger,
@@ -84,16 +85,36 @@ sealed class TransactionBtcNode with _$TransactionBtcNode {
     final outputs = vouts
         .map(
           (e) => BitcoinOutput(
-            address: BitcoinAddress(
-              e.addresses.first,
-              network: network,
-            ).baseAddress,
+            address: _parseOutputAddressOrThrow(e.addresses.first, network),
             value: BigInt.from(e.valueInSatoshi),
           ),
         )
         .toList();
 
     return (outputs: outputs, message: message);
+  }
+
+  /// An output that bitcoin_base can't build for [network] (e.g. Taproot on
+  /// Litecoin, sent by another wallet with the same seed) blocks the RBF
+  ///
+  /// THROWS
+  BitcoinBaseAddress _parseOutputAddressOrThrow(
+    String address,
+    BasedUtxoNetwork network,
+  ) {
+    try {
+      return BitcoinNetworkAddress.parse(
+        address: address,
+        network: network,
+      ).baseAddress;
+    } on Exception catch (e) {
+      throw AppException(
+        message:
+            'Unsupported output address $address of pending tx $txId '
+            'on ${network.identifier}: $e',
+        code: ExceptionCode.unableToCreateTransaction,
+      );
+    }
   }
 }
 

@@ -1,3 +1,49 @@
+## 4.0.0
+
+### Added
+
+- Litecoin: `AppBlockchain.litecoin` (backend slug `litecoin`), served by `TransactionsServiceBTCImpl`
+  with `appBlockchain: AppBlockchain.litecoin` and a `LitecoinNetwork`. Transactions are built,
+  signed and RBF-handled the same way as Bitcoin ones, the node repository (`BTCNodeRepo`,
+  Blockbook) is shared
+- Litecoin wallet address is native SegWit P2WPKH (`ltc1q...`, BIP-84 `m/84'/2'/0'/0/0`):
+  bitcoin_base does not support Taproot for Litecoin, so `ltc1p...` recipients are rejected
+- `KeyGenerator.generateForLitecoin()`
+- `AppBlockchain.isUtxo` — Bitcoin or Litecoin
+- `SingingKeyCreatorBTC.spenderAddress()` — wallet address of the blockchain (Taproot / SegWit)
+- Unit tests of `TransactionsServiceBTCImpl` for both blockchains, `KeyGenerator`,
+  `AppBlockchain`, `TransferParamsBTC`, `TransactionBtcNode.onlyTransfersToOutputsOrThrow`
+- Litecoin example `example/src/features/ltc`: `BTCNodeRepo` over a Blockbook node (NOWNodes
+  mainnet and testnet, GetBlock mainnet) and over the mempool compatible API of litecoinspace.org
+  (no API key).
+  README BTC example updated to the current API
+
+### Changed
+
+- An invalid recipient address (another network, unsupported type) is an `AppException` with
+  `unableToCreateTransaction` instead of a bare bitcoin_base `DartBitcoinPluginException`
+- `TransactionsServiceBTCImpl` / `SingingKeyCreatorBTC` check that `network` matches
+  `appBlockchain` (`AppIncorrectBlockchainException`) before deriving a key
+- `SingingKeyCreatorBTC.createSigningKey` / `spenderAddress` throw
+  `AppBlockchainIsNotSupportedException` for a non UTXO blockchain instead of falling back to Bitcoin
+- An output of a pending RBF transaction that can't be built for the network (e.g. `ltc1p...`) is
+  an `AppException` with `unableToCreateTransaction` instead of a bare bitcoin_base exception
+
+### Breaking changes
+
+- `AppBlockchain.litecoin` added — exhaustive switches over `AppBlockchain` have to be updated
+- `SingingKeyCreatorBTC.network` and `TransactionsServiceBTCImpl.network` are `BasedUtxoNetwork`
+  (was `BitcoinNetwork`); overriding with `BitcoinNetwork` is still valid
+- `prepareTransactionAndCalculateSize` record field `spender3Taproot: P2trAddress` renamed to
+  `spender: BitcoinBaseAddress`
+- `TransactionBtcNode.onlyTransfersToOutputsOrThrow` takes a `BasedUtxoNetwork`
+
+### Migration
+
+- Bitcoin callers need no changes: `appBlockchain` defaults to `AppBlockchain.bitcoin` both in
+  `TransactionsServiceBTCImpl` and `TransferParamsBTC`
+- Destructuring of `prepareTransactionAndCalculateSize`: `spender3Taproot: _` -> `spender: _`
+
 ## 3.2.1
 
 ### Fixed
