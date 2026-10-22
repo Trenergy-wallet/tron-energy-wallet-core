@@ -6,7 +6,6 @@ import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart' show ETHPrivateKey;
 import 'package:permissionless/permissionless.dart' as pl;
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service (gasFree)
@@ -30,13 +29,12 @@ class TransactionsServiceEthereumGasFreeImpl
     required this.nodeApiUri,
     required this.pimlicoApiUri,
     required Future<String> Function(String masterKey) getSigningKey,
+    required http.Client httpClient,
     this.getHeaders,
     TRLogger? logger,
-    // Custom http client - for tests and diagnostics (call counting)
-    http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
        _logger = logger,
-       _injectedHttpClient = httpClient,
+       _httpClient = httpClient,
        assert(
          appBlockchain.isEvm,
          '$appBlockchain is not supported',
@@ -62,25 +60,12 @@ class TransactionsServiceEthereumGasFreeImpl
   final Map<String, String>? Function()? getHeaders;
 
   /// HTTP client for the backend proxies, e.g. one that adds DPoP proofs
-  /// (tests use it to count calls). Shared by all sub-clients and never closed
-  /// by them, see [_newHttpClient]
-  final http.Client? _injectedHttpClient;
-
-  /// A fresh http client for every permissionless sub-client.
   ///
-  /// permissionless closes the client it is given once an operation completes,
-  /// so a single long-lived shared instance breaks on the next round with
-  /// "Client is already closed". The injected client is wrapped so that
-  /// permissionless can not close it (its owner does). Plus a logging wrapper
-  /// when a logger is set; null - nothing to add, permissionless creates its
-  /// own plain client
-  http.Client? get _newHttpClient {
-    final injected = _injectedHttpClient;
-    return nodeHttpClient(
-      client: injected == null ? null : UnclosableHttpClient(injected),
-      logger: _logger,
-    );
-  }
+  /// Long-lived, owned by the caller: shared by all permissionless sub-clients
+  /// of all operations, so connections are reused. The sub-clients are
+  /// created per operation (cheap objects, headers are fresh) and never
+  /// closed - closing them would close this client
+  final http.Client _httpClient;
 
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
@@ -129,14 +114,14 @@ class TransactionsServiceEthereumGasFreeImpl
     final pimlicoUrl = pimlicoUrlForChain(params.chainId);
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
@@ -150,7 +135,7 @@ class TransactionsServiceEthereumGasFreeImpl
       publicClient: publicClient,
       paymaster: pl.createPaymasterClient(
         url: pimlicoUrl,
-        httpClient: _newHttpClient,
+        httpClient: _httpClient,
         headers: _requestHeaders,
         timeout: CoreConsts.defaultRequestTimeout,
       ),
@@ -251,10 +236,6 @@ class TransactionsServiceEthereumGasFreeImpl
       return _sendUserOperationPayload(signedOp, result.authorization);
     } on pl.BundlerRpcError catch (e) {
       throw AppBundlerRpcException(e);
-    } finally {
-      // client.close() closes both the bundler (pimlico) and the paymaster
-      client.close();
-      publicClient.close();
     }
   }
 
@@ -304,20 +285,20 @@ class TransactionsServiceEthereumGasFreeImpl
     final pimlicoUrl = pimlicoUrlForChain(chainId);
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final pimlico = pl.createPimlicoClient(
       url: pimlicoUrl,
       entryPoint: pl.EntryPointAddresses.v08,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrl,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
@@ -493,10 +474,6 @@ class TransactionsServiceEthereumGasFreeImpl
       );
     } on pl.BundlerRpcError catch (e) {
       throw AppBundlerRpcException(e);
-    } finally {
-      pimlico.close();
-      paymaster.close();
-      publicClient.close();
     }
   }
 
@@ -540,13 +517,13 @@ class TransactionsServiceEthereumGasFreeImpl
 
     final publicClient = pl.createPublicClient(
       url: nodeApiUri,
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrlForChain(params.chainId),
-      httpClient: _newHttpClient,
+      httpClient: _httpClient,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final account = pl.createEip7702SimpleSmartAccount(
@@ -633,9 +610,6 @@ class TransactionsServiceEthereumGasFreeImpl
       return _sendUserOperationPayload(signedOp, result.authorization);
     } on pl.BundlerRpcError catch (e) {
       throw AppBundlerRpcException(e);
-    } finally {
-      paymaster.close();
-      publicClient.close();
     }
   }
 

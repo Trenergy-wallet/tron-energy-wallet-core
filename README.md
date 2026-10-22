@@ -195,7 +195,9 @@ final tron = TransactionsServiceTronImpl(
 Ethereum-compatible and Solana services take `EthereumProvider(EthereumHTTPProvider(...))` and
 `SolanaProvider(SolanaHTTPProvider(...))` as `rpc`. TON takes
 `TonProvider(provider, provider.api)` of a `TonHTTPProvider` as `rpc`; it logs the
-requests itself, no `LoggingHttpClient` needed.
+requests itself, no `LoggingHttpClient` needed. Gasfree
+(`TransactionsServiceEthereumGasFreeImpl`) takes the client itself as `httpClient`: it never closes
+it.
 
 ## Issues & Feedback
 

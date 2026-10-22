@@ -21,6 +21,10 @@
   empty token - no `Authorization` header. Migration: `authToken: token` →
   `getAuthToken: () => token`, `EthereumHTTPProvider(url, token)` →
   `EthereumHTTPProvider(url, getAuthToken: () => token)`
+- **Breaking:** `TransactionsServiceEthereumGasFreeImpl.httpClient` is required. It is shared by
+  all permissionless sub-clients of all operations and never closed by the service - the owner
+  closes it. Node / Pimlico traffic is no longer logged by the service: wrap the client into
+  `LoggingHttpClient`
 - `tr_ton_wallet_service` `^2.0.0`: `TonHTTPProvider` reads the auth token via `getAuthToken` on every
   request instead of keeping it in the instance
 

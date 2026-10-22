@@ -119,8 +119,8 @@ String _ethCallResult(Map<String, dynamic> body, {BigInt? balance}) {
   return _uint256(BigInt.zero);
 }
 
-/// Behaves like a real client after close: permissionless closes the clients
-/// it is given, a shared injected client must survive that
+/// Behaves like a real client after close: the injected client is shared and
+/// long-lived, nothing in the service may close it
 class _ClosableClient extends http.BaseClient {
   _ClosableClient(this._inner);
 
@@ -284,8 +284,8 @@ void main() {
     );
 
     test(
-      'injected client survives permissionless closing its sub-clients: '
-      'two operations in a row on one service',
+      'the injected client is never closed: two operations in a row on one '
+      'service',
       () async {
         final client = _ClosableClient(_mockRpc());
         final service = _service(httpClient: client);
@@ -597,6 +597,31 @@ void main() {
           callData,
           contains(_paymasterAddress.substring(2).toLowerCase()),
         );
+      },
+    );
+
+    test(
+      'estimate and send on one service: the injected client is never '
+      'closed',
+      () async {
+        final client = _ClosableClient(_mockRpc());
+        final service = _service(httpClient: client);
+
+        final cached = await service.estimateGasFree(
+          chainId: 11155111,
+          senderAddress: _senderAddress,
+          recipientAddress: _recipientAddress,
+          tokenContractAddress: _tokenAddress,
+          tokenDecimal: 6,
+          serviceFeeCollector: _collectorAddress,
+        );
+        await service.createTransactionFromEstimate(
+          params: _params(),
+          estimate: cached,
+          masterKey: 'mk',
+        );
+
+        expect(client.closed, isFalse);
       },
     );
 
