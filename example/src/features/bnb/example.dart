@@ -8,7 +8,6 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     'https://data-seed-prebsc-1-s1.binance.org:8545/',
-    '',
   ),
 );
 

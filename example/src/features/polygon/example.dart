@@ -18,7 +18,6 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://polygon-rpc.com/',
     'https://rpc-amoy.polygon.technology/',
-    '',
   ),
 );
 

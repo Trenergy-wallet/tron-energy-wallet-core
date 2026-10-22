@@ -1,7 +1,6 @@
 import 'package:blockchain_utils/utils/numbers/rational/big_rational.dart';
 import 'package:on_chain/ethereum/src/rpc/methds/ethereum/get_balance.dart';
 import 'package:on_chain/ethereum/src/rpc/methds/ethereum/send_raw_transaction.dart';
-import 'package:on_chain/ethereum/src/rpc/provider/provider.dart';
 import 'package:on_chain/solidity/address/core.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/erc_20_balance.dart';
@@ -11,7 +10,7 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://rpc.ankr.com/eth_sepolia/',
     'https://ethereum-sepolia-rpc.publicnode.com',
-    'your-api-token',
+    getAuthToken: () => 'your-api-token',
   ),
 );
 

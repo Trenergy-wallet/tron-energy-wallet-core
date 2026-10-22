@@ -4,11 +4,9 @@
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/solana/domain/token_type.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -32,22 +30,13 @@ class TransactionsServiceSolanaImpl
   TransactionsServiceSolanaImpl({
     required Future<String> Function(String masterKey) getSigningKey,
     required this.isTestnet,
-    String Function()? getAuthToken,
+    required this.rpc,
     Future<int> Function(List<SolAddress> addresses)?
     getPriorityFeePricePerUnit,
-    this.rpc,
-    this.apiUri,
     TRLogger? logger,
-    http.Client? httpClient,
   }) : appBlockchain = AppBlockchain.solana,
-       _getAuthToken = getAuthToken,
        _getSigningKey = getSigningKey,
-       _logger = logger,
-       _httpClient = httpClient,
-       assert(
-         rpc != null || apiUri != null,
-         'Required rpc params are null',
-       ) {
+       _logger = logger {
     _getPriorityFeePricePerUnit =
         getPriorityFeePricePerUnit ?? _getPriorityFeePricePerUnitDefault;
   }
@@ -57,13 +46,11 @@ class TransactionsServiceSolanaImpl
   final AppBlockchain appBlockchain;
 
   /// Node provider
-  final SolanaProvider? rpc;
-
-  /// Solana API address
-  final String? apiUri;
-
-  /// Auth token for the backend
-  final String Function()? _getAuthToken;
+  ///
+  /// Long-lived, owned by the caller: the service never closes it. The auth
+  /// token is not baked into it - [SolanaHTTPProvider] reads it via
+  /// `getAuthToken` on every request
+  final SolanaProvider rpc;
 
   /// Get Tron private key as String
   final Future<String> Function(String masterKey) _getSigningKey;
@@ -73,26 +60,11 @@ class TransactionsServiceSolanaImpl
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
 
-  /// HTTP client for the node requests (backend proxies), e.g. one that adds
-  /// DPoP proofs. Shared by all requests of the service, the service never
-  /// closes it
-  final http.Client? _httpClient;
-
   /// Testnet params (impact on address generation)
   final bool isTestnet;
 
   late final Future<int> Function(List<SolAddress> addresses)
   _getPriorityFeePricePerUnit;
-
-  SolanaProvider get _nodeProvider =>
-      rpc ??
-      SolanaProvider(
-        SolanaHTTPProvider(
-          url: apiUri!,
-          authToken: _getAuthToken?.call(),
-          client: nodeHttpClient(client: _httpClient, logger: _logger),
-        ),
-      );
 
   /// Create signed transaction for Solana
   @override
@@ -144,7 +116,6 @@ class TransactionsServiceSolanaImpl
   /// Create the transaction for the main coin of the blockchain
   @visibleForTesting
   Future<SolanaTransaction> buildTransaction({
-    required SolanaProvider rpc,
     required TransferParamsSOL params,
     required bool simulatePriorityFee,
   }) async {
@@ -198,7 +169,6 @@ class TransactionsServiceSolanaImpl
   /// Create the transaction for SPL token
   @visibleForTesting
   Future<SolanaTransaction> buildSplTokenTransaction({
-    required SolanaProvider rpc,
     required TransferParamsSOL params,
     required bool simulatePriorityFee,
   }) async {
@@ -210,7 +180,7 @@ class TransactionsServiceSolanaImpl
       );
     }
     if (params.tokenType.isUnknown) {
-      final mintInfo = await _nodeProvider.request(
+      final mintInfo = await rpc.request(
         SolanaRequestGetAccountInfo(
           account: mintAddress,
           dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
@@ -260,7 +230,7 @@ class TransactionsServiceSolanaImpl
         );
 
     // 3. Destination ATA account exists?
-    final destinationInfo = await _nodeProvider.request(
+    final destinationInfo = await rpc.request(
       SolanaRequestGetAccountInfo(
         account: destinationATA.address,
         // Lightweight account existence check
@@ -377,7 +347,7 @@ class TransactionsServiceSolanaImpl
           );
         }
         if (params.tokenType.isUnknown) {
-          final mintInfo = await _nodeProvider.request(
+          final mintInfo = await rpc.request(
             SolanaRequestGetAccountInfo(
               account: mintAddress,
               dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
@@ -446,7 +416,7 @@ class TransactionsServiceSolanaImpl
     List<SolAddress> addresses,
   ) async {
     try {
-      final feePrices = await _nodeProvider.request(
+      final feePrices = await rpc.request(
         SolanaRequestGetRecentPrioritizationFees(addresses: addresses),
       );
       final nonZeroFees = feePrices
@@ -478,7 +448,7 @@ class TransactionsServiceSolanaImpl
   /// MinimumBalance for the account
   Future<BigInt> getMinimumBalanceForRentExemption(
     TokenWalletType type,
-  ) async => _nodeProvider.request(
+  ) async => rpc.request(
     SolanaRequestGetMinimumBalanceForRentExemption(
       // 165 is the solana blockchain constant size for the ATA SPL-token
       size: type.isMaster ? 0 : 165,
@@ -487,7 +457,7 @@ class TransactionsServiceSolanaImpl
 
   /// Check account for the existence
   Future<bool> accountExists(String address) async {
-    final info = await _nodeProvider.request(
+    final info = await rpc.request(
       SolanaRequestGetAccountInfo(
         account: SolAddress.unchecked(address),
         // Lightweight account existence check
@@ -503,7 +473,7 @@ class TransactionsServiceSolanaImpl
     required String tokenContractAddress,
   }) async {
     final mintAddress = SolAddress(tokenContractAddress);
-    final mintInfo = await _nodeProvider.request(
+    final mintInfo = await rpc.request(
       SolanaRequestGetAccountInfo(
         account: mintAddress,
         dataSlice: const RPCDataSliceConfig(length: 0, offset: 0),
@@ -550,16 +520,14 @@ class TransactionsServiceSolanaImpl
     }
     final tx = params.tokenWalletType.isMaster
         ? await buildTransaction(
-            rpc: _nodeProvider,
             params: params,
             simulatePriorityFee: simulatePriorityFee,
           )
         : await buildSplTokenTransaction(
-            rpc: _nodeProvider,
             params: params,
             simulatePriorityFee: simulatePriorityFee,
           );
-    final simulatedResult = await _nodeProvider.request(
+    final simulatedResult = await rpc.request(
       SolanaRequestSimulateTransaction(
         encodedTransaction: tx.serializeString(),
         replaceRecentBlockhash: simulatePriorityFee,
@@ -599,7 +567,7 @@ class TransactionsServiceSolanaImpl
 
   Future<SolAddress> _getTransactionBlockHash({bool simulate = false}) async {
     if (simulate) return SolAddress.defaultPubKey;
-    final blockHash = await _nodeProvider.request(
+    final blockHash = await rpc.request(
       const SolanaRequestGetLatestBlockhash(),
     );
     return blockHash.blockhash;

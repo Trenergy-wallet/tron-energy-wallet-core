@@ -7,11 +7,8 @@ class TransactionsServiceBaseImpl extends TransactionsServiceEthereumImpl {
   /// Provides services for creating and signing BASE transactions
   TransactionsServiceBaseImpl({
     required super.getSigningKey,
-    super.getAuthToken,
-    super.rpc,
-    super.apiUri,
+    required super.rpc,
     super.logger,
-    super.httpClient,
   }) : super(appBlockchain: AppBlockchain.base);
 
   @override
@@ -24,7 +21,7 @@ class TransactionsServiceBaseImpl extends TransactionsServiceEthereumImpl {
 
   @override
   Future<BigInt> Function(ETHTransaction transaction)? get _onEstimateL1Fee =>
-      (tx) async => _ethereumProvider.request(
+      (tx) async => rpc.request(
         RPCOpGetL1Fee(
           tx.serialized,
           '0x420000000000000000000000000000000000000F',

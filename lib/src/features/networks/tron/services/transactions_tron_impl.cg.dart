@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:on_chain/solidity/contract/contract_abi.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Transactions Service
@@ -18,32 +16,21 @@ class TransactionsServiceTronImpl
   /// Provides services for creating and signing TRON transactions
   TransactionsServiceTronImpl({
     required Future<TronPrivateKey?> Function(String masterKey) getSigningKey,
-    this.tronProvider,
-    this.apiTron,
-    String Function()? getAuthToken,
+    required this.rpc,
     TRLogger? logger,
-    http.Client? httpClient,
   }) : _getSigningKey = getSigningKey,
-       _getAuthToken = getAuthToken,
-       _logger = logger,
-       _httpClient = httpClient,
-       assert(
-         tronProvider != null || apiTron != null,
-         'Required rpc params are null',
-       );
+       _logger = logger;
 
   /// Blockchain of the service
   @override
   final AppBlockchain appBlockchain = AppBlockchain.tron;
 
   /// Node provider
-  final TronProvider? tronProvider;
-
-  /// TRON API address
-  final String? apiTron;
-
-  /// Auth token for the backend
-  final String Function()? _getAuthToken;
+  ///
+  /// Long-lived, owned by the caller: the service never closes it. The auth
+  /// token is not baked into it - [TronHTTPProvider] reads it via
+  /// `getAuthToken` on every request
+  final TronProvider rpc;
 
   /// Get Tron private key as String
   final Future<TronPrivateKey?> Function(String masterKey) _getSigningKey;
@@ -52,22 +39,6 @@ class TransactionsServiceTronImpl
 
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
-
-  /// HTTP client for the node requests (backend proxies), e.g. one that adds
-  /// DPoP proofs. Shared by all requests of the service, the service never
-  /// closes it
-  final http.Client? _httpClient;
-
-  TronProvider get _tronProvider =>
-      tronProvider ??
-      TronProvider(
-        TronHTTPProvider(
-          url: apiTron!,
-          // authToken: _localRepo.getAccount().token,
-          authToken: _getAuthToken?.call(),
-          client: nodeHttpClient(client: _httpClient, logger: _logger),
-        ),
-      );
 
   /// Send TRX
   ///
@@ -100,12 +71,12 @@ class TransactionsServiceTronImpl
       _logger?.logInfoMessage(_name, 'transferContract: $transferContract');
 
       // Validate transacation and got required data like block hash and ....
-      final transaction = await _tronProvider.request(
+      final transaction = await rpc.request(
         TronRequestCreateTransaction.fromContract(transferContract),
       );
 
       // Another way of creating transaction with memo included
-      // final transaction = await _tronProvider.request(
+      // final transaction = await rpc.request(
       //   TronRequestCreateTransaction(
       //     ownerAddress: TronAddress(params.from),
       //     toAddress: TronAddress(params.to),
@@ -153,7 +124,7 @@ class TransactionsServiceTronImpl
 
     final _contractAddress = TronAddress(params.tokenContractAddress!);
 
-    final transaction = await _tronProvider.request(
+    final transaction = await rpc.request(
       TronRequestTriggerConstantContract(
         ownerAddress: TronAddress(params.from),
         contractAddress: _contractAddress,

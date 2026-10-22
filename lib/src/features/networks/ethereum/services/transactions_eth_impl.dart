@@ -4,11 +4,9 @@
 import 'dart:async';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:on_chain/on_chain.dart';
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tron_energy_wallet_core/src/core/utils/node_http_client.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/abi/abi.dart';
 import 'package:tron_energy_wallet_core/src/features/networks/ethereum/api/requests/optimism_getl1fee.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
@@ -27,17 +25,11 @@ class TransactionsServiceEthereumImpl
   TransactionsServiceEthereumImpl({
     required this.appBlockchain,
     required Future<String> Function(String masterKey) getSigningKey,
-    String Function()? getAuthToken,
-    this.rpc,
-    this.apiUri,
+    required this.rpc,
     TRLogger? logger,
-    http.Client? httpClient,
-  }) : _getAuthToken = getAuthToken,
-       _getSigningKey = getSigningKey,
+  }) : _getSigningKey = getSigningKey,
        _logger = logger,
-       _httpClient = httpClient,
        _onEstimateL1Fee = null,
-       assert(rpc != null || apiUri != null, 'Required rpc params are null'),
        assert(
          appBlockchain.isEvm,
          '$appBlockchain is not supported',
@@ -56,13 +48,11 @@ class TransactionsServiceEthereumImpl
   final AppBlockchain appBlockchain;
 
   /// Node provider
-  final EthereumProvider? rpc;
-
-  /// Ethereum API address
-  final String? apiUri;
-
-  /// Auth token for the backend
-  final String Function()? _getAuthToken;
+  ///
+  /// Long-lived, owned by the caller: the service never closes it. The auth
+  /// token is not baked into it - [EthereumHTTPProvider] reads it via
+  /// `getAuthToken` on every request
+  final EthereumProvider rpc;
 
   /// Get Tron private key as String
   final Future<String> Function(String masterKey) _getSigningKey;
@@ -71,21 +61,6 @@ class TransactionsServiceEthereumImpl
 
   /// Logger - null when the caller did not provide one (no logging)
   final TRLogger? _logger;
-
-  /// HTTP client for the node requests (backend proxies), e.g. one that adds
-  /// DPoP proofs. Shared by all requests of the service, the service never
-  /// closes it
-  final http.Client? _httpClient;
-
-  EthereumProvider get _ethereumProvider =>
-      rpc ??
-      EthereumProvider(
-        EthereumHTTPProvider(
-          apiUri!,
-          _getAuthToken?.call(),
-          client: nodeHttpClient(client: _httpClient, logger: _logger),
-        ),
-      );
 
   /// Estimates the L1 fee in wei (if applicable)
   final Future<BigInt> Function(ETHTransaction transaction)? _onEstimateL1Fee;
@@ -184,7 +159,6 @@ class TransactionsServiceEthereumImpl
   /// Create the transaction for the main coin of the blockchain (ex-Ethereum)
   @visibleForTesting
   Future<ETHTransaction> buildTransaction({
-    required EthereumProvider rpc,
     required TransferParamsETH params,
     required int nonce,
     BigInt? gasPrice,
@@ -274,7 +248,6 @@ class TransactionsServiceEthereumImpl
   /// Create the transaction for ERC-20 token
   @visibleForTesting
   Future<ETHTransaction> buildERC20Transaction({
-    required EthereumProvider rpc,
     required TransferParamsETH params,
     required int nonce,
     BigInt? gasPrice,
@@ -412,11 +385,11 @@ class TransactionsServiceEthereumImpl
 
   /// Gas price for legacy transaction
   Future<BigInt> tryGetGasPrice() async =>
-      _ethereumProvider.request(EthereumRequestGetGasPrice());
+      rpc.request(EthereumRequestGetGasPrice());
 
   /// Gas price for Eip1559 transaction
   Future<FeeHistorical> tryGetEip1559Fee() async {
-    final eip1559Historical = await _ethereumProvider.request(
+    final eip1559Historical = await rpc.request(
       EthereumRequestGetFeeHistory(
         blockCount: CoreConsts.ethBlockCountForFee,
         newestBlock: BlockTagOrNumber.pending,
@@ -462,7 +435,7 @@ class TransactionsServiceEthereumImpl
         code: ExceptionCode.amountIsNotPositive,
       );
     }
-    final nonce = await _ethereumProvider.request(
+    final nonce = await rpc.request(
       EthereumRequestGetTransactionCount(address: params.from),
     );
 
@@ -474,7 +447,6 @@ class TransactionsServiceEthereumImpl
 
     return params.tokenWalletType.isMaster
         ? await buildTransaction(
-            rpc: _ethereumProvider,
             params: params,
             nonce: nonce,
             gasPrice: gasPrice,
@@ -482,7 +454,6 @@ class TransactionsServiceEthereumImpl
           )
         // Memo is not supported for standard ERC20 contracts
         : await buildERC20Transaction(
-            rpc: _ethereumProvider,
             params: params,
             nonce: nonce,
             gasPrice: gasPrice,

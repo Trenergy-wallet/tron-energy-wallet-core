@@ -5,7 +5,6 @@ import 'package:on_chain/tron/src/models/contract/transaction/transaction.dart'
     show Transaction;
 import 'package:on_chain/tron/src/provider/methods/broadcast_hex.dart'
     show TronRequestBroadcastHex;
-import 'package:on_chain/tron/src/provider/provider/provider.dart';
 import 'package:tr_logger/tr_logger.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
@@ -14,7 +13,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 final TronProvider<TronHTTPProvider> tronRpc = TronProvider(
   TronHTTPProvider(
     url: 'https://nile.trongrid.io',
-    authToken: 'your-api-key',
+    getAuthToken: () => 'your-api-key',
   ),
 );
 
@@ -27,7 +26,7 @@ Future<void> main() async {
   final logger = InAppLogger()..usePrint = true;
   // Lots of TRON examples can be found here: https://github.com/mrtnetwork/On_chain/blob/main/example/lib/example
   final service = TransactionsServiceTronImpl(
-    tronProvider: tronRpc,
+    rpc: tronRpc,
     logger: logger,
     getSigningKey: (_) async => privateKey,
   );

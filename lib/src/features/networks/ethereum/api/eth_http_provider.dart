@@ -4,14 +4,20 @@ import 'package:on_chain/on_chain.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Http provider for Ethereum
+///
+/// Meant to be long-lived: create it once and share it, so that the http client
+/// keeps its connections alive between requests. The auth token is not
+/// stored in the instance - `getAuthToken` is called on every request.
+/// The provider never closes the http client, that is up to its owner.
 class EthereumHTTPProvider with EthereumServiceProvider {
   /// Http provider for Ethereum
   EthereumHTTPProvider(
-    this.url,
-    this.authToken, {
+    this.url, {
     Client? client,
+    String? Function()? getAuthToken,
     this.requestTimeout = CoreConsts.defaultRequestTimeout,
-  }) : client = client ?? Client();
+  }) : client = client ?? Client(),
+       _getAuthToken = getAuthToken;
 
   /// Api url
   final String url;
@@ -22,20 +28,21 @@ class EthereumHTTPProvider with EthereumServiceProvider {
   /// Timeout for requests
   final Duration requestTimeout;
 
-  /// Auth token
-  final String? authToken;
+  /// Current auth token: null or empty - no Authorization header
+  final String? Function()? _getAuthToken;
 
   @override
   Future<BaseServiceResponse> doRequest(
     EthereumRequestDetails params, {
     Duration? timeout,
   }) async {
+    final authToken = _getAuthToken?.call();
     final response = await client
         .post(
           params.encodeUrl(url),
           headers: {
             ...params.headers,
-            if (authToken != null && authToken!.isNotEmpty)
+            if (authToken != null && authToken.isNotEmpty)
               'Authorization': 'Bearer $authToken',
           },
           body: params.encodeBody(),

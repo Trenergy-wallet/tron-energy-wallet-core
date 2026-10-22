@@ -31,7 +31,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 final tronRpc = TronProvider(
   TronHTTPProvider(
     url: 'https://nile.trongrid.io',
-    authToken: tronApiKey,
+    getAuthToken: () => tronApiKey,
   ),
 );
 final tonRpc = TonProvider(
@@ -92,7 +92,7 @@ Future<void> tronExample(String tronAddress) async {
   final tronService = TransactionsServiceTronImpl(
     localRepo: localRepo,
     postTransaction: postTransactionTron,
-    tronProvider: tronRpc,
+    rpc: tronRpc,
   );
 
   final tronAsset = tronAssetExample(tronAddress);
@@ -117,7 +117,7 @@ Future<void> tonExample() async {
     postTransaction: postTransactionTon,
     currentAccountWallet: () => null,
     isTestnet: true,
-    tonProvider: tonRpc,
+    rpc: tonRpc,
   );
 
   final walletInfo = await tonService.tryInitializeWalletAndGetInfoOrThrow(
@@ -170,22 +170,32 @@ Future<void> btcExample() async {
 
 See the `/example` folder for a detailed example.
 
-## Custom HTTP client (DPoP)
+## Node providers, custom HTTP client (DPoP)
 
-The network services take an optional `httpClient` for the requests. The app passes a
-client that adds DPoP proofs (RFC 9449), the device key stays behind `DpopSigner`:
+The network services take a ready node provider. Build it once and keep it as long as the
+service: one http client, connections are reused. The auth token is not stored in the
+provider - `getAuthToken` is called on every request, so a re-login needs no new provider.
+The app passes a client that adds DPoP proofs (RFC 9449), the device key stays behind
+`DpopSigner`:
 
 ```dart
 final tron = TransactionsServiceTronImpl(
-  apiTron: apiTron,
-  getAuthToken: () => token, // Authorization: Bearer stays as it was
   getSigningKey: getSigningKey,
-  httpClient: dpopClient, // shared by all requests, the service never closes it
+  rpc: TronProvider(
+    TronHTTPProvider(
+      url: apiTron,
+      getAuthToken: () => token, // Authorization: Bearer, read per request
+      // the provider never closes the client, its owner does
+      client: LoggingHttpClient(dpopClient, logger: logger),
+    ),
+  ),
 );
 ```
 
-Without `httpClient` the services work as before. With a logger the client is
-wrapped into `LoggingHttpClient`.
+Ethereum-compatible and Solana services take `EthereumProvider(EthereumHTTPProvider(...))` and
+`SolanaProvider(SolanaHTTPProvider(...))` as `rpc`. TON takes
+`TonProvider(provider, provider.api)` of a `TonHTTPProvider` as `rpc`; it logs the
+requests itself, no `LoggingHttpClient` needed.
 
 ## Issues & Feedback
 

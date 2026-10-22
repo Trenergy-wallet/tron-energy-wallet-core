@@ -1,3 +1,29 @@
+## Unreleased
+
+### Changed
+
+- **Breaking:** `TransactionsServiceTonImpl` takes the node provider from outside only: `rpc`
+  is required. `apiTon`, `apiTonJrpc`, `testApiKey`, `getAuthToken` and `httpClient` are removed —
+  build a `TonHTTPProvider` once with them (`getAuthToken` is a callback there) and pass
+  `TonProvider(provider, provider.api)`. The service no longer creates a provider and an http client
+  on every request, connections are reused
+- **Breaking:** the same for TRON, Ethereum-compatible (incl. Optimism, Base) and Solana: `rpc`
+  is required in `TransactionsServiceTronImpl` (renamed from `tronProvider`),
+  `TransactionsServiceEthereumImpl` (and its Optimism / Base subclasses) and
+  `TransactionsServiceSolanaImpl`. The node provider is named `rpc` in all network services. `apiTron`,
+  `apiUri`, `getAuthToken` and `httpClient` are removed. Node http traffic is no longer logged by
+  the service: wrap the client into `LoggingHttpClient` when building the provider
+- **Breaking:** `buildTransaction` / `buildERC20Transaction` (Ethereum) and `buildTransaction` /
+  `buildSplTokenTransaction` (Solana) no longer take `rpc`: they use the provider of the service
+- **Breaking:** `TronHTTPProvider`, `SolanaHTTPProvider`, `EthereumHTTPProvider` take
+  `getAuthToken` (called on every request) instead of a stored `authToken`; for
+  `EthereumHTTPProvider` it is a named parameter instead of the second positional one. Null or
+  empty token - no `Authorization` header. Migration: `authToken: token` →
+  `getAuthToken: () => token`, `EthereumHTTPProvider(url, token)` →
+  `EthereumHTTPProvider(url, getAuthToken: () => token)`
+- `tr_ton_wallet_service` `^2.0.0`: `TonHTTPProvider` reads the auth token via `getAuthToken` on every
+  request instead of keeping it in the instance
+
 ## 3.2.1
 
 ### Fixed
