@@ -12,7 +12,8 @@
   `TransactionsServiceEthereumImpl` (and its Optimism / Base subclasses) and
   `TransactionsServiceSolanaImpl`. The node provider is named `rpc` in all network services. `apiTron`,
   `apiUri`, `getAuthToken` and `httpClient` are removed. Node http traffic is no longer logged by
-  the service: wrap the client into `LoggingHttpClient` when building the provider
+  the service: `logger` still gets the service messages, but not the requests to the node - wrap
+  the client into `LoggingHttpClient` when building the provider
 - **Breaking:** `buildTransaction` / `buildERC20Transaction` (Ethereum) and `buildTransaction` /
   `buildSplTokenTransaction` (Solana) no longer take `rpc`: they use the provider of the service
 - **Breaking:** `TronHTTPProvider`, `SolanaHTTPProvider`, `EthereumHTTPProvider` take
@@ -23,10 +24,17 @@
   `EthereumHTTPProvider(url, getAuthToken: () => token)`
 - **Breaking:** `TransactionsServiceEthereumGasFreeImpl.httpClient` is required. It is shared by
   all permissionless sub-clients of all operations and never closed by the service - the owner
-  closes it. Node / Pimlico traffic is no longer logged by the service: wrap the client into
-  `LoggingHttpClient`
+  closes it. Node / Pimlico traffic is no longer logged by the service, `logger` included: wrap
+  the client into `LoggingHttpClient`
 - `tr_ton_wallet_service` `^2.0.0`: `TonHTTPProvider` reads the auth token via `getAuthToken` on every
   request instead of keeping it in the instance
+- `EthereumHTTPProvider`: headers of the request override `Authorization` from `getAuthToken`, as
+  in the TRON, Solana and TON providers (it was the other way round)
+
+### Fixed
+
+- Gasfree `createTransactionFromEstimate`: the paymaster call (`pm_getPaymasterData`) went
+  without the `getHeaders` headers (`Authorization`)
 
 ## 3.2.1
 

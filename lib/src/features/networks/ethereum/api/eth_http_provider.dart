@@ -41,9 +41,9 @@ class EthereumHTTPProvider with EthereumServiceProvider {
         .post(
           params.encodeUrl(url),
           headers: {
-            ...params.headers,
             if (authToken != null && authToken.isNotEmpty)
               'Authorization': 'Bearer $authToken',
+            ...params.headers,
           },
           body: params.encodeBody(),
         )

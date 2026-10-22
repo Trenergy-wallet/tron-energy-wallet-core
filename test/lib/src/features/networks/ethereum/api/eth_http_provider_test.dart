@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blockchain_utils/service/models/params.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:on_chain/on_chain.dart';
@@ -50,6 +51,26 @@ void main() {
         expect(requests.single.headers.containsKey('Authorization'), isFalse);
       });
     }
+
+    test('request headers win over the token', () async {
+      final requests = <http.Request>[];
+      final provider = EthereumHTTPProvider(
+        _url,
+        client: _node(requests),
+        getAuthToken: () => 'token',
+      );
+
+      await provider.doRequest(
+        const EthereumRequestDetails(
+          requestID: 1,
+          responseEncoding: ServiceReponseEncoding.json,
+          headers: {'Authorization': 'Bearer own'},
+          method: 'eth_gasPrice',
+        ),
+      );
+
+      expect(requests.single.headers['Authorization'], 'Bearer own');
+    });
   });
 
   test('POST to the url through the one injected client', () async {

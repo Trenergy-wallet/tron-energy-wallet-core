@@ -524,6 +524,7 @@ class TransactionsServiceEthereumGasFreeImpl
     final paymaster = pl.createPaymasterClient(
       url: pimlicoUrlForChain(params.chainId),
       httpClient: _httpClient,
+      headers: _requestHeaders,
       timeout: CoreConsts.defaultRequestTimeout,
     );
     final account = pl.createEip7702SimpleSmartAccount(

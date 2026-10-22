@@ -39,7 +39,11 @@ MockClient _mockRpc({
   List<Map<String, dynamic>>? log,
 }) => MockClient((request) async {
   final body = jsonDecode(request.body) as Map<String, dynamic>;
-  log?.add({'url': request.url.toString(), ...body});
+  log?.add({
+    'url': request.url.toString(),
+    'authorization': request.headers['Authorization'],
+    ...body,
+  });
   final method = body['method'] as String;
 
   if (failEstimate && method == 'eth_estimateUserOperationGas') {
@@ -622,6 +626,32 @@ void main() {
         );
 
         expect(client.closed, isFalse);
+      },
+    );
+
+    test(
+      'createTransactionFromEstimate: every call (node and paymaster) '
+      'carries the auth headers',
+      () async {
+        final cached = await estimate(log: []);
+
+        final sendLog = <Map<String, dynamic>>[];
+        await _service(
+          httpClient: _mockRpc(log: sendLog),
+        ).createTransactionFromEstimate(
+          params: _params(),
+          estimate: cached,
+          masterKey: 'mk',
+        );
+
+        expect(
+          sendLog.map((r) => r['method']),
+          contains('pm_getPaymasterData'),
+        );
+        expect(
+          sendLog.map((r) => r['authorization']),
+          everyElement('test-token'),
+        );
       },
     );
 
