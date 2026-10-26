@@ -13,26 +13,14 @@ class TransactionsServiceTonImpl
   /// Transactions Service
   ///
   /// Provides services for creating and signing transactions
-  ///
-  /// For working on the testnet, you must provide either [tonProvider]
-  /// or [testApiKey]
   TransactionsServiceTonImpl({
     required String? Function() currentAccountWallet,
     required Future<String> Function(String masterKey) getSigningKey,
     required this.isTestnet,
-    this.tonProvider,
-    this.apiTon,
-    this.apiTonJrpc,
-    this.testApiKey,
-    String Function()? getAuthToken,
+    required this.rpc,
     TRLogger? logger,
   }) : _getSigningKey = getSigningKey,
-       _getAuthToken = getAuthToken,
-       _currentAccountWallet = currentAccountWallet,
-       assert(
-         tonProvider != null || (apiTon != null && apiTonJrpc != null),
-         'Required rpc params are null',
-       ) {
+       _currentAccountWallet = currentAccountWallet {
     _logger = logger ?? InAppLogger();
   }
 
@@ -45,9 +33,6 @@ class TransactionsServiceTonImpl
 
   final String? Function() _currentAccountWallet;
 
-  /// Auth token for the backend
-  final String Function()? _getAuthToken;
-
   /// Get Tron private key as String
   final Future<String> Function(String masterKey) _getSigningKey;
 
@@ -55,16 +40,11 @@ class TransactionsServiceTonImpl
   TonWalletService? _walletService;
 
   /// Node provider
-  final TonProvider? tonProvider;
-
-  /// Access key for the TON testnet API
-  final String? testApiKey;
-
-  /// Access address for the TON API
-  final String? apiTon;
-
-  /// Access address for the TON API (JRPC)
-  final String? apiTonJrpc;
+  ///
+  /// Long-lived, owned by the caller: the service never recreates it, so its
+  /// http client keeps connections alive. The auth token must not be baked
+  /// into it - [TonHTTPProvider] reads it via `getAuthToken` on every request
+  final TonProvider rpc;
 
   static const String _name = 'TransactionsServiceTonImpl';
 
@@ -72,23 +52,6 @@ class TransactionsServiceTonImpl
 
   /// Jetton wallets
   final Map<int, TonJettonWalletService> _jettonWallets = {};
-
-  TonProvider get _rpc {
-    final provider = tonProvider;
-    if (provider != null) return provider;
-    final service = TonHTTPProvider(
-      tonApiUrl: apiTon, // 'https://testnet.tonapi.io',
-      tonCenterUrl: apiTonJrpc, // 'https://testnet.toncenter.com',
-      tonApiKey: testApiKey,
-      authToken: _getAuthToken?.call(),
-    );
-    // TonHTTPProvider(
-    //     tonApiUrl: 'https://tonapi.io',
-    //     tonCenterUrl: 'https://toncenter.com',
-    //     authToken: _mainNetApiKey),
-    // ton_dart 2.3.0 moved TonApiType off the service and onto the provider.
-    return TonProvider(service, service.api);
-  }
 
   @override
   Future<String> createTransaction({
@@ -207,7 +170,7 @@ class TransactionsServiceTonImpl
     _walletService = TonWalletService.fromPublicKey(
       tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
       publicKey: pk.toPublicKey(),
-      rpc: _rpc,
+      rpc: rpc,
       logger: _logger,
     );
     return (
@@ -238,7 +201,7 @@ class TransactionsServiceTonImpl
           TonWalletService.fromWalletAddress(
             tonChain: isTestnet ? TonChainId.testnet : TonChainId.mainnet,
             address: assetAddress,
-            rpc: _rpc,
+            rpc: rpc,
             logger: _logger,
           );
       final res = await walletService.fetchWalletAddressState(

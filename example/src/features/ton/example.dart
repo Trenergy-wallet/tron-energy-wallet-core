@@ -1,7 +1,6 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:ton_dart/ton_dart.dart';
 import 'package:tr_logger/tr_logger.dart';
-import 'package:tr_ton_wallet_service/tr_ton_wallet_service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 // Explorer: https://testnet.tonscan.org
@@ -22,7 +21,7 @@ Future<void> main() async {
   final service = TransactionsServiceTonImpl(
     currentAccountWallet: () => null,
     isTestnet: true,
-    tonProvider: tonRpc,
+    rpc: tonRpc,
     logger: logger,
     getSigningKey: (_) async => 'mnemonic',
   );
@@ -43,7 +42,7 @@ Future<void> main() async {
   logger.logInfoMessage('tonExample', 'TX: $tx');
   final res = await tonRpc.request(TonCenterSendBocReturnHash(tx));
   // Also:
-  // final res = await tonProvider.request(
+  // final res = await tonRpc.request(
   //   TonApiSendBlockchainMessage(batch: [], boc: tx),
   // );
   final sentTx = res['hash'].toString();

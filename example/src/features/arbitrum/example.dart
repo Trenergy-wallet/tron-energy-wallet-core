@@ -16,7 +16,6 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://arb1.arbitrum.io/rpc/',
     'https://sepolia-rollup.arbitrum.io/rpc/',
-    '',
   ),
 );
 
