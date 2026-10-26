@@ -99,8 +99,7 @@ BTC, Ethereum-compatible networks, Solana and gasfree: see `/example`.
 The network services take a ready node provider. Build it once and keep it as long as the
 service: one http client, connections are reused. The auth token is not stored in the
 provider - `getAuthToken` is called on every request, so a re-login needs no new provider.
-The app passes a client that adds DPoP proofs (RFC 9449), the device key stays behind
-`DpopSigner`:
+The app passes its own client, e.g. one that adds DPoP proofs (RFC 9449):
 
 ```dart
 final tron = TransactionsServiceTronImpl(
