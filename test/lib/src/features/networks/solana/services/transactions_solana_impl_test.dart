@@ -16,12 +16,16 @@ MockClient _node(List<http.Request> requests, {String result = '42'}) =>
 
 TransactionsServiceSolanaImpl _service({
   required http.Client client,
-  String? Function()? getAuthToken,
+  String? Function()? getAuthorization,
 }) => TransactionsServiceSolanaImpl(
   getSigningKey: (_) async => '',
   isTestnet: true,
   rpc: SolanaProvider(
-    SolanaHTTPProvider(url: _url, client: client, getAuthToken: getAuthToken),
+    SolanaHTTPProvider(
+      url: _url,
+      client: client,
+      getAuthorization: getAuthorization,
+    ),
   ),
 );
 
@@ -33,7 +37,7 @@ void main() {
       var token = 'first';
       final service = _service(
         client: _node(requests),
-        getAuthToken: () => token,
+        getAuthorization: () => 'Bearer $token',
       );
 
       final rent = await service.getMinimumBalanceForRentExemption(

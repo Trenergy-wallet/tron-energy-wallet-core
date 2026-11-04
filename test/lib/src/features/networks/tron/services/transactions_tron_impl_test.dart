@@ -10,11 +10,15 @@ const _to = 'TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL';
 
 TransactionsServiceTronImpl _service({
   required http.Client client,
-  String? Function()? getAuthToken,
+  String? Function()? getAuthorization,
 }) => TransactionsServiceTronImpl(
   getSigningKey: (_) async => null,
   rpc: TronProvider(
-    TronHTTPProvider(url: _url, client: client, getAuthToken: getAuthToken),
+    TronHTTPProvider(
+      url: _url,
+      client: client,
+      getAuthorization: getAuthorization,
+    ),
   ),
 );
 
@@ -37,7 +41,7 @@ void main() {
           requests.add(request);
           throw http.ClientException('down');
         }),
-        getAuthToken: () => 'token',
+        getAuthorization: () => 'Bearer token',
       );
 
       await expectLater(

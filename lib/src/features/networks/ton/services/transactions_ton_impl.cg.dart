@@ -42,8 +42,9 @@ class TransactionsServiceTonImpl
   /// Node provider
   ///
   /// Long-lived, owned by the caller: the service never recreates it, so its
-  /// http client keeps connections alive. The auth token must not be baked
-  /// into it - [TonHTTPProvider] reads it via `getAuthToken` on every request
+  /// http client keeps connections alive. The `Authorization` header must not
+  /// be baked into it - [TonHTTPProvider] reads it via `getAuthorization` on
+  /// every request
   final TonProvider rpc;
 
   static const String _name = 'TransactionsServiceTonImpl';

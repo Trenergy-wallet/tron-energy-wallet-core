@@ -15,9 +15,9 @@ MockClient _node(List<http.Request> requests) => MockClient((request) async {
 EthereumProvider _rpc(
   String url, {
   http.Client? client,
-  String? Function()? getAuthToken,
+  String? Function()? getAuthorization,
 }) => EthereumProvider(
-  EthereumHTTPProvider(url, client: client, getAuthToken: getAuthToken),
+  EthereumHTTPProvider(url, client: client, getAuthorization: getAuthorization),
 );
 
 void main() {
@@ -31,7 +31,7 @@ void main() {
         rpc: _rpc(
           'https://api.example.com/eth',
           client: _node(requests),
-          getAuthToken: () => token,
+          getAuthorization: () => 'Bearer $token',
         ),
       );
 

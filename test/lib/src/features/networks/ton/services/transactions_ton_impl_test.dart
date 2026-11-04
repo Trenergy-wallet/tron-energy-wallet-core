@@ -26,14 +26,14 @@ MockClient _tonCenter(
 
 TransactionsServiceTonImpl _service({
   required http.Client client,
-  String? Function()? getAuthToken,
+  String? Function()? getAuthorization,
   Future<String> Function(String masterKey)? getSigningKey,
 }) {
   final provider = TonHTTPProvider(
     tonApiUrl: 'https://tonapi.example',
     tonCenterUrl: _tonCenterUrl,
     client: client,
-    getAuthToken: getAuthToken,
+    getAuthorization: getAuthorization,
   );
   return TransactionsServiceTonImpl(
     currentAccountWallet: () => null,
@@ -51,7 +51,7 @@ void main() {
       var token = 'first';
       final service = _service(
         client: _tonCenter(requests),
-        getAuthToken: () => token,
+        getAuthorization: () => 'Bearer $token',
       );
 
       await service.checkWalletIsFrozen(

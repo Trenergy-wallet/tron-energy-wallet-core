@@ -47,9 +47,9 @@ class TransactionsServiceSolanaImpl
 
   /// Node provider
   ///
-  /// Long-lived, owned by the caller: the service never closes it. The auth
-  /// token is not baked into it - [SolanaHTTPProvider] reads it via
-  /// `getAuthToken` on every request
+  /// Long-lived, owned by the caller: the service never closes it. The
+  /// `Authorization` header is not baked into it - [SolanaHTTPProvider] reads
+  /// it via `getAuthorization` on every request
   final SolanaProvider rpc;
 
   /// Get Tron private key as String

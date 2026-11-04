@@ -10,7 +10,7 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://rpc.ankr.com/eth_sepolia/',
     'https://ethereum-sepolia-rpc.publicnode.com',
-    getAuthToken: () => 'your-api-token',
+    getAuthorization: () => 'Bearer your-api-token',
   ),
 );
 

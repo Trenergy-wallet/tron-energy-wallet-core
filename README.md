@@ -34,7 +34,7 @@ Each network service takes a ready node provider (`rpc`), see
 final tronRpc = TronProvider(
   TronHTTPProvider(
     url: 'https://nile.trongrid.io',
-    getAuthToken: () => tronApiKey,
+    getAuthorization: () => 'Bearer $tronApiKey',
   ),
 );
 
@@ -97,8 +97,9 @@ BTC, Ethereum-compatible networks, Solana and gasfree: see `/example`.
 ## Node providers, custom HTTP client (DPoP)
 
 The network services take a ready node provider. Build it once and keep it as long as the
-service: one http client, connections are reused. The auth token is not stored in the
-provider - `getAuthToken` is called on every request, so a re-login needs no new provider.
+service: one http client, connections are reused. The `Authorization` header is not stored in
+the provider - `getAuthorization` is called on every request, so a re-login needs no new
+provider. It returns the whole value with its scheme (`Bearer …`, `DPoP …`), sent as is.
 The app passes its own client, e.g. one that adds DPoP proofs (RFC 9449):
 
 ```dart
@@ -107,7 +108,7 @@ final tron = TransactionsServiceTronImpl(
   rpc: TronProvider(
     TronHTTPProvider(
       url: apiTron,
-      getAuthToken: () => token, // Authorization: Bearer, read per request
+      getAuthorization: () => authorization, // `DPoP …`, read per request
       // the provider never closes the client, its owner does
       client: LoggingHttpClient(dpopClient, logger: logger),
     ),

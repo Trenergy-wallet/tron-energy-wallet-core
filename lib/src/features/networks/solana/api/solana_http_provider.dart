@@ -7,8 +7,9 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 /// Provider for working with the Solana node
 ///
 /// Meant to be long-lived: create it once and share it, so that the http client
-/// keeps its connections alive between requests. The auth token is not
-/// stored in the instance - `getAuthToken` is called on every request.
+/// keeps its connections alive between requests. The `Authorization` header
+/// is not stored in the instance - `getAuthorization` is called on every
+/// request.
 /// The provider never closes the http client, that is up to its owner.
 class SolanaHTTPProvider with SolanaServiceProvider {
   /// Provider for working with the Solana node
@@ -16,9 +17,9 @@ class SolanaHTTPProvider with SolanaServiceProvider {
     required this.url,
     http.Client? client,
     this.requestTimeout = CoreConsts.defaultRequestTimeout,
-    String? Function()? getAuthToken,
+    String? Function()? getAuthorization,
   }) : client = client ?? http.Client(),
-       _getAuthToken = getAuthToken;
+       _getAuthorization = getAuthorization;
 
   /// API address
   final String url;
@@ -29,21 +30,22 @@ class SolanaHTTPProvider with SolanaServiceProvider {
   /// Timeout for requests
   final Duration requestTimeout;
 
-  /// Current auth token: null or empty - no Authorization header
-  final String? Function()? _getAuthToken;
+  /// Current `Authorization` header value with its scheme (`Bearer …`,
+  /// `DPoP …`), sent as is: null or empty - no Authorization header
+  final String? Function()? _getAuthorization;
 
   @override
   Future<BaseServiceResponse> doRequest(
     SolanaRequestDetails params, {
     Duration? timeout,
   }) async {
-    final authToken = _getAuthToken?.call();
+    final authorization = _getAuthorization?.call();
     final response = await client
         .post(
           params.encodeUrl(url),
           headers: {
-            if (authToken != null && authToken.isNotEmpty)
-              'Authorization': 'Bearer $authToken',
+            if (authorization != null && authorization.isNotEmpty)
+              'Authorization': authorization,
             ...params.headers,
           },
           body: params.encodeBody(),

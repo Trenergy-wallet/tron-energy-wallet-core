@@ -17,34 +17,45 @@ MockClient _node(List<http.Request> requests) => MockClient((request) async {
 
 EthereumProvider _rpc({
   required http.Client client,
-  String? Function()? getAuthToken,
+  String? Function()? getAuthorization,
 }) => EthereumProvider(
-  EthereumHTTPProvider(_url, client: client, getAuthToken: getAuthToken),
+  EthereumHTTPProvider(
+    _url,
+    client: client,
+    getAuthorization: getAuthorization,
+  ),
 );
 
 void main() {
-  group('auth token', () {
-    test('is read on every request, a new token is picked up', () async {
+  group('Authorization', () {
+    test('is read on every request, a new value is picked up', () async {
       final requests = <http.Request>[];
-      var token = 'first';
-      final rpc = _rpc(client: _node(requests), getAuthToken: () => token);
+      var authorization = 'Bearer first';
+      final rpc = _rpc(
+        client: _node(requests),
+        getAuthorization: () => authorization,
+      );
 
       await rpc.request(EthereumRequestGetGasPrice());
-      token = 'second';
+      authorization = 'DPoP second';
       await rpc.request(EthereumRequestGetGasPrice());
 
       expect(requests[0].headers['Authorization'], 'Bearer first');
-      expect(requests[1].headers['Authorization'], 'Bearer second');
+      // The scheme is not added: the header goes as is
+      expect(requests[1].headers['Authorization'], 'DPoP second');
     });
 
-    for (final (name, getAuthToken) in [
+    for (final (name, getAuthorization) in [
       ('no callback', null),
       ('callback returns null', () => null),
       ('callback returns an empty string', () => ''),
     ]) {
       test('no Authorization header: $name', () async {
         final requests = <http.Request>[];
-        final rpc = _rpc(client: _node(requests), getAuthToken: getAuthToken);
+        final rpc = _rpc(
+          client: _node(requests),
+          getAuthorization: getAuthorization,
+        );
 
         await rpc.request(EthereumRequestGetGasPrice());
 
@@ -52,12 +63,12 @@ void main() {
       });
     }
 
-    test('request headers win over the token', () async {
+    test('request headers win over getAuthorization', () async {
       final requests = <http.Request>[];
       final provider = EthereumHTTPProvider(
         _url,
         client: _node(requests),
-        getAuthToken: () => 'token',
+        getAuthorization: () => 'Bearer token',
       );
 
       await provider.doRequest(
