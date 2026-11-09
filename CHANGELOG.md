@@ -1,3 +1,44 @@
+## 4.0.0
+
+### Changed
+
+- **Breaking:** `TransactionsServiceTonImpl` takes the node provider from outside only: `rpc`
+  is required. `apiTon`, `apiTonJrpc`, `testApiKey`, `getAuthToken` and `httpClient` are removed —
+  build a `TonHTTPProvider` once with them (`getAuthorization` is a callback there) and pass
+  `TonProvider(provider, provider.api)`. The service no longer creates a provider and an http client
+  on every request, connections are reused
+- **Breaking:** the same for TRON, Ethereum-compatible (incl. Optimism, Base) and Solana: `rpc`
+  is required in `TransactionsServiceTronImpl` (renamed from `tronProvider`),
+  `TransactionsServiceEthereumImpl` (and its Optimism / Base subclasses) and
+  `TransactionsServiceSolanaImpl`. The node provider is named `rpc` in all network services. `apiTron`,
+  `apiUri`, `getAuthToken` and `httpClient` are removed. Node http traffic is no longer logged by
+  the service: `logger` still gets the service messages, but not the requests to the node - wrap
+  the client into `LoggingHttpClient` when building the provider
+- **Breaking:** `buildTransaction` / `buildERC20Transaction` (Ethereum) and `buildTransaction` /
+  `buildSplTokenTransaction` (Solana) no longer take `rpc`: they use the provider of the service
+- **Breaking:** `TronHTTPProvider`, `SolanaHTTPProvider`, `EthereumHTTPProvider` take
+  `getAuthorization` (called on every request) instead of a stored `authToken`; for
+  `EthereumHTTPProvider` it is a named parameter instead of the second positional one. It returns
+  the whole `Authorization` value with its scheme (`Bearer …`, `DPoP …`), sent as is: the
+  providers no longer add `Bearer`. Null or empty - no `Authorization` header. Migration:
+  `authToken: token` → `getAuthorization: () => 'Bearer $token'`,
+  `EthereumHTTPProvider(url, token)` →
+  `EthereumHTTPProvider(url, getAuthorization: () => 'Bearer $token')`
+- **Breaking:** `TransactionsServiceEthereumGasFreeImpl.httpClient` is required. It is shared by
+  all permissionless sub-clients of all operations and never closed by the service - the owner
+  closes it. Node / Pimlico traffic is no longer logged by the service, `logger` included: wrap
+  the client into `LoggingHttpClient`
+- `tr_ton_wallet_service` 2.0.0 (tag `v2.0.0`): `TonHTTPProvider` reads the whole
+  `Authorization` value via `getAuthorization` on every request instead of keeping a token in the
+  instance
+- `EthereumHTTPProvider`: headers of the request override `Authorization` from `getAuthorization`, as
+  in the TRON, Solana and TON providers (it was the other way round)
+
+### Fixed
+
+- Gasfree `createTransactionFromEstimate`: the paymaster call (`pm_getPaymasterData`) went
+  without the `getHeaders` headers (`Authorization`)
+
 ## 3.2.1
 
 ### Fixed

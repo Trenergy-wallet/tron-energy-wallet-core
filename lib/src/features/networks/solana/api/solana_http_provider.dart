@@ -5,14 +5,21 @@ import 'package:on_chain/solana/src/rpc/service/service.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Provider for working with the Solana node
+///
+/// Meant to be long-lived: create it once and share it, so that the http client
+/// keeps its connections alive between requests. The `Authorization` header
+/// is not stored in the instance - `getAuthorization` is called on every
+/// request.
+/// The provider never closes the http client, that is up to its owner.
 class SolanaHTTPProvider with SolanaServiceProvider {
   /// Provider for working with the Solana node
   SolanaHTTPProvider({
     required this.url,
     http.Client? client,
     this.requestTimeout = CoreConsts.defaultRequestTimeout,
-    this.authToken,
-  }) : client = client ?? http.Client();
+    String? Function()? getAuthorization,
+  }) : client = client ?? http.Client(),
+       _getAuthorization = getAuthorization;
 
   /// API address
   final String url;
@@ -23,20 +30,22 @@ class SolanaHTTPProvider with SolanaServiceProvider {
   /// Timeout for requests
   final Duration requestTimeout;
 
-  /// Authorization token
-  final String? authToken;
+  /// Current `Authorization` header value with its scheme (`Bearer …`,
+  /// `DPoP …`), sent as is: null or empty - no Authorization header
+  final String? Function()? _getAuthorization;
 
   @override
   Future<BaseServiceResponse> doRequest(
     SolanaRequestDetails params, {
     Duration? timeout,
   }) async {
+    final authorization = _getAuthorization?.call();
     final response = await client
         .post(
           params.encodeUrl(url),
           headers: {
-            if (authToken != null && authToken!.isNotEmpty)
-              'Authorization': 'Bearer $authToken',
+            if (authorization != null && authorization.isNotEmpty)
+              'Authorization': authorization,
             ...params.headers,
           },
           body: params.encodeBody(),

@@ -27,7 +27,6 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://mainnet.base.org/',
     'https://sepolia.base.org/',
-    '',
   ),
 );
 
