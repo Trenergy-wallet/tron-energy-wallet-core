@@ -91,7 +91,45 @@ Future<void> tonExample() async {
 }
 ```
 
-BTC, Ethereum-compatible networks, Solana and gasfree: see `/example`.
+Bitcoin and Litecoin share one service, `TransactionsServiceBTCImpl`: only `appBlockchain` and
+`network` differ. Instead of `rpc` it takes a `BTCNodeRepo` (Blockbook), implemented by the app.
+The Bitcoin wallet address is Taproot (`bc1p...`), the Litecoin one is native SegWit
+(`ltc1q...`, BIP-84 `m/84'/2'/0'/0/0`): `ltc1p...` recipients are rejected.
+
+```dart
+Future<void> ltcExample() async {
+  // your BTCNodeRepo, see example/src/features/ltc/data/repo
+  final nodeRepo = LTCBlockbookRepoImpl.nowNodes(apiKey: apiKey, isTestnet: true);
+
+  final service = TransactionsServiceBTCImpl(
+    // Bitcoin: omit appBlockchain (bitcoin by default), network: BitcoinNetwork.signet
+    appBlockchain: AppBlockchain.litecoin,
+    network: LitecoinNetwork.testnet,
+    btcNodeRepo: nodeRepo,
+    estimateFee: nodeRepo.getEstimateFee,
+    getSigningKey: (masterKey) async => mnemonic,
+  );
+
+  final walletInfo = await service.initializeWalletAndGetInfo(masterKey: '');
+  // Signed raw transaction, RBF enabled
+  final tx = await service.createTransaction(
+    params: TransferParamsBTC(
+      // Bitcoin: omit appBlockchain here as well
+      appBlockchain: AppBlockchain.litecoin,
+      to: 'tltc1q...',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.0001'),
+      tokenWalletType: TokenWalletType.master,
+      feeType: FeeType.optimal,
+    ),
+    masterKey: '',
+  );
+  await nodeRepo.broadcast(tx);
+}
+```
+
+Full Bitcoin and Litecoin examples, Ethereum-compatible networks, Solana and gasfree: see
+`/example`.
 
 
 ## Node providers, custom HTTP client (DPoP)

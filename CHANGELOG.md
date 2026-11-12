@@ -15,8 +15,8 @@
   `AppBlockchain`, `TransferParamsBTC`, `TransactionBtcNode.onlyTransfersToOutputsOrThrow`
 - Litecoin example `example/src/features/ltc`: `BTCNodeRepo` over a Blockbook node (NOWNodes
   mainnet and testnet, GetBlock mainnet) and over the mempool compatible API of litecoinspace.org
-  (no API key).
-  README BTC example updated to the current API
+  (no API key)
+- README: Bitcoin / Litecoin section with a Litecoin example
 
 ### Changed
 
