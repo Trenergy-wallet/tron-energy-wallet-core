@@ -1,8 +1,14 @@
+import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:test/test.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 BigRational _r(String value) => BigRational.parseDecimal(value);
+
+/// Public BIP-39 test vector, not a real wallet
+const _mnemonic =
+    'abandon abandon abandon abandon abandon abandon abandon abandon '
+    'abandon abandon abandon about';
 
 void main() {
   group('UnitsConverter.tokenToUnits', () {
@@ -115,6 +121,32 @@ void main() {
           reason: amount,
         );
       }
+    });
+  });
+
+  group('KeyGenerator', () {
+    test("generateForLitecoin derives m/84'/2'/0'/0/0 SegWit key", () async {
+      final pk = await KeyGenerator(mnemonic: _mnemonic).generateForLitecoin();
+      final address = pk.getPublic().toSegwitAddress();
+      // Matches the blockchain_utils BIP-84 Litecoin encoder and the default
+      // P2WPKH path of the reference wallet
+      expect(
+        address.toAddress(LitecoinNetwork.mainnet),
+        'ltc1qjmxnz78nmc8nq77wuxh25n2es7rzm5c2rkk4wh',
+      );
+      expect(
+        address.toAddress(LitecoinNetwork.testnet),
+        'tltc1qjmxnz78nmc8nq77wuxh25n2es7rzm5c25y4uaa',
+      );
+    });
+
+    test("generateForBitcoin derives m/86'/0'/0'/0/0 Taproot key", () async {
+      final pk = await KeyGenerator(mnemonic: _mnemonic).generateForBitcoin();
+      // BIP-86 test vector
+      expect(
+        pk.getPublic().toTaprootAddress().toAddress(BitcoinNetwork.mainnet),
+        'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr',
+      );
     });
   });
 }

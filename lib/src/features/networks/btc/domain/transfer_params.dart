@@ -11,6 +11,7 @@ class TransferParamsBTC extends TransferParams {
   /// [txIdToPumpFeeBTC] - Unconfirmed transaction for which the
   /// fee needs to be bumped. In this case, [to], [amount], and [message]
   /// will be ignored since data will be taken from this transaction
+  /// [appBlockchain] - UTXO blockchain of the transfer (Bitcoin or Litecoin)
   const TransferParamsBTC({
     required super.to,
     required super.from,
@@ -20,7 +21,8 @@ class TransferParamsBTC extends TransferParams {
     super.message,
     this.userApprovedFee,
     this.txIdToPumpFeeBTC,
-  }) : super(appBlockchain: AppBlockchain.bitcoin);
+    super.appBlockchain = AppBlockchain.bitcoin,
+  });
 
   /// FeeType
   final FeeType feeType;
