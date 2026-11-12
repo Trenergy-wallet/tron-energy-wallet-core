@@ -3,14 +3,21 @@ import 'package:on_chain/tron/tron.dart';
 import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 
 /// Provider for working with the TRON node
+///
+/// Meant to be long-lived: create it once and share it, so that the http client
+/// keeps its connections alive between requests. The `Authorization` header
+/// is not stored in the instance - `getAuthorization` is called on every
+/// request.
+/// The provider never closes the http client, that is up to its owner.
 class TronHTTPProvider with TronServiceProvider {
   /// Provider for working with the TRON node
   TronHTTPProvider({
     required this.url,
     http.Client? client,
     this.requestTimeout = CoreConsts.defaultRequestTimeout,
-    this.authToken,
-  }) : client = client ?? http.Client();
+    String? Function()? getAuthorization,
+  }) : client = client ?? http.Client(),
+       _getAuthorization = getAuthorization;
 
   /// API address
   final String url;
@@ -21,14 +28,18 @@ class TronHTTPProvider with TronServiceProvider {
   /// Timeout for requests
   final Duration requestTimeout;
 
-  /// Authorization token
-  final String? authToken;
+  /// Current `Authorization` header value with its scheme (`Bearer …`,
+  /// `DPoP …`), sent as is: null or empty - no Authorization header
+  final String? Function()? _getAuthorization;
 
-  Map<String, String> _headers(TronRequestDetails params) => {
-    if (authToken != null && authToken!.isNotEmpty)
-      'Authorization': 'Bearer $authToken',
-    ...params.headers,
-  };
+  Map<String, String> _headers(TronRequestDetails params) {
+    final authorization = _getAuthorization?.call();
+    return {
+      if (authorization != null && authorization.isNotEmpty)
+        'Authorization': authorization,
+      ...params.headers,
+    };
+  }
 
   @override
   Future<TronServiceResponse> doRequest(

@@ -19,7 +19,6 @@ final EthereumProvider<EthereumHTTPProvider> _rpc = EthereumProvider(
   EthereumHTTPProvider(
     // 'https://mainnet.optimism.io/',
     'https://sepolia.optimism.io/',
-    '',
   ),
 );
 

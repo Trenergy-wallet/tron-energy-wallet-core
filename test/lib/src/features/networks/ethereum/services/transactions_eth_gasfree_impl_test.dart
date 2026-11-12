@@ -39,7 +39,11 @@ MockClient _mockRpc({
   List<Map<String, dynamic>>? log,
 }) => MockClient((request) async {
   final body = jsonDecode(request.body) as Map<String, dynamic>;
-  log?.add({'url': request.url.toString(), ...body});
+  log?.add({
+    'url': request.url.toString(),
+    'authorization': request.headers['Authorization'],
+    ...body,
+  });
   final method = body['method'] as String;
 
   if (failEstimate && method == 'eth_estimateUserOperationGas') {
@@ -117,6 +121,24 @@ String _ethCallResult(Map<String, dynamic> body, {BigInt? balance}) {
     return _uint256(balance ?? BigInt.parse('1000000000000000000000000000'));
   }
   return _uint256(BigInt.zero);
+}
+
+/// Behaves like a real client after close: the injected client is shared and
+/// long-lived, nothing in the service may close it
+class _ClosableClient extends http.BaseClient {
+  _ClosableClient(this._inner);
+
+  final http.Client _inner;
+  bool closed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (closed) throw http.ClientException('Client is already closed');
+    return _inner.send(request);
+  }
+
+  @override
+  void close() => closed = true;
 }
 
 TransactionsServiceEthereumGasFreeImpl _service({
@@ -262,6 +284,20 @@ void main() {
           callData,
           isNot(contains(_collectorAddress.substring(2).toLowerCase())),
         );
+      },
+    );
+
+    test(
+      'the injected client is never closed: two operations in a row on one '
+      'service',
+      () async {
+        final client = _ClosableClient(_mockRpc());
+        final service = _service(httpClient: client);
+
+        await service.createTransaction(params: _params(), masterKey: 'mk');
+        await service.createTransaction(params: _params(), masterKey: 'mk');
+
+        expect(client.closed, isFalse);
       },
     );
 
@@ -564,6 +600,57 @@ void main() {
         expect(
           callData,
           contains(_paymasterAddress.substring(2).toLowerCase()),
+        );
+      },
+    );
+
+    test(
+      'estimate and send on one service: the injected client is never '
+      'closed',
+      () async {
+        final client = _ClosableClient(_mockRpc());
+        final service = _service(httpClient: client);
+
+        final cached = await service.estimateGasFree(
+          chainId: 11155111,
+          senderAddress: _senderAddress,
+          recipientAddress: _recipientAddress,
+          tokenContractAddress: _tokenAddress,
+          tokenDecimal: 6,
+          serviceFeeCollector: _collectorAddress,
+        );
+        await service.createTransactionFromEstimate(
+          params: _params(),
+          estimate: cached,
+          masterKey: 'mk',
+        );
+
+        expect(client.closed, isFalse);
+      },
+    );
+
+    test(
+      'createTransactionFromEstimate: every call (node and paymaster) '
+      'carries the auth headers',
+      () async {
+        final cached = await estimate(log: []);
+
+        final sendLog = <Map<String, dynamic>>[];
+        await _service(
+          httpClient: _mockRpc(log: sendLog),
+        ).createTransactionFromEstimate(
+          params: _params(),
+          estimate: cached,
+          masterKey: 'mk',
+        );
+
+        expect(
+          sendLog.map((r) => r['method']),
+          contains('pm_getPaymasterData'),
+        );
+        expect(
+          sendLog.map((r) => r['authorization']),
+          everyElement('test-token'),
         );
       },
     );

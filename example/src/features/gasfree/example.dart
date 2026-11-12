@@ -102,7 +102,7 @@ Future<void> main() async {
   final mnemonic = 'mnemonic';
   final send = false;
 
-  // optional
+  // One client for all operations, the service never closes it
   final counter = _CountingHttpClient(http.Client());
 
   final service = TransactionsServiceEthereumGasFreeImpl(
@@ -118,8 +118,8 @@ Future<void> main() async {
     //     'Accept': 'application/json',
     //   };
     // },
-    // optional
-    httpClient: counter,
+    // Node / Pimlico traffic goes to the log through LoggingHttpClient
+    httpClient: LoggingHttpClient(counter, logger: InAppLogger()),
   );
 
   final info = await service.initializeWalletAndGetInfo(masterKey: '');
