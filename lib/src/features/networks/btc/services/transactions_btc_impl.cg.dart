@@ -34,7 +34,7 @@ class TransactionsServiceBTCImpl
     required this.network,
     required this.btcNodeRepo,
     required this.getSigningKey,
-    required Future<ErrOrEstimateFee> Function({
+    required Future<EstimateFeeModel> Function({
       required double amount,
       required AppBlockchain appBlockchain,
       required TokenWalletType tokenWalletType,
@@ -76,7 +76,7 @@ class TransactionsServiceBTCImpl
   ///
   /// For Bitcoin, the fees section shows the cost in sat/vB (satoshis per ONE
   /// virtual byte)
-  final Future<ErrOrEstimateFee> Function({
+  final Future<EstimateFeeModel> Function({
     required double amount,
     required AppBlockchain appBlockchain,
     required TokenWalletType tokenWalletType,
@@ -116,13 +116,13 @@ class TransactionsServiceBTCImpl
       masterKey: masterKey,
     );
     // 4.2 Get fee rates per byte from the backend
-    final networkEstimate = (await _estimateFee(
+    final networkEstimate = await _estimateFee(
       // Ok to send amount here, bs we operate with rates per vB not
       // calculated fee by backend
       amount: params.amount.toDouble(),
       appBlockchain: appBlockchain,
       tokenWalletType: params.tokenWalletType,
-    )).fold((l) => throw l, (r) => r);
+    );
     if (networkEstimate.fees == Fees.invalid) {
       throw AppException(
         message: '$appBlockchain fees are invalid: ${networkEstimate.fees}',
@@ -455,12 +455,11 @@ mixin SingingKeyCreatorBTC {
 
         // loop each spenders address and get utxos and add to accountsUtxos
         for (final i in spenders) {
-          final utxosResponse = await btcNodeRepo.fetchUtxosV2(
+          // 2.1 Retrieve inputs from the node
+          final utxos = await btcNodeRepo.fetchUtxosV2(
             address: i.toAddress(network),
             confirmed: true,
           );
-          // 2.1 Retrieve inputs from the node
-          final utxos = utxosResponse.fold((l) => throw l, (r) => r);
           // 2.2 Convert them into a model for the builder
           final utxosWithAddress = utxos
               .map(
@@ -483,13 +482,9 @@ mixin SingingKeyCreatorBTC {
           // 2.3 Prepare outputs for RBF
           // The node has a cache, so we forcibly request confirmed inputs via
           // v2 API and unconfirmed via v1
-          final pendingTransactionsResponse = await btcNodeRepo.fetchUtxosV1(
+          final utxosPending = await btcNodeRepo.fetchUtxosV1(
             address: i.toAddress(network),
             confirmed: false,
-          );
-          final utxosPending = pendingTransactionsResponse.fold(
-            (l) => throw l,
-            (r) => r,
           );
           pendingUtxos.addAll(utxosPending.where((e) => e.confirmations == 0));
         }
@@ -532,15 +527,11 @@ mixin SingingKeyCreatorBTC {
         final pendingTransactions = <TransactionBtcNode>[];
         // 3.2.1 Get information about each such transaction
         for (final utxo in pendingUtxos) {
-          final txResponse = await btcNodeRepo.fetchTransaction(
-            txId: utxo.txid,
-          );
-          txResponse.fold((l) => throw l, (r) {
-            // Sometimes the node glitches and shows confirmed transactions as
-            // unconfirmed, we additionally check that the transaction indeed
-            // has no confirmations yet
-            if (r.isPending) pendingTransactions.add(r);
-          });
+          final tx = await btcNodeRepo.fetchTransaction(txId: utxo.txid);
+          // Sometimes the node glitches and shows confirmed transactions as
+          // unconfirmed, we additionally check that the transaction indeed
+          // has no confirmations yet
+          if (tx.isPending) pendingTransactions.add(tx);
         }
         // 3.3 Clean the transaction list of those that use inputs
         // which we do not engage

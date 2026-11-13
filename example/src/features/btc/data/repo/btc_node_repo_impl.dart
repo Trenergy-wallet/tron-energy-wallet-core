@@ -35,7 +35,7 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
   final String baseUrl;
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV1({
+  Future<List<AppUtxo>> fetchUtxosV1({
     required String address,
     bool? confirmed,
   }) async {
@@ -46,14 +46,14 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
         confirmed: confirmed,
         apiToken: apiKey,
       );
-      return Right(response.map((e) => e.toDomainOrThrow()).toList());
+      return response.map((e) => e.toDomainOrThrow()).toList();
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
+      throw AppBackendException(message: e.toString());
     }
   }
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV2({
+  Future<List<AppUtxo>> fetchUtxosV2({
     required String address,
     bool? confirmed,
   }) async {
@@ -64,14 +64,14 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
         confirmed: confirmed,
         apiToken: apiKey,
       );
-      return Right(response.map((e) => e.toDomainOrThrow()).toList());
+      return response.map((e) => e.toDomainOrThrow()).toList();
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
+      throw AppBackendException(message: e.toString());
     }
   }
 
   @override
-  Future<Either<AppExceptionWithCode, TransactionBtcNode>> fetchTransaction({
+  Future<TransactionBtcNode> fetchTransaction({
     required String txId,
   }) async {
     try {
@@ -80,16 +80,16 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
         blockBook: isTestnet ? 'btc_blockbook_signet' : 'btc_blockbook',
         apiToken: apiKey,
       );
-      return Right(response.toDomainOrThrow());
+      return response.toDomainOrThrow();
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
+      throw AppBackendException(message: e.toString());
     }
   }
 
   /// For example purposes only.
   ///
   /// Not a part of core base interface [BTCNodeRepo]
-  Future<Either<AppExceptionWithCode, EstimateFeeModel>> getEstimateFee({
+  Future<EstimateFeeModel> getEstimateFee({
     required double amount,
     required AppBlockchain appBlockchain,
     String? recipientAddress,
@@ -101,20 +101,18 @@ final class BTCNodeRepoImpl implements BTCNodeRepo {
       final fees = await _api.request(
         const MempoolRequestGetNetworkFeeRate(),
       );
-      return Right(
-        EstimateFeeModel(
-          fee: BigRational.parseDecimal(fees.medium.toString()),
-          energy: 0,
-          fees: Fees(
-            fastestFee: fees.high.toInt(),
-            halfHourFee: fees.medium.toInt(),
-            economyFee: fees.economyFee?.toInt() ?? fees.medium.toInt(),
-          ),
-          txDustThreshold: BigInt.from(350),
+      return EstimateFeeModel(
+        fee: BigRational.parseDecimal(fees.medium.toString()),
+        energy: 0,
+        fees: Fees(
+          fastestFee: fees.high.toInt(),
+          halfHourFee: fees.medium.toInt(),
+          economyFee: fees.economyFee?.toInt() ?? fees.medium.toInt(),
         ),
+        txDustThreshold: BigInt.from(350),
       );
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
+      throw AppBackendException(message: e.toString());
     }
   }
 }

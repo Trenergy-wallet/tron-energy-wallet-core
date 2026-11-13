@@ -26,21 +26,21 @@ final class LTCNodeRepoImpl implements LTCExampleNodeRepo {
 
   /// Mempool API has no node cache, so v1 and v2 return the same data
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV1({
+  Future<List<AppUtxo>> fetchUtxosV1({
     required String address,
     bool? confirmed,
-  }) => _run(() => _fetchUtxos(address: address, confirmed: confirmed));
+  }) => _orThrow(() => _fetchUtxos(address: address, confirmed: confirmed));
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV2({
+  Future<List<AppUtxo>> fetchUtxosV2({
     required String address,
     bool? confirmed,
-  }) => _run(() => _fetchUtxos(address: address, confirmed: confirmed));
+  }) => _orThrow(() => _fetchUtxos(address: address, confirmed: confirmed));
 
   @override
-  Future<Either<AppExceptionWithCode, TransactionBtcNode>> fetchTransaction({
+  Future<TransactionBtcNode> fetchTransaction({
     required String txId,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final [txJson, tipJson] = await Future.wait([
       _get('/tx/$txId'),
       _get('/blocks/tip/height'),
@@ -65,13 +65,13 @@ final class LTCNodeRepoImpl implements LTCExampleNodeRepo {
   });
 
   @override
-  Future<Either<AppExceptionWithCode, EstimateFeeModel>> getEstimateFee({
+  Future<EstimateFeeModel> getEstimateFee({
     required double amount,
     required AppBlockchain appBlockchain,
     required TokenWalletType tokenWalletType,
     String? recipientAddress,
     String? tokenContractAddress,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final fees = await _get('/v1/fees/recommended') as Map<String, dynamic>;
     final halfHourFee = fees['halfHourFee'] as int;
     return EstimateFeeModel(
@@ -184,19 +184,18 @@ final class LTCNodeRepoImpl implements LTCExampleNodeRepo {
     return jsonDecode(response.body);
   }
 
-  Future<Either<AppExceptionWithCode, T>> _run<T>(
-    Future<T> Function() request,
-  ) async {
+  /// THROWS only [AppExceptionWithCode]
+  Future<T> _orThrow<T>(Future<T> Function() request) async {
     try {
-      return Right(await request());
-    } on AppExceptionWithCode catch (e) {
-      return Left(e);
+      return await request();
+    } on AppExceptionWithCode {
+      rethrow;
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
-      // An unexpected response shape fails the casts: return it as Left
+      throw AppBackendException(message: e.toString());
+      // An unexpected response shape fails the casts
       // ignore: avoid_catching_errors
     } on TypeError catch (e) {
-      return Left(AppBackendException(message: 'Unexpected response: $e'));
+      throw AppBackendException(message: 'Unexpected response: $e');
     }
   }
 }

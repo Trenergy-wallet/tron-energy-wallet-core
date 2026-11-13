@@ -92,21 +92,29 @@ Future<void> tonExample() async {
 ```
 
 Bitcoin and Litecoin share one service, `TransactionsServiceBTCImpl`: only `appBlockchain` and
-`network` differ. Instead of `rpc` it takes a `BTCNodeRepo` (Blockbook), implemented by the app.
+`network` differ. Instead of `rpc` it takes a `BTCNodeRepo`: `BlockbookNodeRepo` for a Blockbook
+node, or your own one for another API.
 The Bitcoin wallet address is Taproot (`bc1p...`), the Litecoin one is native SegWit
 (`ltc1q...`, BIP-84 `m/84'/2'/0'/0/0`): `ltc1p...` recipients are rejected.
 
 ```dart
 Future<void> ltcExample() async {
-  // your BTCNodeRepo, see example/src/features/ltc/data/repo
-  final nodeRepo = LTCBlockbookRepoImpl.nowNodes(apiKey: apiKey, isTestnet: true);
+  final nodeRepo = BlockbookNodeRepo(
+    rpc: BlockbookProvider(
+      BlockbookHTTPProvider(
+        url: blockbookUrl, // the root `/api/v2/...` is appended to
+        getAuthorization: () => authorization,
+        // client: your http client, see Node providers below
+      ),
+    ),
+  );
 
   final service = TransactionsServiceBTCImpl(
     // Bitcoin: omit appBlockchain (bitcoin by default), network: BitcoinNetwork.signet
     appBlockchain: AppBlockchain.litecoin,
     network: LitecoinNetwork.testnet,
     btcNodeRepo: nodeRepo,
-    estimateFee: nodeRepo.getEstimateFee,
+    estimateFee: estimateFee, // fee rates in sat/vB, e.g. from your backend
     getSigningKey: (masterKey) async => mnemonic,
   );
 
@@ -124,7 +132,7 @@ Future<void> ltcExample() async {
     ),
     masterKey: '',
   );
-  await nodeRepo.broadcast(tx);
+  // Broadcast it yourself, e.g. Blockbook `/api/v2/sendtx/`
 }
 ```
 
@@ -157,7 +165,8 @@ final tron = TransactionsServiceTronImpl(
 Ethereum-compatible and Solana services take `EthereumProvider(EthereumHTTPProvider(...))` and
 `SolanaProvider(SolanaHTTPProvider(...))` as `rpc`. TON takes
 `TonProvider(provider, provider.api)` of a `TonHTTPProvider` as `rpc`; it logs the
-requests itself, no `LoggingHttpClient` needed. Gasfree
+requests itself, no `LoggingHttpClient` needed. Bitcoin and Litecoin take
+`BlockbookNodeRepo(rpc: BlockbookProvider(BlockbookHTTPProvider(...)))` as `btcNodeRepo`. Gasfree
 (`TransactionsServiceEthereumGasFreeImpl`) takes the client itself as `httpClient`: it never closes
 it.
 

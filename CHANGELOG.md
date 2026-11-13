@@ -17,6 +17,17 @@
   mainnet and testnet, GetBlock mainnet) and over the mempool compatible API of litecoinspace.org
   (no API key)
 - README: Bitcoin / Litecoin section with a Litecoin example
+- Blockbook node access with an injected http client, as in the other networks:
+  `BlockbookNodeRepo(rpc: BlockbookProvider(BlockbookHTTPProvider(...)))` is a ready `BTCNodeRepo`.
+  `BlockbookHTTPProvider` takes `url`, `client` and `getAuthorization` (read on every request) and
+  never closes the client. The app no longer has to implement `BTCNodeRepo` itself, a custom one
+  (another API) is still accepted
+- `BlockbookProvider` with `BlockbookRequestDetails` and the requests `BlockbookRequestUtxosV1`,
+  `BlockbookRequestUtxosV2`, `BlockbookRequestTransaction` (`BlockbookRequest` is the base for own
+  ones): the provider / service / request split of blockchain_utils, as in bitcoin_base and
+  on_chain. bitcoin_base has no Blockbook API, so these are ours
+- `BlockbookNodeRepo` throws only `AppExceptionWithCode`: no response is `connectionTimeout`, a node
+  error is `rpcError`, a response of another model is `checkedFromJsonException`
 
 ### Changed
 
@@ -37,12 +48,20 @@
 - `prepareTransactionAndCalculateSize` record field `spender3Taproot: P2trAddress` renamed to
   `spender: BitcoinBaseAddress`
 - `TransactionBtcNode.onlyTransfersToOutputsOrThrow` takes a `BasedUtxoNetwork`
+- `BTCNodeRepo` methods and the `estimateFee` callback of `TransactionsServiceBTCImpl` return the
+  value and throw on a failure instead of returning `Either<AppExceptionWithCode, T>`: the service
+  only rethrew the left side. The exception reaches the caller of the service as is
+- `ErrOrEstimateFee` typedef removed: nothing in the core returns it any more
 
 ### Migration
 
 - Bitcoin callers need no changes: `appBlockchain` defaults to `AppBlockchain.bitcoin` both in
   `TransactionsServiceBTCImpl` and `TransferParamsBTC`
 - Destructuring of `prepareTransactionAndCalculateSize`: `spender3Taproot: _` -> `spender: _`
+- Own `BTCNodeRepo`: return the value instead of `Right(value)`, throw instead of `Left(error)`.
+  Or drop it and pass `BlockbookNodeRepo`
+- `estimateFee` callback: the same. A function that still returns an `Either` is adapted with
+  `(await estimateFee(...)).fold((l) => throw l, (r) => r)`
 
 ## 4.0.0
 

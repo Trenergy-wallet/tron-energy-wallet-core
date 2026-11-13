@@ -48,10 +48,10 @@ final class LTCBlockbookRepoImpl implements LTCExampleNodeRepo {
   static const _economyBlocks = 48;
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV1({
+  Future<List<AppUtxo>> fetchUtxosV1({
     required String address,
     bool? confirmed,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final response = await _dio.get<List<dynamic>>(
       '/api/v1/utxo/$address',
       queryParameters: {'confirmed': ?confirmed},
@@ -63,10 +63,10 @@ final class LTCBlockbookRepoImpl implements LTCExampleNodeRepo {
   });
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV2({
+  Future<List<AppUtxo>> fetchUtxosV2({
     required String address,
     bool? confirmed,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final response = await _dio.get<List<dynamic>>(
       '/api/v2/utxo/$address',
       queryParameters: {'confirmed': ?confirmed},
@@ -78,21 +78,21 @@ final class LTCBlockbookRepoImpl implements LTCExampleNodeRepo {
   });
 
   @override
-  Future<Either<AppExceptionWithCode, TransactionBtcNode>> fetchTransaction({
+  Future<TransactionBtcNode> fetchTransaction({
     required String txId,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final response = await _dio.get<Map<String, dynamic>>('/api/v2/tx/$txId');
     return TransactionBtcNodeDto.fromJson(response.data!).toDomainOrThrow();
   });
 
   @override
-  Future<Either<AppExceptionWithCode, EstimateFeeModel>> getEstimateFee({
+  Future<EstimateFeeModel> getEstimateFee({
     required double amount,
     required AppBlockchain appBlockchain,
     required TokenWalletType tokenWalletType,
     String? recipientAddress,
     String? tokenContractAddress,
-  }) => _run(() async {
+  }) => _orThrow(() async {
     final [fastest, halfHour, economy] = await Future.wait([
       _feeRate(_fastestBlocks),
       _feeRate(_halfHourBlocks),
@@ -148,19 +148,20 @@ final class LTCBlockbookRepoImpl implements LTCExampleNodeRepo {
     return '${e.response?.statusCode} $error';
   }
 
-  Future<Either<AppExceptionWithCode, T>> _run<T>(
-    Future<T> Function() request,
-  ) async {
+  /// THROWS only [AppExceptionWithCode]
+  Future<T> _orThrow<T>(Future<T> Function() request) async {
     try {
-      return Right(await request());
+      return await request();
+    } on AppExceptionWithCode {
+      rethrow;
     } on DioException catch (e) {
-      return Left(AppBackendException(message: _describe(e)));
+      throw AppBackendException(message: _describe(e));
     } on Exception catch (e) {
-      return Left(AppBackendException(message: e.toString()));
-      // An unexpected response shape fails the casts: return it as Left
+      throw AppBackendException(message: e.toString());
+      // An unexpected response shape fails the casts
       // ignore: avoid_catching_errors
     } on TypeError catch (e) {
-      return Left(AppBackendException(message: 'Unexpected response: $e'));
+      throw AppBackendException(message: 'Unexpected response: $e');
     }
   }
 }

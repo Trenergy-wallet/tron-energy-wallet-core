@@ -1,5 +1,9 @@
+export 'api/blockbook_http_provider.dart';
+export 'api/blockbook_provider.dart';
+export 'api/blockbook_requests.dart';
 export 'data/dto/account_utxo.cg.dart';
 export 'data/dto/transaction.cg.dart';
+export 'data/repo/blockbook_node_repo.dart';
 export 'domain/account_utxo.cg.dart';
 export 'domain/repo/btc_node_repo_base.dart';
 export 'domain/transaction.cg.dart';

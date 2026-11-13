@@ -32,19 +32,19 @@ final class _FakeNodeRepo implements BTCNodeRepo {
   final AppExceptionWithCode? error;
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV2({
+  Future<List<AppUtxo>> fetchUtxosV2({
     required String address,
     bool? confirmed,
-  }) async => error != null ? Left(error!) : Right(utxos);
+  }) async => error != null ? throw error! : utxos;
 
   @override
-  Future<Either<AppExceptionWithCode, List<AppUtxo>>> fetchUtxosV1({
+  Future<List<AppUtxo>> fetchUtxosV1({
     required String address,
     bool? confirmed,
-  }) async => const Right(<AppUtxo>[]);
+  }) async => const [];
 
   @override
-  Future<Either<AppExceptionWithCode, TransactionBtcNode>> fetchTransaction({
+  Future<TransactionBtcNode> fetchTransaction({
     required String txId,
   }) => throw UnimplementedError();
 }
@@ -64,6 +64,7 @@ TransactionsServiceBTCImpl _service({
   String mnemonic = _mnemonic,
   BTCNodeRepo? nodeRepo,
   Fees fees = _fees,
+  AppExceptionWithCode? estimateFeeError,
 }) => TransactionsServiceBTCImpl(
   appBlockchain: appBlockchain,
   network: network,
@@ -88,7 +89,8 @@ TransactionsServiceBTCImpl _service({
         required tokenWalletType,
         recipientAddress,
         tokenContractAddress,
-      }) async => Right(_estimate(fees)),
+      }) async =>
+          estimateFeeError != null ? throw estimateFeeError : _estimate(fees),
 );
 
 /// Native SegWit address of another key
@@ -148,7 +150,7 @@ void main() {
               required tokenWalletType,
               recipientAddress,
               tokenContractAddress,
-            }) async => Right(_estimate()),
+            }) async => _estimate(),
       );
       expect(service.appBlockchain, AppBlockchain.bitcoin);
       final info = await service.initializeWalletAndGetInfo(masterKey: '');
@@ -385,6 +387,16 @@ void main() {
       expect(
         _service(
           nodeRepo: _FakeNodeRepo(error: error),
+        ).createTransaction(params: _params(), masterKey: ''),
+        throwsA(same(error)),
+      );
+    });
+
+    test('THROWS estimateFee error as is', () {
+      final error = AppException(code: ExceptionCode.backendGeneralError);
+      expect(
+        _service(
+          estimateFeeError: error,
         ).createTransaction(params: _params(), masterKey: ''),
         throwsA(same(error)),
       );

@@ -7,7 +7,7 @@ import 'package:tron_energy_wallet_core/tron_energy_wallet_core.dart';
 /// the backend (2.4) and broadcasts through it (6.2)
 abstract interface class LTCExampleNodeRepo implements BTCNodeRepo {
   /// Fee rates in sat/vB
-  Future<Either<AppExceptionWithCode, EstimateFeeModel>> getEstimateFee({
+  Future<EstimateFeeModel> getEstimateFee({
     required double amount,
     required AppBlockchain appBlockchain,
     required TokenWalletType tokenWalletType,
