@@ -48,16 +48,16 @@ class BlockbookHTTPProvider implements BlockbookServiceProvider {
     BlockbookRequestDetails params, {
     Duration? timeout,
   }) async {
-    final uri = params.encodeUrl(url);
-    final response =
-        await (params.requestMethod.isPost
-                ? client.post(
-                    uri,
-                    headers: _headers(params),
-                    body: params.encodeBody(),
-                  )
-                : client.get(uri, headers: _headers(params)))
-            .timeout(timeout ?? requestTimeout);
+    final request = http.Request(
+      params.requestMethod.methodName,
+      params.encodeUrl(url),
+    )..headers.addAll(_headers(params));
+    final body = params.encodeBody();
+    if (body != null) request.bodyBytes = body;
+    final response = await client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(timeout ?? requestTimeout);
     return params.toResponse(
       response.bodyBytes,
       statusCode: response.statusCode,

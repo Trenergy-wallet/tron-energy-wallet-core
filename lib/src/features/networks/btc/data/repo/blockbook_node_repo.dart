@@ -43,9 +43,11 @@ final class BlockbookNodeRepo implements BTCNodeRepo {
   /// code whatever went wrong:
   ///
   /// - no response (timeout, connection) - `connectionTimeout`
-  /// - the node answered with an error - `rpcError`
-  /// - the response does not match the model - `checkedFromJsonException`
+  /// - the node answered with an error status - `rpcError`
+  /// - a successful response that is not the model (not a JSON, another
+  ///   shape, a missing or malformed field) - `checkedFromJsonException`
   /// - an [AppExceptionWithCode] of the injected client - as is
+  /// - any other exception of the client - `rpcError`
   Future<RESULT> _request<RESULT, RESPONSE>(
     BlockbookRequest<RESULT, RESPONSE> request,
   ) async {
@@ -58,11 +60,20 @@ final class BlockbookNodeRepo implements BTCNodeRepo {
     } on http.ClientException catch (e, st) {
       throw _connectionError(request, e, st);
     } on RPCError catch (e, st) {
+      final statusCode = e.statusCode;
+      // With a successful status the provider throws only when it can't
+      // decode the body to the type the request expects
+      if (statusCode == null || (statusCode >= 200 && statusCode < 300)) {
+        throw _unexpectedResponse(request, e.message, st);
+      }
       throw AppRpcException(
-        message: '${request.path}: ${e.statusCode} ${e.message}',
+        message: '${request.path}: $statusCode ${e.message}',
         stackTrace: st,
       );
     } on CheckedFromJsonException catch (e, st) {
+      throw _unexpectedResponse(request, e, st);
+    } on FormatException catch (e, st) {
+      // A number of the model that is not a number
       throw _unexpectedResponse(request, e, st);
     } on Exception catch (e, st) {
       throw AppRpcException(message: '${request.path}: $e', stackTrace: st);

@@ -24,10 +24,13 @@
   (another API) is still accepted
 - `BlockbookProvider` with `BlockbookRequestDetails` and the requests `BlockbookRequestUtxosV1`,
   `BlockbookRequestUtxosV2`, `BlockbookRequestTransaction` (`BlockbookRequest` is the base for own
-  ones): the provider / service / request split of blockchain_utils, as in bitcoin_base and
+  ones, with `queryParameters`, `requestMethod` and `body`): the provider / service / request split of blockchain_utils, as in bitcoin_base and
   on_chain. bitcoin_base has no Blockbook API, so these are ours
-- `BlockbookNodeRepo` throws only `AppExceptionWithCode`: no response is `connectionTimeout`, a node
-  error is `rpcError`, a response of another model is `checkedFromJsonException`
+- `BlockbookNodeRepo` throws only `AppExceptionWithCode`: no response is `connectionTimeout`, an
+  error status of the node is `rpcError`, a successful response that is not the model (not a JSON,
+  another shape, a missing or malformed field) is `checkedFromJsonException`
+- Addresses and transaction ids are percent-encoded in the Blockbook paths: a value from a node
+  response can't lead the request to another path or add a query. Valid values go as is
 
 ### Changed
 

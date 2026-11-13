@@ -155,6 +155,20 @@ void main() {
     });
   });
 
+  test('a transaction id of the node can not lead to another path', () async {
+    late Uri url;
+    final repo = _repo((request) {
+      url = request.url;
+      return _json(_txJson());
+    });
+
+    await repo.fetchTransaction(txId: '../../../../../account?x=1');
+
+    expect(url.path, startsWith('/blockbook/api/v2/tx/'));
+    expect(url.pathSegments.last, '../../../../../account?x=1');
+    expect(url.hasQuery, isFalse);
+  });
+
   group('THROWS', () {
     test('rpcError with the status and the reason of a node error', () async {
       final repo = _repo((_) => _json({'error': 'Invalid address'}, 400));
@@ -240,20 +254,40 @@ void main() {
       },
     );
 
-    test('AppRpcException on a response of another shape', () async {
+    test('checkedFromJsonException on a response of another shape', () async {
       final repo = _repo((_) => _json({'unexpected': true}));
 
       final error = await _thrown(repo.fetchUtxosV2(address: _address));
 
-      expect(error, isA<AppRpcException>());
+      expect(error.code, ExceptionCode.checkedFromJsonException);
     });
 
-    test('AppRpcException on a non JSON response', () async {
+    test('checkedFromJsonException on a non JSON response', () async {
       final repo = _repo((_) => http.Response('<html>', 200));
 
       final error = await _thrown(repo.fetchUtxosV2(address: _address));
 
-      expect(error, isA<AppRpcException>());
+      expect(error.code, ExceptionCode.checkedFromJsonException);
+    });
+
+    test('checkedFromJsonException when a number is malformed', () async {
+      final repo = _repo((_) => _json(_txJson()..['fees'] = 'abc'));
+
+      final error = await _thrown(repo.fetchTransaction(txId: _txId));
+
+      expect(error.code, ExceptionCode.checkedFromJsonException);
+    });
+
+    test('checkedFromJsonException when a UTXO value is malformed', () async {
+      final repo = _repo(
+        (_) => _json([
+          {'txid': _txId, 'vout': 0, 'value': 'abc', 'confirmations': 1},
+        ]),
+      );
+
+      final error = await _thrown(repo.fetchUtxosV2(address: _address));
+
+      expect(error.code, ExceptionCode.checkedFromJsonException);
     });
   });
 }

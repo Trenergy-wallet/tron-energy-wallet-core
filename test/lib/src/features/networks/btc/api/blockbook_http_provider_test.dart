@@ -127,6 +127,24 @@ void main() {
     expect(requests.single.body, 'rawtx');
   });
 
+  test('the method of the request is the method sent', () async {
+    final requests = <http.Request>[];
+    final provider = BlockbookHTTPProvider(url: _url, client: _node(requests));
+
+    for (final method in [RequestMethod.put, RequestMethod.delete]) {
+      await provider.doRequest(
+        BlockbookRequestDetails(
+          requestID: 1,
+          responseEncoding: ServiceReponseEncoding.json,
+          path: '/api/v2/x',
+          requestMethod: method,
+        ),
+      );
+    }
+
+    expect(requests.map((e) => e.method), ['PUT', 'DELETE']);
+  });
+
   group('THROWS', () {
     test('TimeoutException when the response is late', () async {
       final provider = BlockbookHTTPProvider(

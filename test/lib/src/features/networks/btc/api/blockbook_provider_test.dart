@@ -29,6 +29,40 @@ class _EstimateFee extends BlockbookRequest<String, Map<String, dynamic>> {
   String onResonse(Map<String, dynamic> result) => result['result'] as String;
 }
 
+/// Records the ids the provider builds the request with
+class _RecordingRequest
+    extends BlockbookRequest<Object?, Map<String, dynamic>> {
+  final ids = <int>[];
+
+  @override
+  String get path => '/api/v2/estimatefee/2';
+
+  @override
+  BlockbookRequestDetails buildRequest(int requestID) {
+    ids.add(requestID);
+    return super.buildRequest(requestID);
+  }
+}
+
+/// Own POST request with a body
+class _SendTx extends BlockbookRequest<String, Map<String, dynamic>> {
+  const _SendTx(this.rawTx);
+
+  final String rawTx;
+
+  @override
+  String get path => '/api/v2/sendtx/';
+
+  @override
+  RequestMethod get requestMethod => RequestMethod.post;
+
+  @override
+  String get body => rawTx;
+
+  @override
+  String onResonse(Map<String, dynamic> result) => result['result'] as String;
+}
+
 void main() {
   group('BlockbookProvider', () {
     test('request converts the response with the request', () async {
@@ -67,11 +101,28 @@ void main() {
       expect(url.toString(), '$_url/api/v2/estimatefee/2');
     });
 
-    test('request ids grow', () {
-      const request = BlockbookRequestTransaction(txId: 'aa');
+    test('every request gets the next id', () async {
+      final rpc = _rpc((_) => http.Response('{"result":"0.0001"}', 200));
+      final request = _RecordingRequest();
 
-      expect(request.buildRequest(0).requestID, 0);
-      expect(request.buildRequest(7).requestID, 7);
+      await rpc.request(request);
+      await rpc.requestDynamic(request);
+      await rpc.request(request);
+
+      expect(request.ids, [0, 1, 2]);
+    });
+
+    test('an own POST request sends its body', () async {
+      late http.Request sent;
+      final rpc = _rpc((request) {
+        sent = request;
+        return http.Response('{"result":"txid"}', 200);
+      });
+
+      expect(await rpc.request(const _SendTx('rawtx')), 'txid');
+      expect(sent.method, 'POST');
+      expect(sent.url.toString(), '$_url/api/v2/sendtx/');
+      expect(sent.body, 'rawtx');
     });
 
     for (final statusCode in [400, 401, 498, 500]) {
@@ -134,8 +185,16 @@ void main() {
       });
     });
 
-    test('is serialized to CBOR', () {
-      expect(details.toCbor().encode(), isNotEmpty);
+    test('is serialized to CBOR with its own tag', () {
+      final cbor = details.toCbor();
+
+      expect(cbor.encode(), isNotEmpty);
+      expect(cbor.tags, [21007]);
+      // Not the tag of the bitcoin_base requests: the fields differ
+      expect(
+        cbor.tags,
+        isNot(contains(BlockchainNetwork.bitcoinAndRelated.identifier.id)),
+      );
     });
   });
 
@@ -154,6 +213,72 @@ void main() {
           confirmed: false,
         ).buildRequest(0).path,
         '/api/v2/utxo/$_address?confirmed=false',
+      );
+    });
+
+    for (final (name, value) in [
+      ('path traversal', '../../../../../account'),
+      ('query', 'aa?x=1'),
+      ('fragment', 'aa#x'),
+      ('slash', 'aa/bb'),
+      ('space', 'aa bb'),
+    ]) {
+      test('a value from outside can not change the url: $name', () {
+        for (final request in <BlockbookRequest<dynamic, dynamic>>[
+          BlockbookRequestTransaction(txId: value),
+          BlockbookRequestUtxosV1(address: value),
+          BlockbookRequestUtxosV2(address: value, confirmed: true),
+        ]) {
+          final uri = request.buildRequest(0).encodeUrl(_url);
+          final prefix = request.path.substring(
+            0,
+            request.path.lastIndexOf('/') + 1,
+          );
+
+          // The value stays one path segment after the path of the request
+          expect(uri.path, startsWith('/blockbook$prefix'));
+          expect(uri.pathSegments.last, value);
+          expect(uri.hasFragment, isFalse);
+          expect(
+            uri.queryParameters,
+            request is BlockbookRequestUtxosV2
+                ? {'confirmed': 'true'}
+                : isEmpty,
+          );
+        }
+      });
+    }
+
+    test('a valid transaction id and address go as is', () {
+      final txId = 'ab' * 32;
+
+      expect(
+        BlockbookRequestTransaction(txId: txId).buildRequest(0).path,
+        '/api/v2/tx/$txId',
+      );
+      for (final address in [
+        _address,
+        'bc1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rusxg3297',
+        '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2',
+        'tltc1qjmxnz78nmc8nq77wuxh25n2es7rzm5c2rkk4wh',
+      ]) {
+        expect(
+          BlockbookRequestUtxosV2(address: address).buildRequest(0).path,
+          '/api/v2/utxo/$address',
+        );
+      }
+    });
+
+    test('the path is the same with and without the query', () {
+      const value = 'a b/c';
+
+      expect(
+        const BlockbookRequestUtxosV1(
+          address: value,
+          confirmed: true,
+        ).buildRequest(0).path,
+        '${const BlockbookRequestUtxosV1(address: value).buildRequest(0).path}'
+        '?confirmed=true',
       );
     });
 
