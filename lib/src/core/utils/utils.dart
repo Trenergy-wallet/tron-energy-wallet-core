@@ -55,7 +55,22 @@ class KeyGenerator {
       // BIP-86 m/86'/0'/0'/0/0 - for taproot
       // BIP-84 m/84'/0'/0'/0/0 - for SegWit
       // BIP-49 "m/49'/0'/0'/0/0" - for SegWit in compatibility mode with legacy wallets
-      final bipBase = bip32.derivePath(_BtcBipPath.bip86taproot.path);
+      final bipBase = bip32.derivePath(_BipPath.bip86taproot.path);
+      return ECPrivate.fromBytes(bipBase.privateKey.raw);
+    });
+  }
+
+  /// Derives and returns the private key for the Litecoin blockchain from
+  /// the stored mnemonic.
+  ///
+  /// BIP-84 m/84'/2'/0'/0/0 - native SegWit (ltc1q...): bitcoin_base does not
+  /// support Taproot for Litecoin. The mainnet path is used on testnet too,
+  /// the same way as for Bitcoin
+  Future<ECPrivate> generateForLitecoin() async {
+    return Isolate.run(() {
+      final mnemonicGenerated = bip.Bip39SeedGenerator(mnemonic).generate();
+      final bip32 = bip.Bip32Slip10Secp256k1.fromSeed(mnemonicGenerated);
+      final bipBase = bip32.derivePath(_BipPath.bip84litecoin.path);
       return ECPrivate.fromBytes(bipBase.privateKey.raw);
     });
   }
@@ -110,7 +125,7 @@ class UnitsConverter {
 }
 
 /// bip32.derivePath params
-enum _BtcBipPath {
+enum _BipPath {
   /// For SegWit in compatibility mode with legacy wallets
   bip49segwit("m/49'/0'/0'/0/0"),
 
@@ -118,10 +133,13 @@ enum _BtcBipPath {
   bip84segwit("m/84'/0'/0'/0/0"),
 
   /// Taproot
-  bip86taproot("m/86'/0'/0'/0/0")
+  bip86taproot("m/86'/0'/0'/0/0"),
+
+  /// Litecoin native SegWit
+  bip84litecoin("m/84'/2'/0'/0/0")
   ;
 
-  const _BtcBipPath(this.path);
+  const _BipPath(this.path);
 
   /// Key derivation path
   final String path;

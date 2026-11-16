@@ -1,3 +1,71 @@
+## 5.0.0
+
+### Added
+
+- Litecoin: `AppBlockchain.litecoin` (backend slug `litecoin`), served by `TransactionsServiceBTCImpl`
+  with `appBlockchain: AppBlockchain.litecoin` and a `LitecoinNetwork`. Transactions are built,
+  signed and RBF-handled the same way as Bitcoin ones, the node repository (`BTCNodeRepo`,
+  Blockbook) is shared
+- Litecoin wallet address is native SegWit P2WPKH (`ltc1q...`, BIP-84 `m/84'/2'/0'/0/0`):
+  bitcoin_base does not support Taproot for Litecoin, so `ltc1p...` recipients are rejected
+- `KeyGenerator.generateForLitecoin()`
+- `AppBlockchain.isUtxo` — Bitcoin or Litecoin
+- `SingingKeyCreatorBTC.spenderAddress()` — wallet address of the blockchain (Taproot / SegWit)
+- Unit tests of `TransactionsServiceBTCImpl` for both blockchains, `KeyGenerator`,
+  `AppBlockchain`, `TransferParamsBTC`, `TransactionBtcNode.onlyTransfersToOutputsOrThrow`
+- Litecoin example `example/src/features/ltc`: `BTCNodeRepo` over a Blockbook node (NOWNodes
+  mainnet and testnet, GetBlock mainnet) and over the mempool compatible API of litecoinspace.org
+  (no API key)
+- README: Bitcoin / Litecoin section with a Litecoin example
+- Blockbook node access with an injected http client, as in the other networks:
+  `BlockbookNodeRepo(rpc: BlockbookProvider(BlockbookHTTPProvider(...)))` is a ready `BTCNodeRepo`.
+  `BlockbookHTTPProvider` takes `url`, `client` and `getAuthorization` (read on every request) and
+  never closes the client. The app no longer has to implement `BTCNodeRepo` itself, a custom one
+  (another API) is still accepted
+- `BlockbookProvider` with `BlockbookRequestDetails` and the requests `BlockbookRequestUtxosV1`,
+  `BlockbookRequestUtxosV2`, `BlockbookRequestTransaction` (`BlockbookRequest` is the base for own
+  ones, with `queryParameters`, `requestMethod` and `body`): the provider / service / request split of blockchain_utils, as in bitcoin_base and
+  on_chain. bitcoin_base has no Blockbook API, so these are ours
+- `BlockbookNodeRepo` throws only `AppExceptionWithCode`: no response is `connectionTimeout`, an
+  error status of the node is `rpcError`, a successful response that is not the model (not a JSON,
+  another shape, a missing or malformed field) is `checkedFromJsonException`
+- Addresses and transaction ids are percent-encoded in the Blockbook paths: a value from a node
+  response can't lead the request to another path or add a query. Valid values go as is
+
+### Changed
+
+- An invalid recipient address (another network, unsupported type) is an `AppException` with
+  `unableToCreateTransaction` instead of a bare bitcoin_base `DartBitcoinPluginException`
+- `TransactionsServiceBTCImpl` / `SingingKeyCreatorBTC` check that `network` matches
+  `appBlockchain` (`AppIncorrectBlockchainException`) before deriving a key
+- `SingingKeyCreatorBTC.createSigningKey` / `spenderAddress` throw
+  `AppBlockchainIsNotSupportedException` for a non UTXO blockchain instead of falling back to Bitcoin
+- An output of a pending RBF transaction that can't be built for the network (e.g. `ltc1p...`) is
+  an `AppException` with `unableToCreateTransaction` instead of a bare bitcoin_base exception
+
+### Breaking changes
+
+- `AppBlockchain.litecoin` added — exhaustive switches over `AppBlockchain` have to be updated
+- `SingingKeyCreatorBTC.network` and `TransactionsServiceBTCImpl.network` are `BasedUtxoNetwork`
+  (was `BitcoinNetwork`); overriding with `BitcoinNetwork` is still valid
+- `prepareTransactionAndCalculateSize` record field `spender3Taproot: P2trAddress` renamed to
+  `spender: BitcoinBaseAddress`
+- `TransactionBtcNode.onlyTransfersToOutputsOrThrow` takes a `BasedUtxoNetwork`
+- `BTCNodeRepo` methods and the `estimateFee` callback of `TransactionsServiceBTCImpl` return the
+  value and throw on a failure instead of returning `Either<AppExceptionWithCode, T>`: the service
+  only rethrew the left side. The exception reaches the caller of the service as is
+- `ErrOrEstimateFee` typedef removed: nothing in the core returns it any more
+
+### Migration
+
+- Bitcoin callers need no changes: `appBlockchain` defaults to `AppBlockchain.bitcoin` both in
+  `TransactionsServiceBTCImpl` and `TransferParamsBTC`
+- Destructuring of `prepareTransactionAndCalculateSize`: `spender3Taproot: _` -> `spender: _`
+- Own `BTCNodeRepo`: return the value instead of `Right(value)`, throw instead of `Left(error)`.
+  Or drop it and pass `BlockbookNodeRepo`
+- `estimateFee` callback: the same. A function that still returns an `Either` is adapted with
+  `(await estimateFee(...)).fold((l) => throw l, (r) => r)`
+
 ## 4.0.0
 
 ### Changed

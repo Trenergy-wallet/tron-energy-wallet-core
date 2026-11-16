@@ -57,6 +57,3 @@ sealed class Fees with _$Fees {
     economyFee: CoreConsts.invalidIntValue,
   );
 }
-
-/// Either AppExceptionWithCode, EstimateFeeModel
-typedef ErrOrEstimateFee = Either<AppExceptionWithCode, EstimateFeeModel>;

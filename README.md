@@ -4,8 +4,8 @@
 
 ## Features
 
-- create and send transactions on TRON, TON, BITCOIN blockchains
-- BITCOIN RBF transactions
+- create and send transactions on TRON, TON, BITCOIN, LITECOIN, EVM, SOLANA blockchains
+- BITCOIN / LITECOIN RBF transactions
 - limited TON Jetton support
 
 ## Getting started
@@ -91,7 +91,53 @@ Future<void> tonExample() async {
 }
 ```
 
-BTC, Ethereum-compatible networks, Solana and gasfree: see `/example`.
+Bitcoin and Litecoin share one service, `TransactionsServiceBTCImpl`: only `appBlockchain` and
+`network` differ. Instead of `rpc` it takes a `BTCNodeRepo`: `BlockbookNodeRepo` for a Blockbook
+node, or your own one for another API.
+The Bitcoin wallet address is Taproot (`bc1p...`), the Litecoin one is native SegWit
+(`ltc1q...`, BIP-84 `m/84'/2'/0'/0/0`): `ltc1p...` recipients are rejected.
+
+```dart
+Future<void> ltcExample() async {
+  final nodeRepo = BlockbookNodeRepo(
+    rpc: BlockbookProvider(
+      BlockbookHTTPProvider(
+        url: blockbookUrl, // the root `/api/v2/...` is appended to
+        getAuthorization: () => authorization,
+        // client: your http client, see Node providers below
+      ),
+    ),
+  );
+
+  final service = TransactionsServiceBTCImpl(
+    // Bitcoin: omit appBlockchain (bitcoin by default), network: BitcoinNetwork.signet
+    appBlockchain: AppBlockchain.litecoin,
+    network: LitecoinNetwork.testnet,
+    btcNodeRepo: nodeRepo,
+    estimateFee: estimateFee, // fee rates in sat/vB, e.g. from your backend
+    getSigningKey: (masterKey) async => mnemonic,
+  );
+
+  final walletInfo = await service.initializeWalletAndGetInfo(masterKey: '');
+  // Signed raw transaction, RBF enabled
+  final tx = await service.createTransaction(
+    params: TransferParamsBTC(
+      // Bitcoin: omit appBlockchain here as well
+      appBlockchain: AppBlockchain.litecoin,
+      to: 'tltc1q...',
+      from: walletInfo.address,
+      amount: BigRational.parseDecimal('0.0001'),
+      tokenWalletType: TokenWalletType.master,
+      feeType: FeeType.optimal,
+    ),
+    masterKey: '',
+  );
+  // Broadcast it yourself, e.g. Blockbook `/api/v2/sendtx/`
+}
+```
+
+Full Bitcoin and Litecoin examples, Ethereum-compatible networks, Solana and gasfree: see
+`/example`.
 
 
 ## Node providers, custom HTTP client (DPoP)
@@ -119,7 +165,8 @@ final tron = TransactionsServiceTronImpl(
 Ethereum-compatible and Solana services take `EthereumProvider(EthereumHTTPProvider(...))` and
 `SolanaProvider(SolanaHTTPProvider(...))` as `rpc`. TON takes
 `TonProvider(provider, provider.api)` of a `TonHTTPProvider` as `rpc`; it logs the
-requests itself, no `LoggingHttpClient` needed. Gasfree
+requests itself, no `LoggingHttpClient` needed. Bitcoin and Litecoin take
+`BlockbookNodeRepo(rpc: BlockbookProvider(BlockbookHTTPProvider(...)))` as `btcNodeRepo`. Gasfree
 (`TransactionsServiceEthereumGasFreeImpl`) takes the client itself as `httpClient`: it never closes
 it.
 
