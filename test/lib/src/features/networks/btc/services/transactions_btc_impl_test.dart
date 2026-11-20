@@ -306,6 +306,71 @@ void main() {
       expect(tx.outputs.where((o) => o.amount == BigInt.zero), hasLength(1));
     });
 
+    // Recipient addresses are encoded here from the Litecoin Core version
+    // bytes (chainparams.cpp) and the expected scripts are written by hand,
+    // so the check does not depend on bitcoin_base address encoding
+    final hash20 = List<int>.filled(20, 7);
+    final hash20Hex = BytesUtils.toHexString(hash20);
+    final hash32 = List<int>.filled(32, 7);
+    final recipients =
+        <String, ({BasedUtxoNetwork network, String to, String script})>{
+          'legacy P2PKH (L...)': (
+            network: LitecoinNetwork.mainnet,
+            to: Base58Encoder.checkEncode([48, ...hash20]),
+            script: '76a914${hash20Hex}88ac',
+          ),
+          'P2SH (M...)': (
+            network: LitecoinNetwork.mainnet,
+            to: Base58Encoder.checkEncode([50, ...hash20]),
+            script: 'a914${hash20Hex}87',
+          ),
+          'P2WSH (ltc1q..., 32 bytes)': (
+            network: LitecoinNetwork.mainnet,
+            to: SegwitBech32Encoder.encode('ltc', 0, hash32),
+            script: '0020${BytesUtils.toHexString(hash32)}',
+          ),
+          'testnet legacy P2PKH (m.../n...)': (
+            network: LitecoinNetwork.testnet,
+            to: Base58Encoder.checkEncode([111, ...hash20]),
+            script: '76a914${hash20Hex}88ac',
+          ),
+          'testnet P2SH (Q...)': (
+            network: LitecoinNetwork.testnet,
+            to: Base58Encoder.checkEncode([58, ...hash20]),
+            script: 'a914${hash20Hex}87',
+          ),
+        };
+    for (final MapEntry(key: type, value: recipient) in recipients.entries) {
+      test('builds transaction to $type recipient', () async {
+        final isMainnet = recipient.network == LitecoinNetwork.mainnet;
+        final raw = await _service(network: recipient.network)
+            .createTransaction(
+              params: _params(
+                to: recipient.to,
+                from: isMainnet ? _ltcMainnetAddress : _ltcTestnetAddress,
+              ),
+              masterKey: '',
+            );
+        final tx = BtcTransaction.deserialize(BytesUtils.fromHexString(raw));
+        final sent = tx.outputs.where(
+          (o) => o.scriptPubKey.toHex() == recipient.script,
+        );
+        expect(sent.single.amount, BigInt.from(100000));
+      });
+    }
+
+    test('THROWS unableToCreateTransaction for deprecated P2SH (3...)', () {
+      // Old P2SH version byte 5 (same as Bitcoin): bitcoin_base accepts only
+      // the current one (50, M...), the same hash must be sent as M...
+      expect(
+        _service().createTransaction(
+          params: _params(to: Base58Encoder.checkEncode([5, ...hash20])),
+          masterKey: '',
+        ),
+        _throwsCode(ExceptionCode.unableToCreateTransaction),
+      );
+    });
+
     test('THROWS AppIncorrectBlockchainException for bitcoin params', () {
       expect(
         _service().createTransaction(
